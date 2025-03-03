@@ -58,6 +58,7 @@ function SceneGridLayoutRenderer({ model }) {
       width: width2,
       isDraggable: isDraggable && width2 > 768,
       isResizable: isResizable != null ? isResizable : false,
+      className: "oodle-panel-row",
       containerPadding: [0, 0],
       useCSSTransforms: true,
       margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
