@@ -47,6 +47,7 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
            */
           isDraggable={isDraggable && width > 768}
           isResizable={isResizable ?? false}
+          className="oodle-panel-row"
           containerPadding={[0, 0]}
           useCSSTransforms={true}
           margin={[GRID_CELL_VMARGIN, GRID_CELL_VMARGIN]}
