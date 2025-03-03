@@ -1,10 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import ReactGridLayout from 'react-grid-layout';
-import { GRID_CELL_VMARGIN, GRID_COLUMN_COUNT, GRID_CELL_HEIGHT } from './constants.js';
+import { GRID_CELL_HEIGHT, GRID_CELL_VMARGIN, GRID_COLUMN_COUNT } from './constants.js';
 import { LazyLoader } from '../LazyLoader.js';
 import { useStyles2 } from '@grafana/ui';
 import { cx, css } from '@emotion/css';
 import { useMeasure } from 'react-use';
+import { isSceneGridRow } from './SceneGridItem.js';
 
 var __defProp = Object.defineProperty;
 var __defProps = Object.defineProperties;
@@ -41,6 +42,7 @@ function SceneGridLayoutRenderer({ model }) {
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
   const ref = useRef(null);
+  const styles = useStyles2(getStyles);
   useEffect(() => {
     updateAnimationClass(ref, !!isDraggable);
   }, [isDraggable]);
@@ -50,6 +52,16 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
+    const rows = {};
+    layout.forEach((item) => {
+      const sceneChild = model.getSceneLayoutChild(item.i);
+      const parent = sceneChild.parent;
+      const rowKey = parent && isSceneGridRow(parent) ? parent.state.key : "default";
+      if (!rows[rowKey]) {
+        rows[rowKey] = [];
+      }
+      rows[rowKey].push(item);
+    });
     return /* @__PURE__ */ React.createElement("div", {
       ref,
       style: { width: `${width2}px`, height: "100%" },
@@ -58,7 +70,7 @@ function SceneGridLayoutRenderer({ model }) {
       width: width2,
       isDraggable: isDraggable && width2 > 768,
       isResizable: isResizable != null ? isResizable : false,
-      className: "oodle-panel-row",
+      className: "oodle-panel-grid",
       containerPadding: [0, 0],
       useCSSTransforms: true,
       margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
@@ -73,14 +85,29 @@ function SceneGridLayoutRenderer({ model }) {
       onLayoutChange: model.onLayoutChange,
       isBounded: false,
       resizeHandle: /* @__PURE__ */ React.createElement(ResizeHandle, null)
-    }, layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
-      key: gridItem.i,
-      grid: model,
-      layoutItem: gridItem,
-      index,
-      isLazy,
-      totalCount: layout.length
-    }))));
+    }, Object.entries(rows).map(([rowKey, rowItems]) => {
+      const isRow = rowKey !== "default";
+      const sceneChild = model.getSceneLayoutChild(rowItems[0].i);
+      const parent = sceneChild.parent;
+      const row = isRow ? parent : null;
+      return /* @__PURE__ */ React.createElement("div", {
+        key: rowKey,
+        className: cx(styles.rowContainer, isRow && styles.rowContainerWithRow)
+      }, isRow && row && /* @__PURE__ */ React.createElement("div", {
+        className: styles.rowHeader
+      }, /* @__PURE__ */ React.createElement(row.Component, {
+        model: row
+      })), /* @__PURE__ */ React.createElement("div", {
+        className: styles.rowContent
+      }, rowItems.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
+        key: gridItem.i,
+        grid: model,
+        layoutItem: gridItem,
+        index,
+        isLazy,
+        totalCount: layout.length
+      }))));
+    })));
   };
   return /* @__PURE__ */ React.createElement("div", {
     ref: outerDivRef,
@@ -173,6 +200,31 @@ function getResizeHandleStyles(theme) {
       display: "none"
     }
   });
+}
+function getStyles(theme) {
+  return {
+    rowContainer: css({
+      position: "absolute",
+      left: 0,
+      right: 0,
+      minHeight: GRID_CELL_HEIGHT,
+      background: theme.colors.background.primary,
+      borderRadius: theme.shape.borderRadius(1),
+      margin: theme.spacing(0.5, 0)
+    }),
+    rowContainerWithRow: css({
+      background: theme.colors.background.secondary,
+      margin: theme.spacing(0.5, 0)
+    }),
+    rowHeader: css({
+      position: "relative",
+      zIndex: 1
+    }),
+    rowContent: css({
+      position: "relative",
+      zIndex: 0
+    })
+  };
 }
 
 export { SceneGridLayoutRenderer };

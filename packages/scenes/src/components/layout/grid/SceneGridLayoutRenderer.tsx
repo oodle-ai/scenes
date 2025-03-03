@@ -9,6 +9,7 @@ import { useStyles2 } from '@grafana/ui';
 import { css, cx } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { useMeasure } from 'react-use';
+import { isSceneGridRow } from './SceneGridItem';
 
 export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGridLayout>) {
   const { children, isLazy, isDraggable, isResizable } = model.useState();
@@ -31,6 +32,19 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
 
     const layout = model.buildGridLayout(width, height);
 
+    // Group items by their parent row
+    const rows: { [key: string]: ReactGridLayout.Layout[] } = {};
+    layout.forEach((item) => {
+      const sceneChild = model.getSceneLayoutChild(item.i);
+      const parent = sceneChild.parent;
+      const rowKey = parent && isSceneGridRow(parent) ? parent.state.key! : 'default';
+      
+      if (!rows[rowKey]) {
+        rows[rowKey] = [];
+      }
+      rows[rowKey].push(item);
+    });
+
     return (
       /**
        * The children is using a width of 100% so we need to guarantee that it is wrapped
@@ -47,7 +61,7 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
            */
           isDraggable={isDraggable && width > 768}
           isResizable={isResizable ?? false}
-          className="oodle-panel-row"
+          className="oodle-panel-grid"
           containerPadding={[0, 0]}
           useCSSTransforms={true}
           margin={[GRID_CELL_VMARGIN, GRID_CELL_VMARGIN]}
@@ -63,16 +77,22 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
           isBounded={false}
           resizeHandle={<ResizeHandle />}
         >
-          {layout.map((gridItem, index) => (
-            <GridItemWrapper
-              key={gridItem.i}
-              grid={model}
-              layoutItem={gridItem}
-              index={index}
-              isLazy={isLazy}
-              totalCount={layout.length}
-            />
-          ))}
+          {Object.entries(rows).map(([rowKey, rowItems]) => {
+            return (
+              <div key={rowKey}>
+                {rowItems.map((gridItem, index) => (
+                  <GridItemWrapper
+                    key={gridItem.i}
+                    grid={model}
+                    layoutItem={gridItem}
+                    index={index}
+                    isLazy={isLazy}
+                    totalCount={layout.length}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </ReactGridLayout>
       </div>
     );

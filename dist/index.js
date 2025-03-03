@@ -3190,7 +3190,7 @@ function LoadingIndicator(props) {
 }
 
 function ControlsLabel(props) {
-  const styles = ui.useStyles2(getStyles$g);
+  const styles = ui.useStyles2(getStyles$h);
   const theme = ui.useTheme2();
   const isVertical = props.layout === "vertical";
   const loadingIndicator = Boolean(props.isLoading) ? /* @__PURE__ */ React__default["default"].createElement("div", {
@@ -3253,7 +3253,7 @@ function ControlsLabel(props) {
   }
   return labelElement;
 }
-const getStyles$g = (theme) => ({
+const getStyles$h = (theme) => ({
   horizontalLabel: css.css({
     background: theme.isDark ? theme.colors.background.primary : theme.colors.background.secondary,
     display: `flex`,
@@ -3322,7 +3322,7 @@ function keyLabelToOption(key, label) {
 const filterNoOp = () => true;
 function AdHocFilterRenderer({ filter, model }) {
   var _a, _b, _c, _d, _e;
-  const styles = ui.useStyles2(getStyles$f);
+  const styles = ui.useStyles2(getStyles$g);
   const [keys, setKeys] = React.useState([]);
   const [values, setValues] = React.useState([]);
   const [isKeysLoading, setIsKeysLoading] = React.useState(false);
@@ -3529,7 +3529,7 @@ function AdHocFilterRenderer({ filter, model }) {
     onClick: () => model._removeFilter(filter)
   }));
 }
-const getStyles$f = (theme) => ({
+const getStyles$g = (theme) => ({
   field: css.css({
     marginBottom: 0
   }),
@@ -3709,7 +3709,7 @@ var __objRest$3 = (source, exclude) => {
 const DropdownItem = React.forwardRef(
   function DropdownItem2(_a, ref) {
     var _b = _a, { children, active, addGroupBottomBorder, isMultiValueEdit, checked } = _b, rest = __objRest$3(_b, ["children", "active", "addGroupBottomBorder", "isMultiValueEdit", "checked"]);
-    const styles = ui.useStyles2(getStyles$e);
+    const styles = ui.useStyles2(getStyles$f);
     const id = React.useId();
     return /* @__PURE__ */ React__default["default"].createElement("div", __spreadValues$D({
       ref,
@@ -3727,7 +3727,7 @@ const DropdownItem = React.forwardRef(
     }) : null, children)));
   }
 );
-const getStyles$e = (theme) => ({
+const getStyles$f = (theme) => ({
   option: css.css({
     label: "grafana-select-option",
     top: 0,
@@ -3803,7 +3803,7 @@ const MultiValueApplyButton = ({
   maxOptionWidth,
   menuHeight
 }) => {
-  const styles = ui.useStyles2(getStyles$e);
+  const styles = ui.useStyles2(getStyles$f);
   const floatingElementRect = floatingElement == null ? void 0 : floatingElement.getBoundingClientRect();
   return /* @__PURE__ */ React__default["default"].createElement("div", {
     className: styles.multiValueApplyWrapper,
@@ -4049,7 +4049,7 @@ const MultiValuePill = ({
   handleEditMultiValuePill
 }) => {
   var _a, _b;
-  const styles = ui.useStyles2(getStyles$d);
+  const styles = ui.useStyles2(getStyles$e);
   const editMultiValuePill = React.useCallback(
     (e) => {
       e.stopPropagation();
@@ -4102,7 +4102,7 @@ const MultiValuePill = ({
     id: `${item.value}-${index}-close-icon`
   })));
 };
-const getStyles$d = (theme) => ({
+const getStyles$e = (theme) => ({
   basePill: css.css(__spreadProps$q(__spreadValues$C({
     display: "flex",
     alignItems: "center",
@@ -4160,7 +4160,7 @@ const AdHocCombobox = React.forwardRef(function AdHocCombobox2({ filter, model, 
   const [activeIndex, setActiveIndex] = React.useState(null);
   const [filterInputType, setInputType] = React.useState(!isAlwaysWip ? "value" : "key");
   const [preventFiltering, setPreventFiltering] = React.useState(!isAlwaysWip && filterInputType === "value");
-  const styles = ui.useStyles2(getStyles$c);
+  const styles = ui.useStyles2(getStyles$d);
   const [filterMultiValues, setFilterMultiValues] = React.useState([]);
   const [_, setForceRefresh] = React.useState({});
   const allowCustomValue = (_a = model.state.allowCustomValue) != null ? _a : true;
@@ -4687,7 +4687,7 @@ const AdHocCombobox = React.forwardRef(function AdHocCombobox2({ filter, model, 
     menuHeight: Math.min(rowVirtualizer.getTotalSize(), MAX_MENU_HEIGHT)
   }) : null))));
 });
-const getStyles$c = (theme) => ({
+const getStyles$d = (theme) => ({
   comboboxWrapper: css.css({
     display: "flex",
     flexWrap: "wrap"
@@ -4778,7 +4778,7 @@ var __spreadValues$A = (a, b) => {
 var __spreadProps$o = (a, b) => __defProps$o(a, __getOwnPropDescs$o(b));
 function AdHocFilterPill({ filter, model, readOnly, focusOnWipInputRef }) {
   var _a, _b, _c;
-  const styles = ui.useStyles2(getStyles$b);
+  const styles = ui.useStyles2(getStyles$c);
   const [viewMode, setViewMode] = React.useState(true);
   const [shouldFocusOnPillWrapper, setShouldFocusOnPillWrapper] = React.useState(false);
   const pillWrapperRef = React.useRef(null);
@@ -4868,7 +4868,7 @@ function AdHocFilterPill({ filter, model, readOnly, focusOnWipInputRef }) {
     populateInputOnEdit
   });
 }
-const getStyles$b = (theme) => ({
+const getStyles$c = (theme) => ({
   combinedFilterPill: css.css(__spreadProps$o(__spreadValues$A({
     display: "flex",
     alignItems: "center",
@@ -4929,7 +4929,7 @@ const AdHocFiltersAlwaysWipCombobox = React.forwardRef(function AdHocFiltersAlwa
 
 const AdHocFiltersComboboxRenderer = React.memo(function AdHocFiltersComboboxRenderer2({ model }) {
   const { filters, readOnly } = model.useState();
-  const styles = ui.useStyles2(getStyles$a);
+  const styles = ui.useStyles2(getStyles$b);
   const focusOnWipInputRef = React.useRef();
   return /* @__PURE__ */ React__default["default"].createElement("div", {
     className: css.cx(styles.comboboxWrapper, { [styles.comboboxFocusOutline]: !readOnly }),
@@ -4952,7 +4952,7 @@ const AdHocFiltersComboboxRenderer = React.memo(function AdHocFiltersComboboxRen
     ref: focusOnWipInputRef
   }) : null);
 });
-const getStyles$a = (theme) => ({
+const getStyles$b = (theme) => ({
   comboboxWrapper: css.css({
     display: "flex",
     flexWrap: "wrap",
@@ -5220,7 +5220,7 @@ function renderExpression(builder, filters) {
 }
 function AdHocFiltersVariableRenderer({ model }) {
   const { filters, readOnly, addFilterButtonText } = model.useState();
-  const styles = ui.useStyles2(getStyles$9);
+  const styles = ui.useStyles2(getStyles$a);
   if (model.state.layout === "combobox") {
     return /* @__PURE__ */ React__default["default"].createElement(AdHocFiltersComboboxRenderer, {
       model
@@ -5239,7 +5239,7 @@ function AdHocFiltersVariableRenderer({ model }) {
     addFilterButtonText
   }));
 }
-const getStyles$9 = (theme) => ({
+const getStyles$a = (theme) => ({
   wrapper: css.css({
     display: "flex",
     flexWrap: "wrap",
@@ -7018,7 +7018,7 @@ function getCursorSyncScope(sceneObject) {
 }
 
 function VizPanelSeriesLimit({ data, showAll, seriesLimit, onShowAllSeries }) {
-  const styles = ui.useStyles2(getStyles$8);
+  const styles = ui.useStyles2(getStyles$9);
   const seriesCount = data == null ? void 0 : data.series.length;
   if (seriesCount === void 0 || seriesCount < seriesLimit) {
     return null;
@@ -7040,7 +7040,7 @@ function VizPanelSeriesLimit({ data, showAll, seriesLimit, onShowAllSeries }) {
     onClick: onShowAllSeries
   }, buttonText)));
 }
-const getStyles$8 = (theme) => ({
+const getStyles$9 = (theme) => ({
   timeSeriesDisclaimer: css.css({
     label: "time-series-disclaimer",
     display: "flex",
@@ -10178,7 +10178,7 @@ class EmbeddedScene extends SceneObjectBase {
 EmbeddedScene.Component = EmbeddedSceneRenderer;
 function EmbeddedSceneRenderer({ model }) {
   const { body, controls } = model.useState();
-  const styles = ui.useStyles2(getStyles$7);
+  const styles = ui.useStyles2(getStyles$8);
   return /* @__PURE__ */ React__default["default"].createElement("div", {
     className: styles.container
   }, controls && /* @__PURE__ */ React__default["default"].createElement("div", {
@@ -10192,7 +10192,7 @@ function EmbeddedSceneRenderer({ model }) {
     model: body
   })));
 }
-const getStyles$7 = (theme) => {
+const getStyles$8 = (theme) => {
   return {
     container: css.css({
       flexGrow: 1,
@@ -10409,7 +10409,7 @@ const LazyLoader = React__default["default"].forwardRef(
   (_a, ref) => {
     var _b = _a, { children, onLoad, onChange, className } = _b, rest = __objRest$1(_b, ["children", "onLoad", "onChange", "className"]);
     const id = useUniqueId();
-    const { hideEmpty } = ui.useStyles2(getStyles$6);
+    const { hideEmpty } = ui.useStyles2(getStyles$7);
     const [loaded, setLoaded] = React.useState(false);
     const [isInView, setIsInView] = React.useState(false);
     const innerRef = React.useRef(null);
@@ -10443,7 +10443,7 @@ const LazyLoader = React__default["default"].forwardRef(
     }, rest), loaded && (typeof children === "function" ? children({ isInView }) : children));
   }
 );
-function getStyles$6() {
+function getStyles$7() {
   return {
     hideEmpty: css.css({
       "&:empty": {
@@ -10501,6 +10501,7 @@ function SceneGridLayoutRenderer({ model }) {
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = reactUse.useMeasure();
   const ref = React.useRef(null);
+  const styles = ui.useStyles2(getStyles$6);
   React.useEffect(() => {
     updateAnimationClass(ref, !!isDraggable);
   }, [isDraggable]);
@@ -10510,6 +10511,16 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
+    const rows = {};
+    layout.forEach((item) => {
+      const sceneChild = model.getSceneLayoutChild(item.i);
+      const parent = sceneChild.parent;
+      const rowKey = parent && isSceneGridRow(parent) ? parent.state.key : "default";
+      if (!rows[rowKey]) {
+        rows[rowKey] = [];
+      }
+      rows[rowKey].push(item);
+    });
     return /* @__PURE__ */ React__default["default"].createElement("div", {
       ref,
       style: { width: `${width2}px`, height: "100%" },
@@ -10518,7 +10529,7 @@ function SceneGridLayoutRenderer({ model }) {
       width: width2,
       isDraggable: isDraggable && width2 > 768,
       isResizable: isResizable != null ? isResizable : false,
-      className: "oodle-panel-row",
+      className: "oodle-panel-grid",
       containerPadding: [0, 0],
       useCSSTransforms: true,
       margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
@@ -10533,14 +10544,29 @@ function SceneGridLayoutRenderer({ model }) {
       onLayoutChange: model.onLayoutChange,
       isBounded: false,
       resizeHandle: /* @__PURE__ */ React__default["default"].createElement(ResizeHandle, null)
-    }, layout.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
-      key: gridItem.i,
-      grid: model,
-      layoutItem: gridItem,
-      index,
-      isLazy,
-      totalCount: layout.length
-    }))));
+    }, Object.entries(rows).map(([rowKey, rowItems]) => {
+      const isRow = rowKey !== "default";
+      const sceneChild = model.getSceneLayoutChild(rowItems[0].i);
+      const parent = sceneChild.parent;
+      const row = isRow ? parent : null;
+      return /* @__PURE__ */ React__default["default"].createElement("div", {
+        key: rowKey,
+        className: css.cx(styles.rowContainer, isRow && styles.rowContainerWithRow)
+      }, isRow && row && /* @__PURE__ */ React__default["default"].createElement("div", {
+        className: styles.rowHeader
+      }, /* @__PURE__ */ React__default["default"].createElement(row.Component, {
+        model: row
+      })), /* @__PURE__ */ React__default["default"].createElement("div", {
+        className: styles.rowContent
+      }, rowItems.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
+        key: gridItem.i,
+        grid: model,
+        layoutItem: gridItem,
+        index,
+        isLazy,
+        totalCount: layout.length
+      }))));
+    })));
   };
   return /* @__PURE__ */ React__default["default"].createElement("div", {
     ref: outerDivRef,
@@ -10633,6 +10659,31 @@ function getResizeHandleStyles(theme) {
       display: "none"
     }
   });
+}
+function getStyles$6(theme) {
+  return {
+    rowContainer: css.css({
+      position: "absolute",
+      left: 0,
+      right: 0,
+      minHeight: GRID_CELL_HEIGHT,
+      background: theme.colors.background.primary,
+      borderRadius: theme.shape.borderRadius(1),
+      margin: theme.spacing(0.5, 0)
+    }),
+    rowContainerWithRow: css.css({
+      background: theme.colors.background.secondary,
+      margin: theme.spacing(0.5, 0)
+    }),
+    rowHeader: css.css({
+      position: "relative",
+      zIndex: 1
+    }),
+    rowContent: css.css({
+      position: "relative",
+      zIndex: 0
+    })
+  };
 }
 
 var __defProp$9 = Object.defineProperty;
