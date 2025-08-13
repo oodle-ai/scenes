@@ -321,6 +321,7 @@ export function GroupByVariableRenderer({ model }: SceneComponentProps<MultiValu
       inputValue={inputValue}
       value={uncommittedValue}
       allowCustomValue={allowCustomValue}
+      createOptionPosition="first"
       noMultiValueWrap={true}
       maxVisibleValues={maxVisibleValues ?? 5}
       tabSelectsValue={false}

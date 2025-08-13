@@ -157,6 +157,7 @@ function AdHocFilterRenderer({ filter, model }) {
     className: cx(styles.key, isKeysOpen ? styles.widthWhenOpen : void 0),
     width: "auto",
     allowCustomValue: (_c = model.state.allowCustomValue) != null ? _c : true,
+    createOptionPosition: "first",
     value: keyValue,
     placeholder: "Select label",
     options: handleOptionGroups(keys),

@@ -170,6 +170,7 @@ export function AdHocFilterRenderer({ filter, model }: Props) {
       className={cx(styles.key, isKeysOpen ? styles.widthWhenOpen : undefined)}
       width="auto"
       allowCustomValue={model.state.allowCustomValue ?? true}
+      createOptionPosition="first"
       value={keyValue}
       placeholder={'Select label'}
       options={handleOptionGroups(keys)}
