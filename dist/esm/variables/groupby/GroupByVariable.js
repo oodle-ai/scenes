@@ -253,6 +253,7 @@ function GroupByVariableRenderer({ model }) {
     inputValue,
     value: uncommittedValue,
     allowCustomValue,
+    createOptionPosition: "first",
     noMultiValueWrap: true,
     maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
     tabSelectsValue: false,
