@@ -131,18 +131,34 @@ function findObjectInternal(
   return null;
 }
 
+const _sceneObjectCache = new WeakMap<SceneObject, Map<string, SceneObject>>();
+
 /**
  * Returns a scene object from the scene graph with the requested key.
  *
  * Throws error if no key-matching scene object found.
  */
 export function findByKey(sceneObject: SceneObject, key: string) {
+  let cache: Map<string, SceneObject> | undefined;
+  if(!_sceneObjectCache.has(sceneObject)) {
+    _sceneObjectCache.set(sceneObject, new Map());
+  }
+  cache = _sceneObjectCache.get(sceneObject);
+
+  if(cache && cache.has(key)) {
+    return cache.get(key);
+  }
+
   const found = findObject(sceneObject, (sceneToCheck) => {
     return sceneToCheck.state.key === key;
   });
+  
   if (!found) {
     throw new Error('Unable to find scene with key ' + key);
   }
+
+  _sceneObjectCache.get(sceneObject)?.set(key, found);
+
   return found;
 }
 

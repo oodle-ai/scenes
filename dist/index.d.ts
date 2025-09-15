@@ -1077,7 +1077,7 @@ declare function hasVariableDependencyInLoadingState(sceneObject: SceneObject): 
  *
  * Throws error if no key-matching scene object found.
  */
-declare function findByKey(sceneObject: SceneObject, key: string): SceneObject<SceneObjectState>;
+declare function findByKey(sceneObject: SceneObject, key: string): SceneObject<SceneObjectState> | undefined;
 /**
  * Returns a scene object from the scene graph with the requested key and type.
  *
