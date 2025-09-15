@@ -97,13 +97,22 @@ export function hasVariableDependencyInLoadingState(sceneObject: SceneObject) {
   return false;
 }
 
+const _findObjectInternalCache = new WeakMap<SceneObject, WeakMap<(obj: SceneObject) => boolean, SceneObject | null>>();
+
 function findObjectInternal(
   scene: SceneObject,
   check: (obj: SceneObject) => boolean,
   alreadySearchedChild?: SceneObject,
   shouldSearchUp?: boolean
 ): SceneObject | null {
+  let cache;
+  if(!_findObjectInternalCache.has(scene)) {
+    cache = _findObjectInternalCache.set(scene, new WeakMap());
+  }
+  cache = _findObjectInternalCache.get(scene);
+
   if (check(scene)) {
+    cache?.set(check, scene);
     return scene;
   }
 
@@ -119,6 +128,7 @@ function findObjectInternal(
   scene.forEachChild(childCallbackFn);
 
   if (found) {
+    cache?.set(check, found);
     return found;
   }
 
@@ -129,33 +139,19 @@ function findObjectInternal(
   return null;
 }
 
-const _sceneObjectCache = new WeakMap<SceneObject, Map<string, SceneObject>>();
-
 /**
  * Returns a scene object from the scene graph with the requested key.
  *
  * Throws error if no key-matching scene object found.
  */
 export function findByKey(sceneObject: SceneObject, key: string) {
-  let cache: Map<string, SceneObject> | undefined;
-  if(!_sceneObjectCache.has(sceneObject)) {
-    _sceneObjectCache.set(sceneObject, new Map());
-  }
-  cache = _sceneObjectCache.get(sceneObject);
-
-  if(cache && cache.has(key)) {
-    return cache.get(key);
-  }
-
-  const found = findObject(sceneObject, (sceneToCheck) => {
-    return sceneToCheck.state.key === key;
-  });
+  const checkFn = (sceneToCheck: SceneObject) => sceneToCheck.state.key === key;
+  
+  const found = findObject(sceneObject, checkFn);
   
   if (!found) {
     throw new Error('Unable to find scene with key ' + key);
   }
-
-  _sceneObjectCache.get(sceneObject)?.set(key, found);
 
   return found;
 }

@@ -6651,8 +6651,15 @@ function hasVariableDependencyInLoadingState(sceneObject) {
   }
   return false;
 }
+const _findObjectInternalCache = /* @__PURE__ */ new WeakMap();
 function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) {
+  let cache;
+  if (!_findObjectInternalCache.has(scene)) {
+    cache = _findObjectInternalCache.set(scene, /* @__PURE__ */ new WeakMap());
+  }
+  cache = _findObjectInternalCache.get(scene);
   if (check(scene)) {
+    cache == null ? void 0 : cache.set(check, scene);
     return scene;
   }
   let found = null;
@@ -6664,6 +6671,7 @@ function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) 
   }
   scene.forEachChild(childCallbackFn);
   if (found) {
+    cache == null ? void 0 : cache.set(check, found);
     return found;
   }
   if (shouldSearchUp && scene.parent) {
@@ -6671,24 +6679,12 @@ function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) 
   }
   return null;
 }
-const _sceneObjectCache = /* @__PURE__ */ new WeakMap();
 function findByKey(sceneObject, key) {
-  var _a;
-  let cache;
-  if (!_sceneObjectCache.has(sceneObject)) {
-    _sceneObjectCache.set(sceneObject, /* @__PURE__ */ new Map());
-  }
-  cache = _sceneObjectCache.get(sceneObject);
-  if (cache && cache.has(key)) {
-    return cache.get(key);
-  }
-  const found = findObject(sceneObject, (sceneToCheck) => {
-    return sceneToCheck.state.key === key;
-  });
+  const checkFn = (sceneToCheck) => sceneToCheck.state.key === key;
+  const found = findObject(sceneObject, checkFn);
   if (!found) {
     throw new Error("Unable to find scene with key " + key);
   }
-  (_a = _sceneObjectCache.get(sceneObject)) == null ? void 0 : _a.set(key, found);
   return found;
 }
 function findByKeyAndType(sceneObject, key, targetType) {
