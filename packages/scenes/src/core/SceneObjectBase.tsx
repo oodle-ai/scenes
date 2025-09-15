@@ -414,7 +414,8 @@ export function useSceneObjectState<TState extends SceneObjectState>(
 }
 
 function forEachChild<T extends object>(state: T, callback: (child: SceneObjectBase) => void) {
-  for (const propValue of Object.values(state)) {
+  const stateValues = Object.values(state);
+  for (const propValue of stateValues) {
     if (propValue instanceof SceneObjectBase) {
       callback(propValue);
     }

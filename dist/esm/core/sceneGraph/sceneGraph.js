@@ -55,15 +55,13 @@ function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) 
     return scene;
   }
   let found = null;
-  scene.forEachChild((child) => {
+  function childCallbackFn(child) {
     if (child === alreadySearchedChild) {
       return;
     }
-    let maybe = findObjectInternal(child, check);
-    if (maybe) {
-      found = maybe;
-    }
-  });
+    found = findObjectInternal(child, check);
+  }
+  scene.forEachChild(childCallbackFn);
   if (found) {
     return found;
   }

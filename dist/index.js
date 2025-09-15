@@ -479,7 +479,8 @@ function useSceneObjectState(model, options) {
   return model.state;
 }
 function forEachChild(state, callback) {
-  for (const propValue of Object.values(state)) {
+  const stateValues = Object.values(state);
+  for (const propValue of stateValues) {
     if (propValue instanceof SceneObjectBase) {
       callback(propValue);
     }
@@ -6655,15 +6656,13 @@ function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) 
     return scene;
   }
   let found = null;
-  scene.forEachChild((child) => {
+  function childCallbackFn(child) {
     if (child === alreadySearchedChild) {
       return;
     }
-    let maybe = findObjectInternal(child, check);
-    if (maybe) {
-      found = maybe;
-    }
-  });
+    found = findObjectInternal(child, check);
+  }
+  scene.forEachChild(childCallbackFn);
   if (found) {
     return found;
   }

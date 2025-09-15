@@ -108,17 +108,15 @@ function findObjectInternal(
   }
 
   let found: SceneObject | null = null;
-
-  scene.forEachChild((child) => {
+  function childCallbackFn(child: SceneObject) {
     if (child === alreadySearchedChild) {
       return;
     }
 
-    let maybe = findObjectInternal(child, check);
-    if (maybe) {
-      found = maybe;
-    }
-  });
+    found = findObjectInternal(child, check);
+  }
+
+  scene.forEachChild(childCallbackFn);
 
   if (found) {
     return found;

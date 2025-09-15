@@ -268,7 +268,8 @@ function useSceneObjectState(model, options) {
   return model.state;
 }
 function forEachChild(state, callback) {
-  for (const propValue of Object.values(state)) {
+  const stateValues = Object.values(state);
+  for (const propValue of stateValues) {
     if (propValue instanceof SceneObjectBase) {
       callback(propValue);
     }
