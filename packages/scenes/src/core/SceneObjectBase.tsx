@@ -21,6 +21,7 @@ import { SceneObjectStateChangedEvent } from './events';
 import { cloneSceneObject } from './sceneGraph/utils';
 import { SceneVariableDependencyConfigLike } from '../variables/types';
 import { SceneObjectRef } from './SceneObjectRef';
+import { startPerformanceMeasure, stopPerformanceMeasure } from './sceneGraph/performanceUtils';
 
 export abstract class SceneObjectBase<TState extends SceneObjectState = SceneObjectState>
   implements SceneObject<TState>
@@ -414,6 +415,7 @@ export function useSceneObjectState<TState extends SceneObjectState>(
 }
 
 function forEachChild<T extends object>(state: T, callback: (child: SceneObjectBase) => void) {
+  startPerformanceMeasure('SceneObjectBase::forEachChild');
   for (const propValue of Object.values(state)) {
     if (propValue instanceof SceneObjectBase) {
       callback(propValue);
@@ -427,4 +429,5 @@ function forEachChild<T extends object>(state: T, callback: (child: SceneObjectB
       }
     }
   }
+  stopPerformanceMeasure('SceneObjectBase::forEachChild');
 }

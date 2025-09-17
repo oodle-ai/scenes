@@ -5,6 +5,7 @@ import { lookupVariable } from '../../variables/lookupVariable.js';
 import { getClosest } from './utils.js';
 import { isQueryController } from '../../behaviors/SceneQueryController.js';
 import { QueryVariable } from '../../variables/variants/query/QueryVariable.js';
+import { startPerformanceMeasure, stopPerformanceMeasure } from './performanceUtils.js';
 
 function getVariables(sceneObject) {
   var _a;
@@ -94,7 +95,10 @@ function findByKeyAndType(sceneObject, key, targetType) {
   return found;
 }
 function findObject(scene, check) {
-  return findObjectInternal(scene, check, void 0, true);
+  startPerformanceMeasure("sceneGraph.findObject");
+  const result = findObjectInternal(scene, check, void 0, true);
+  stopPerformanceMeasure("sceneGraph.findObject");
+  return result;
 }
 function findAllObjects(scene, check) {
   const found = [];

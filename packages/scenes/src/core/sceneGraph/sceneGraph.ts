@@ -11,6 +11,7 @@ import { SceneQueryControllerLike, isQueryController } from '../../behaviors/Sce
 import { VariableInterpolation } from '@grafana/runtime';
 import { QueryVariable } from '../../variables/variants/query/QueryVariable';
 import { UrlSyncManagerLike } from '../../services/UrlSyncManager';
+import { startPerformanceMeasure, stopPerformanceMeasure } from './performanceUtils';
 
 /**
  * Get the closest node with variables
@@ -173,7 +174,10 @@ export function findByKeyAndType<TargetType extends SceneObject>(
  * This will search the full scene graph, starting with the scene node passed in, then walking up the parent chain. *
  */
 export function findObject(scene: SceneObject, check: (obj: SceneObject) => boolean): SceneObject | null {
-  return findObjectInternal(scene, check, undefined, true);
+  startPerformanceMeasure('sceneGraph.findObject');
+  const result = findObjectInternal(scene, check, undefined, true);
+  stopPerformanceMeasure('sceneGraph.findObject');
+  return result;
 }
 
 /**

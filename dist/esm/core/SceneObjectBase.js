@@ -6,6 +6,7 @@ import { SceneComponentWrapper } from './SceneComponentWrapper.js';
 import { SceneObjectStateChangedEvent } from './events.js';
 import { cloneSceneObject } from './sceneGraph/utils.js';
 import { SceneObjectRef } from './SceneObjectRef.js';
+import { startPerformanceMeasure, stopPerformanceMeasure } from './sceneGraph/performanceUtils.js';
 
 var __defProp = Object.defineProperty;
 var __getOwnPropSymbols = Object.getOwnPropertySymbols;
@@ -268,6 +269,7 @@ function useSceneObjectState(model, options) {
   return model.state;
 }
 function forEachChild(state, callback) {
+  startPerformanceMeasure("SceneObjectBase::forEachChild");
   for (const propValue of Object.values(state)) {
     if (propValue instanceof SceneObjectBase) {
       callback(propValue);
@@ -280,6 +282,7 @@ function forEachChild(state, callback) {
       }
     }
   }
+  stopPerformanceMeasure("SceneObjectBase::forEachChild");
 }
 
 export { SceneObjectBase, useSceneObjectState };

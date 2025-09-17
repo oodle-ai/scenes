@@ -218,6 +218,31 @@ class SceneObjectRef {
 }
 _ref = new WeakMap();
 
+function startPerformanceMeasure(eventName) {
+  console.time(eventName);
+  if (!performance || !performance.mark) {
+    return;
+  }
+  performance.mark(`${eventName}_started`);
+  if (!window.parent || !window.parent.performance || !window.parent.performance.mark) {
+    return;
+  }
+  window.parent.performance.mark(`${eventName}_started`);
+}
+function stopPerformanceMeasure(eventName) {
+  console.timeEnd(eventName);
+  if (!performance || !performance.mark) {
+    return;
+  }
+  performance.mark(`${eventName}_completed`);
+  performance.measure(`${eventName}_measured`, `${eventName}_started`, `${eventName}_completed`);
+  if (!window.parent || !window.parent.performance || !window.parent.performance.mark) {
+    return;
+  }
+  window.parent.performance.mark(`${eventName}_completed`);
+  window.parent.performance.measure(`${eventName}_measured`, `${eventName}_started`, `${eventName}_completed`);
+}
+
 var __defProp$N = Object.defineProperty;
 var __getOwnPropSymbols$N = Object.getOwnPropertySymbols;
 var __hasOwnProp$N = Object.prototype.hasOwnProperty;
@@ -479,6 +504,7 @@ function useSceneObjectState(model, options) {
   return model.state;
 }
 function forEachChild(state, callback) {
+  startPerformanceMeasure("SceneObjectBase::forEachChild");
   for (const propValue of Object.values(state)) {
     if (propValue instanceof SceneObjectBase) {
       callback(propValue);
@@ -491,6 +517,7 @@ function forEachChild(state, callback) {
       }
     }
   }
+  stopPerformanceMeasure("SceneObjectBase::forEachChild");
 }
 
 var __defProp$M = Object.defineProperty;
@@ -6694,7 +6721,10 @@ function findByKeyAndType(sceneObject, key, targetType) {
   return found;
 }
 function findObject(scene, check) {
-  return findObjectInternal(scene, check, void 0, true);
+  startPerformanceMeasure("sceneGraph.findObject");
+  const result = findObjectInternal(scene, check, void 0, true);
+  stopPerformanceMeasure("sceneGraph.findObject");
+  return result;
 }
 function findAllObjects(scene, check) {
   const found = [];
