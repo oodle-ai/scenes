@@ -50,6 +50,14 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
+    const children2 = React.useMemo(() => layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
+      key: gridItem.i,
+      grid: model,
+      layoutItem: gridItem,
+      index,
+      isLazy,
+      totalCount: layout.length
+    })), [layout, model, isLazy]);
     return /* @__PURE__ */ React.createElement("div", {
       ref,
       style: { width: `${width2}px`, height: "100%" },
@@ -72,14 +80,7 @@ function SceneGridLayoutRenderer({ model }) {
       onLayoutChange: model.onLayoutChange,
       isBounded: false,
       resizeHandle: /* @__PURE__ */ React.createElement(ResizeHandle, null)
-    }, layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
-      key: gridItem.i,
-      grid: model,
-      layoutItem: gridItem,
-      index,
-      isLazy,
-      totalCount: layout.length
-    }))));
+    }, children2));
   };
   return /* @__PURE__ */ React.createElement("div", {
     ref: outerDivRef,
