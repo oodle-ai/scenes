@@ -59,7 +59,8 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
   const dataWithFieldConfig = model.applyFieldConfig(dataWithSeriesLimit);
   const sceneTimeRange = sceneGraph.getTimeRange(model);
   const timeZone = sceneTimeRange.getTimeZone();
-  const timeRange = model.getTimeRange(dataWithFieldConfig);
+  const timeRange = useMemo(() => model.getTimeRange(dataWithFieldConfig), [model, dataWithFieldConfig]);
+  const context = useMemo(() => model.getPanelContext(), [model]);
 
   // Interpolate title
   const titleInterpolated = model.interpolate(title, undefined, 'text');
@@ -162,7 +163,6 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
 
   const isReadyToRender = dataObject.isDataReadyToDisplay ? dataObject.isDataReadyToDisplay() : true;
 
-  const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
 
   let datasource = data.request?.targets[0]?.datasource

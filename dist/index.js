@@ -7118,7 +7118,8 @@ function VizPanelRenderer({ model }) {
   const dataWithFieldConfig = model.applyFieldConfig(dataWithSeriesLimit);
   const sceneTimeRange = sceneGraph.getTimeRange(model);
   const timeZone = sceneTimeRange.getTimeZone();
-  const timeRange = model.getTimeRange(dataWithFieldConfig);
+  const timeRange = React.useMemo(() => model.getTimeRange(dataWithFieldConfig), [model, dataWithFieldConfig]);
+  const context = React.useMemo(() => model.getPanelContext(), [model]);
   const titleInterpolated = model.interpolate(title, void 0, "text");
   const alertStateStyles = ui.useStyles2(getAlertStateStyles);
   if (!plugin) {
@@ -7210,7 +7211,6 @@ function VizPanelRenderer({ model }) {
   }
   const data$1 = dataWithFieldConfig;
   const isReadyToRender = dataObject.isDataReadyToDisplay ? dataObject.isDataReadyToDisplay() : true;
-  const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
   let datasource = (_c = (_b = data$1.request) == null ? void 0 : _b.targets[0]) == null ? void 0 : _c.datasource;
   return /* @__PURE__ */ React__default["default"].createElement("div", {
