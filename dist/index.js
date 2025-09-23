@@ -10420,55 +10420,63 @@ var __objRest = (source, exclude) => {
     }
   return target;
 };
-function SceneGridLayoutRenderer({ model }) {
-  const { children, isLazy, isDraggable, isResizable } = model.useState();
-  const [outerDivRef, { width, height }] = reactUse.useMeasure();
-  const ref = React.useRef(null);
-  React.useEffect(() => {
-    updateAnimationClass(ref, !!isDraggable);
-  }, [isDraggable]);
-  validateChildrenSize(children);
-  const renderGrid = (width2, height2) => {
-    if (!width2 || !height2) {
-      return null;
-    }
-    const layout = model.buildGridLayout(width2, height2);
-    const children2 = React__default["default"].useMemo(() => layout.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
+function GridRenderer({ width, height, model }) {
+  const { isLazy, isDraggable, isResizable } = model.useState();
+  const layout = model.buildGridLayout(width, height);
+  const children = React__default["default"].useMemo(
+    () => layout.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
       key: gridItem.i,
       grid: model,
       layoutItem: gridItem,
       index,
       isLazy,
       totalCount: layout.length
-    })), [layout, model, isLazy]);
-    return /* @__PURE__ */ React__default["default"].createElement("div", {
-      ref,
-      style: { width: `${width2}px`, height: "100%" },
-      className: "react-grid-layout"
-    }, /* @__PURE__ */ React__default["default"].createElement(ReactGridLayout__default["default"], {
-      width: width2,
-      isDraggable: isDraggable && width2 > 768,
-      isResizable: isResizable != null ? isResizable : false,
-      containerPadding: [0, 0],
-      useCSSTransforms: true,
-      margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
-      cols: GRID_COLUMN_COUNT,
-      rowHeight: GRID_CELL_HEIGHT,
-      draggableHandle: `.grid-drag-handle-${model.state.key}`,
-      draggableCancel: ".grid-drag-cancel",
-      layout,
-      onDragStart: model.onDragStart,
-      onDragStop: model.onDragStop,
-      onResizeStop: model.onResizeStop,
-      onLayoutChange: model.onLayoutChange,
-      isBounded: false,
-      resizeHandle: /* @__PURE__ */ React__default["default"].createElement(ResizeHandle, null)
-    }, children2));
-  };
+    })),
+    [layout, model, isLazy]
+  );
+  if (!width || !height) {
+    return null;
+  }
+  return /* @__PURE__ */ React__default["default"].createElement(ReactGridLayout__default["default"], {
+    width,
+    isDraggable: isDraggable && width > 768,
+    isResizable: isResizable != null ? isResizable : false,
+    containerPadding: [0, 0],
+    useCSSTransforms: true,
+    margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
+    cols: GRID_COLUMN_COUNT,
+    rowHeight: GRID_CELL_HEIGHT,
+    draggableHandle: `.grid-drag-handle-${model.state.key}`,
+    draggableCancel: ".grid-drag-cancel",
+    layout,
+    onDragStart: model.onDragStart,
+    onDragStop: model.onDragStop,
+    onResizeStop: model.onResizeStop,
+    onLayoutChange: model.onLayoutChange,
+    isBounded: false,
+    resizeHandle: /* @__PURE__ */ React__default["default"].createElement(ResizeHandle, null)
+  }, children);
+}
+function SceneGridLayoutRenderer({ model }) {
+  const { children, isDraggable } = model.useState();
+  const [outerDivRef, { width, height }] = reactUse.useMeasure();
+  const ref = React.useRef(null);
+  React.useEffect(() => {
+    updateAnimationClass(ref, !!isDraggable);
+  }, [isDraggable]);
+  validateChildrenSize(children);
   return /* @__PURE__ */ React__default["default"].createElement("div", {
     ref: outerDivRef,
     style: { flex: "1 1 auto", position: "relative", zIndex: 1, width: "100%" }
-  }, renderGrid(width, height));
+  }, /* @__PURE__ */ React__default["default"].createElement("div", {
+    ref,
+    style: { width: `${width}px`, height: "100%" },
+    className: "react-grid-layout"
+  }, /* @__PURE__ */ React__default["default"].createElement(GridRenderer, {
+    width,
+    height,
+    model
+  })));
 }
 const GridItemWrapper = React__default["default"].forwardRef((props, ref) => {
   var _b;
