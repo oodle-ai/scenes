@@ -1,8 +1,8 @@
 import React, { useMemo, useCallback } from 'react';
 import { useMeasure } from 'react-use';
 import { SetPanelAttentionEvent, AlertState, PluginContextProvider } from '@grafana/data';
-import { getAppEvents, getDataSourceSrv } from '@grafana/runtime';
-import { useStyles2, Tooltip, PanelChrome, Icon, Button, ErrorBoundaryAlert, PanelContextProvider } from '@grafana/ui';
+import { getAppEvents } from '@grafana/runtime';
+import { useStyles2, Tooltip, PanelChrome, Icon, ErrorBoundaryAlert, PanelContextProvider } from '@grafana/ui';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
 import { isSceneObject } from '../../core/types.js';
 import { css, cx } from '@emotion/css';
@@ -29,7 +29,7 @@ var __spreadValues = (a, b) => {
 };
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 function VizPanelRenderer({ model }) {
-  var _a, _b, _c;
+  var _a;
   const {
     title,
     options,
@@ -162,7 +162,6 @@ function VizPanelRenderer({ model }) {
   const isReadyToRender = dataObject.isDataReadyToDisplay ? dataObject.isDataReadyToDisplay() : true;
   const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
-  let datasource = (_c = (_b = data.request) == null ? void 0 : _b.targets[0]) == null ? void 0 : _c.datasource;
   return /* @__PURE__ */ React.createElement("div", {
     className: relativeWrapper + " oodle-panel"
   }, /* @__PURE__ */ React.createElement("div", {
@@ -195,112 +194,30 @@ function VizPanelRenderer({ model }) {
     collapsible,
     collapsed,
     onToggleCollapse: model.onToggleCollapse
-  }, (innerWidth, innerHeight) => {
-    var _a2;
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, plugin.meta.id === "timeseries" && /* @__PURE__ */ React.createElement(Button, {
-      style: { top: ((_a2 = model.state.title) == null ? void 0 : _a2.length) > 0 ? "-32px" : "0px", right: "28px", position: "absolute", border: 0, padding: 0 },
-      variant: "secondary",
-      fill: "outline",
-      type: "button",
-      "data-testid": "send-query-button",
-      tooltip: "Oodle insight",
-      tooltipPlacement: "top",
-      hidden: (datasource == null ? void 0 : datasource.type) !== "prometheus",
-      onClick: () => {
-        var _a3, _b2;
-        const variables = __spreadValues({}, (_a3 = data == null ? void 0 : data.request) == null ? void 0 : _a3.scopedVars);
-        variables.__interval = {
-          value: "$__interval"
-        };
-        variables.__interval_ms = {
-          value: "$__interval_ms"
-        };
-        let timeRange2 = (_b2 = data.request) == null ? void 0 : _b2.range;
-        let rangeDurationMs = timeRange2.to.valueOf() - timeRange2.from.valueOf();
-        getDataSourceSrv().get(datasource, variables).then((ds) => {
-          var _a4, _b3, _c2, _d, _e, _f;
-          if (ds.interpolateVariablesInQueries) {
-            let targets = ds.interpolateVariablesInQueries((_a4 = data.request) == null ? void 0 : _a4.targets, variables);
-            sendOodleInsightEvent(
-              (_b3 = data.request) == null ? void 0 : _b3.dashboardUID,
-              "Insights",
-              model.state.title,
-              (_c2 = data.request) == null ? void 0 : _c2.panelId,
-              targets,
-              timeRange2,
-              rangeDurationMs,
-              (_f = (_e = (_d = model.state) == null ? void 0 : _d.fieldConfig) == null ? void 0 : _e.defaults) == null ? void 0 : _f.unit
-            );
-          } else {
-            throw new Error("datasource does not support variable interpolation");
-          }
-        }).catch((_) => {
-          var _a4, _b3, _c2, _d, _e, _f;
-          sendOodleInsightEvent(
-            (_a4 = data.request) == null ? void 0 : _a4.dashboardUID,
-            "Insights",
-            model.state.title,
-            (_b3 = data.request) == null ? void 0 : _b3.panelId,
-            (_c2 = data.request) == null ? void 0 : _c2.targets,
-            timeRange2,
-            rangeDurationMs,
-            (_f = (_e = (_d = model.state) == null ? void 0 : _d.fieldConfig) == null ? void 0 : _e.defaults) == null ? void 0 : _f.unit
-          );
-        });
-      }
-    }, /* @__PURE__ */ React.createElement("img", {
-      src: "https://imagedelivery.net/oP5rEbdkySYwiZY4N9HGRw/d0e74e50-902c-4b3c-90af-cabc367bcb00/public",
-      alt: "Insight icon",
-      "data-testid": "insight-icon",
-      style: { height: "25px" }
-    })), /* @__PURE__ */ React.createElement(ErrorBoundaryAlert, {
-      dependencies: [plugin, data]
-    }, /* @__PURE__ */ React.createElement(PluginContextProvider, {
-      meta: plugin.meta
-    }, /* @__PURE__ */ React.createElement(PanelContextProvider, {
-      value: context
-    }, isReadyToRender && /* @__PURE__ */ React.createElement(PanelComponent, {
-      id: panelId,
-      data,
-      title,
-      timeRange,
-      timeZone,
-      options,
-      fieldConfig,
-      transparent: false,
-      width: innerWidth,
-      height: innerHeight,
-      renderCounter: _renderCounter,
-      replaceVariables: model.interpolate,
-      onOptionsChange: model.onOptionsChange,
-      onFieldConfigChange: model.onFieldConfigChange,
-      onChangeTimeRange: model.onTimeRangeChange,
-      eventBus: context.eventBus
-    })))));
-  })));
-}
-const sendOodleInsightEvent = (dashboardUId, dashboardTitle, panelTitle, panelId, expressionData, dashboardTime, rangeDurationMs, unit) => {
-  const eventData = {
-    dashboardUId,
-    dashboardTitle,
-    panelTitle,
-    panelId,
-    expressionData,
-    dashboardTime,
-    rangeDurationMs,
-    unit
-  };
-  sendEventToParent({
-    type: "message",
-    payload: {
-      source: "oodle-grafana",
-      eventType: "sendQuery",
-      value: JSON.parse(JSON.stringify(eventData))
-    }
-  });
-};
-function sendEventToParent(data) {
-  window.parent.postMessage(data, "*");
+  }, (innerWidth, innerHeight) => /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ErrorBoundaryAlert, {
+    dependencies: [plugin, data]
+  }, /* @__PURE__ */ React.createElement(PluginContextProvider, {
+    meta: plugin.meta
+  }, /* @__PURE__ */ React.createElement(PanelContextProvider, {
+    value: context
+  }, isReadyToRender && /* @__PURE__ */ React.createElement(PanelComponent, {
+    id: panelId,
+    data,
+    title,
+    timeRange,
+    timeZone,
+    options,
+    fieldConfig,
+    transparent: false,
+    width: innerWidth,
+    height: innerHeight,
+    renderCounter: _renderCounter,
+    replaceVariables: model.interpolate,
+    onOptionsChange: model.onOptionsChange,
+    onFieldConfigChange: model.onFieldConfigChange,
+    onChangeTimeRange: model.onTimeRangeChange,
+    eventBus: context.eventBus
+  }))))))));
 }
 function useDataWithSeriesLimit(data, seriesLimit, showAllSeries) {
   return useMemo(() => {
