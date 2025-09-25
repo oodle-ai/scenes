@@ -10,8 +10,67 @@ import { css, cx } from '@emotion/css';
 import { GrafanaTheme2 } from '@grafana/data';
 import { useMeasure } from 'react-use';
 
+type GridRendererProps = {
+  width: number;
+  height: number;
+  model: SceneGridLayout;
+};
+
+function GridRenderer({ width, height, model }: GridRendererProps) {
+  const { isLazy, isDraggable, isResizable } = model.useState();
+  const layout = model.buildGridLayout(width, height);
+
+  const children = React.useMemo(
+    () =>
+      layout.map((gridItem, index) => (
+        <GridItemWrapper
+          key={gridItem.i}
+          grid={model}
+          layoutItem={gridItem}
+          index={index}
+          isLazy={isLazy}
+          totalCount={layout.length}
+        />
+      )),
+    [layout, model, isLazy]
+  );
+
+  if (!width || !height) {
+    return null;
+  }
+
+  return (
+    <ReactGridLayout
+      width={width}
+      /**
+        Disable draggable if mobile device, solving an issue with unintentionally
+        moving panels. https://github.com/grafana/grafana/issues/18497
+        theme.breakpoints.md = 769
+        */
+      isDraggable={isDraggable && width > 768}
+      isResizable={isResizable ?? false}
+      containerPadding={[0, 0]}
+      useCSSTransforms={true}
+      margin={[GRID_CELL_VMARGIN, GRID_CELL_VMARGIN]}
+      cols={GRID_COLUMN_COUNT}
+      rowHeight={GRID_CELL_HEIGHT}
+      draggableHandle={`.grid-drag-handle-${model.state.key}`}
+      draggableCancel=".grid-drag-cancel"
+      layout={layout}
+      onDragStart={model.onDragStart}
+      onDragStop={model.onDragStop}
+      onResizeStop={model.onResizeStop}
+      onLayoutChange={model.onLayoutChange}
+      isBounded={false}
+      resizeHandle={<ResizeHandle />}
+    >
+      {children}
+    </ReactGridLayout>
+  );
+}
+
 export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGridLayout>) {
-  const { children, isLazy, isDraggable, isResizable } = model.useState();
+  const { children, isDraggable } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -24,67 +83,19 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
 
   validateChildrenSize(children);
 
-  const renderGrid = (width: number, height: number) => {
-    if (!width || !height) {
-      return null;
-    }
-
-    const layout = model.buildGridLayout(width, height);
-
-    const children = React.useMemo(() => layout.map((gridItem, index) => (
-      <GridItemWrapper
-        key={gridItem.i}
-        grid={model}
-        layoutItem={gridItem}
-        index={index}
-        isLazy={isLazy}
-        totalCount={layout.length}
-      />
-    )), [layout, model, isLazy]);
-
-    return (
-      /**
-       * The children is using a width of 100% so we need to guarantee that it is wrapped
-       * in an element that has the calculated size given by the AutoSizer. The AutoSizer
-       * has a width of 0 and will let its content overflow its div.
-       */
-      <div ref={ref} style={{ width: `${width}px`, height: '100%' }} className="react-grid-layout">
-        <ReactGridLayout
-          width={width}
-          /**
-                Disable draggable if mobile device, solving an issue with unintentionally
-                moving panels. https://github.com/grafana/grafana/issues/18497
-                theme.breakpoints.md = 769
-           */
-          isDraggable={isDraggable && width > 768}
-          isResizable={isResizable ?? false}
-          containerPadding={[0, 0]}
-          useCSSTransforms={true}
-          margin={[GRID_CELL_VMARGIN, GRID_CELL_VMARGIN]}
-          cols={GRID_COLUMN_COUNT}
-          rowHeight={GRID_CELL_HEIGHT}
-          draggableHandle={`.grid-drag-handle-${model.state.key}`}
-          draggableCancel=".grid-drag-cancel"
-          layout={layout}
-          onDragStart={model.onDragStart}
-          onDragStop={model.onDragStop}
-          onResizeStop={model.onResizeStop}
-          onLayoutChange={model.onLayoutChange}
-          isBounded={false}
-          resizeHandle={<ResizeHandle />}
-        >
-          {children}
-        </ReactGridLayout>
-      </div>
-    );
-  };
-
   return (
     <div
       ref={outerDivRef as RefCallback<HTMLDivElement>}
       style={{ flex: '1 1 auto', position: 'relative', zIndex: 1, width: '100%' }}
     >
-      {renderGrid(width, height)}
+      {/**
+       * The children is using a width of 100% so we need to guarantee that it is wrapped
+       * in an element that has the calculated size given by the AutoSizer. The AutoSizer
+       * has a width of 0 and will let its content overflow its div.
+       */}
+      <div ref={ref} style={{ width: `${width}px`, height: '100%' }} className="react-grid-layout">
+        <GridRenderer width={width} height={height} model={model} />
+      </div>
     </div>
   );
 }
