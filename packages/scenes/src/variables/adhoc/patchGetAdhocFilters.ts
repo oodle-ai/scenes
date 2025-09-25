@@ -18,6 +18,7 @@ export function patchGetAdhocFilters(filterVar: AdHocFiltersVariable) {
 
   const templateSrv: any = getTemplateSrv();
   if (!templateSrv?.getAdhocFilters) {
+    // eslint-disable-next-line no-console
     console.log('Failed to patch getAdhocFilters');
     return;
   }

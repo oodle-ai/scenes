@@ -321,13 +321,16 @@ function getVariableChangeBehavior(variableName: string) {
   return new behaviors.ActWhenVariableChanged({
     variableName,
     onChange: (variable) => {
+      // eslint-disable-next-line no-console
       console.log(`${variable.state.name} changed`);
 
       const t = setTimeout(() => {
+        // eslint-disable-next-line no-console
         console.log(`${variable.state.name} post effect`);
       }, 5000);
 
       return () => {
+        // eslint-disable-next-line no-console
         console.log(`${variable.state.name} cancel effect`);
         clearTimeout(t);
       };

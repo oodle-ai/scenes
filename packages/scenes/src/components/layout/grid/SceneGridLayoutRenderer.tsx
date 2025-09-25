@@ -11,6 +11,8 @@ import { GrafanaTheme2 } from '@grafana/data';
 import { useMeasure } from 'react-use';
 
 export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGridLayout>) {
+  model.onRenderLog();
+  console.time('SceneGridLayoutRenderer');
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
   const ref = useRef<HTMLDivElement | null>(null);
@@ -31,7 +33,7 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
 
     const layout = model.buildGridLayout(width, height);
 
-    const children = React.useMemo(() => layout.map((gridItem, index) => (
+    const children = layout.map((gridItem, index) => (
       <GridItemWrapper
         key={gridItem.i}
         grid={model}
@@ -40,7 +42,9 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
         isLazy={isLazy}
         totalCount={layout.length}
       />
-    )), [layout, model, isLazy]);
+    ));
+
+    console.timeEnd('SceneGridLayoutRenderer');
 
     return (
       /**
@@ -98,11 +102,14 @@ interface GridItemWrapperProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 const GridItemWrapper = React.forwardRef<HTMLDivElement, GridItemWrapperProps>((props, ref) => {
+  console.time('GridItemWrapper');
   const { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children, ...divProps } = props;
   const sceneChild = grid.getSceneLayoutChild(layoutItem.i)!;
   const className = sceneChild.getClassName?.();
 
   const innerContent = <sceneChild.Component model={sceneChild} key={sceneChild.state.key} />;
+
+  console.timeEnd('GridItemWrapper');
 
   if (isLazy) {
     return (

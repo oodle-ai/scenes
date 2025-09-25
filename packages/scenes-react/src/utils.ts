@@ -6,6 +6,7 @@ export function writeSceneLog(logger: string, message: string, ...rest: unknown[
   }
 
   if (loggingEnabled) {
+    // eslint-disable-next-line no-console
     console.log(`${logger}: `, message, ...rest);
   }
 }

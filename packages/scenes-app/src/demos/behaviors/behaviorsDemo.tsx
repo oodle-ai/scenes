@@ -104,13 +104,16 @@ export function getBehaviorsDemo(defaults: SceneAppPageState) {
 }
 
 function logEventsBehavior(sceneObject: SceneQueryRunner) {
+  // eslint-disable-next-line no-console
   console.log(`[SceneObjectEvent]: ${sceneObject.constructor?.name} ${sceneObject.state.key} activated!`);
 
   sceneObject.subscribeToState((state) => {
+    // eslint-disable-next-line no-console
     console.log(`[SceneObjectEvent]: ${sceneObject.constructor?.name} ${sceneObject.state.key} state changed!`, state);
   });
 
   return () => {
+    // eslint-disable-next-line no-console
     console.log(`[SceneObjectEvent]: ${sceneObject.constructor?.name} ${sceneObject.state.key} deactivated!`);
   };
 }

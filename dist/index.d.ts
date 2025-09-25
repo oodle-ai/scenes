@@ -1853,6 +1853,7 @@ declare class VizPanel<TOptions = {}, TFieldConfig extends {} = {}> extends Scen
     private _onInstanceStateChange;
     private _onToggleLegendSort;
     private buildPanelContext;
+    onRenderLog(): void;
 }
 
 interface ExploreButtonOptions {
@@ -2235,6 +2236,7 @@ declare class SceneGridLayout extends SceneObjectBase<SceneGridLayoutState> impl
     onDragStop: ReactGridLayout.ItemCallback;
     private toGridCell;
     buildGridLayout(width: number, height: number): ReactGridLayout.Layout[];
+    onRenderLog(): void;
 }
 
 interface SceneGridItemState extends SceneGridItemStateLike {

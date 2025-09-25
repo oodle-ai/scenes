@@ -30,6 +30,8 @@ var __spreadValues = (a, b) => {
 var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 function VizPanelRenderer({ model }) {
   var _a, _b, _c;
+  model.onRenderLog();
+  console.time("VizPanelRenderer");
   const {
     title,
     options,
@@ -163,6 +165,7 @@ function VizPanelRenderer({ model }) {
   const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
   let datasource = (_c = (_b = data.request) == null ? void 0 : _b.targets[0]) == null ? void 0 : _c.datasource;
+  console.timeEnd("VizPanelRenderer");
   return /* @__PURE__ */ React.createElement("div", {
     className: relativeWrapper + " oodle-panel"
   }, /* @__PURE__ */ React.createElement("div", {

@@ -1,4 +1,5 @@
 import ReactGridLayout from 'react-grid-layout';
+import { sizeof } from 'js-sizeof';
 
 import { SceneObjectBase } from '../../../core/SceneObjectBase';
 import { SceneLayout, SceneObjectState } from '../../../core/types';
@@ -382,6 +383,11 @@ export class SceneGridLayout extends SceneObjectBase<SceneGridLayoutState> imple
     this._skipOnLayoutChange = false;
 
     return cells;
+  }
+
+  public onRenderLog() {
+    // eslint-disable-next-line no-console
+    console.log('SceneGridLayout onRenderLog', sizeof(this), this);
   }
 }
 

@@ -17,6 +17,8 @@ import { VizPanelSeriesLimit } from './VizPanelSeriesLimit';
 import { DataQuery } from "@grafana/schema";
 
 export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
+  model.onRenderLog();
+  console.time('VizPanelRenderer');
   const {
     title,
     options,
@@ -166,6 +168,8 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
   const panelId = model.getLegacyPanelId();
 
   let datasource = data.request?.targets[0]?.datasource
+
+  console.timeEnd('VizPanelRenderer');
 
   return (
     <div className={relativeWrapper + " oodle-panel"}>

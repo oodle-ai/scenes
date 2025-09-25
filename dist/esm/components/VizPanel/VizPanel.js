@@ -1,4 +1,5 @@
 import { toUtc, getPanelOptionsWithDefaults, renderMarkdown, applyFieldOverrides, compareArrayValues, compareDataFrameStructures, CoreApp, DashboardCursorSync, PanelPlugin, PluginType } from '@grafana/data';
+import { sizeof } from 'js-sizeof';
 import { getPluginImportUtils, config, getAppEvents } from '@grafana/runtime';
 import { SceneObjectBase } from '../../core/SceneObjectBase.js';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
@@ -373,6 +374,9 @@ class VizPanel extends SceneObjectBase {
       this.state.extendPanelContext(this, context);
     }
     return context;
+  }
+  onRenderLog() {
+    console.log("VizPanel onRenderLog", sizeof(this), this);
   }
 }
 VizPanel.Component = VizPanelRenderer;

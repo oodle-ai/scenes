@@ -16,6 +16,7 @@ var css = require('@emotion/css');
 var react = require('@floating-ui/react');
 var reactVirtual = require('@tanstack/react-virtual');
 var uFuzzy = require('@leeoniya/ufuzzy');
+var jsSizeof = require('js-sizeof');
 var reactUse = require('react-use');
 var operators = require('rxjs/operators');
 var ReactGridLayout = require('react-grid-layout');
@@ -7080,6 +7081,8 @@ var __spreadValues$t = (a, b) => {
 var __spreadProps$i = (a, b) => __defProps$i(a, __getOwnPropDescs$i(b));
 function VizPanelRenderer({ model }) {
   var _a, _b, _c;
+  model.onRenderLog();
+  console.time("VizPanelRenderer");
   const {
     title,
     options,
@@ -7213,6 +7216,7 @@ function VizPanelRenderer({ model }) {
   const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
   let datasource = (_c = (_b = data$1.request) == null ? void 0 : _b.targets[0]) == null ? void 0 : _c.datasource;
+  console.timeEnd("VizPanelRenderer");
   return /* @__PURE__ */ React__default["default"].createElement("div", {
     className: relativeWrapper + " oodle-panel"
   }, /* @__PURE__ */ React__default["default"].createElement("div", {
@@ -8001,6 +8005,9 @@ class VizPanel extends SceneObjectBase {
       this.state.extendPanelContext(this, context);
     }
     return context;
+  }
+  onRenderLog() {
+    console.log("VizPanel onRenderLog", jsSizeof.sizeof(this), this);
   }
 }
 VizPanel.Component = VizPanelRenderer;
@@ -10414,6 +10421,7 @@ function useUniqueId() {
 const LazyLoader = React__default["default"].forwardRef(
   (_a, ref) => {
     var _b = _a, { children, onLoad, onChange, className } = _b, rest = __objRest$1(_b, ["children", "onLoad", "onChange", "className"]);
+    console.time("LazyLoader");
     const id = useUniqueId();
     const { hideEmpty } = ui.useStyles2(getStyles$6);
     const [loaded, setLoaded] = React.useState(false);
@@ -10442,6 +10450,7 @@ const LazyLoader = React__default["default"].forwardRef(
       };
     });
     const classes = `${loaded ? hideEmpty : ""} ${className}`;
+    console.timeEnd("LazyLoader");
     return /* @__PURE__ */ React__default["default"].createElement("div", __spreadValues$b({
       id,
       ref: innerRef,
@@ -10504,6 +10513,8 @@ var __objRest = (source, exclude) => {
   return target;
 };
 function SceneGridLayoutRenderer({ model }) {
+  model.onRenderLog();
+  console.time("SceneGridLayoutRenderer");
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = reactUse.useMeasure();
   const ref = React.useRef(null);
@@ -10516,14 +10527,15 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
-    const children2 = React__default["default"].useMemo(() => layout.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
+    const children2 = layout.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
       key: gridItem.i,
       grid: model,
       layoutItem: gridItem,
       index,
       isLazy,
       totalCount: layout.length
-    })), [layout, model, isLazy]);
+    }));
+    console.timeEnd("SceneGridLayoutRenderer");
     return /* @__PURE__ */ React__default["default"].createElement("div", {
       ref,
       style: { width: `${width2}px`, height: "100%" },
@@ -10555,6 +10567,7 @@ function SceneGridLayoutRenderer({ model }) {
 }
 const GridItemWrapper = React__default["default"].forwardRef((props, ref) => {
   var _b;
+  console.time("GridItemWrapper");
   const _a = props, { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children } = _a, divProps = __objRest(_a, ["grid", "layoutItem", "index", "totalCount", "isLazy", "style", "onLoad", "onChange", "children"]);
   const sceneChild = grid.getSceneLayoutChild(layoutItem.i);
   const className = (_b = sceneChild.getClassName) == null ? void 0 : _b.call(sceneChild);
@@ -10562,6 +10575,7 @@ const GridItemWrapper = React__default["default"].forwardRef((props, ref) => {
     model: sceneChild,
     key: sceneChild.state.key
   });
+  console.timeEnd("GridItemWrapper");
   if (isLazy) {
     return /* @__PURE__ */ React__default["default"].createElement(LazyLoader, __spreadProps$7(__spreadValues$a({}, divProps), {
       key: sceneChild.state.key,
@@ -10926,6 +10940,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     this._skipOnLayoutChange = false;
     return cells;
+  }
+  onRenderLog() {
+    console.log("SceneGridLayout onRenderLog", jsSizeof.sizeof(this), this);
   }
 };
 let SceneGridLayout = _SceneGridLayout;

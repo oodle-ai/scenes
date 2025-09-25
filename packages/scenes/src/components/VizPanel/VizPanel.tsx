@@ -17,6 +17,7 @@ import {
   renderMarkdown,
   PanelPluginDataSupport,
 } from '@grafana/data';
+import { sizeof } from 'js-sizeof';
 import { PanelContext, SeriesVisibilityChangeMode, VizLegendOptions } from '@grafana/ui';
 import { config, getAppEvents, getPluginImportUtils } from '@grafana/runtime';
 import { SceneObjectBase } from '../../core/SceneObjectBase';
@@ -558,6 +559,11 @@ export class VizPanel<TOptions = {}, TFieldConfig extends {} = {}> extends Scene
     }
 
     return context;
+  }
+
+  public onRenderLog() {
+    // eslint-disable-next-line no-console
+    console.log('VizPanel onRenderLog', sizeof(this), this);
   }
 }
 

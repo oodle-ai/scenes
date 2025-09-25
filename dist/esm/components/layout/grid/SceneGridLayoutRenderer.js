@@ -38,6 +38,8 @@ var __objRest = (source, exclude) => {
   return target;
 };
 function SceneGridLayoutRenderer({ model }) {
+  model.onRenderLog();
+  console.time("SceneGridLayoutRenderer");
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
   const ref = useRef(null);
@@ -50,14 +52,15 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
-    const children2 = React.useMemo(() => layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
+    const children2 = layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
       key: gridItem.i,
       grid: model,
       layoutItem: gridItem,
       index,
       isLazy,
       totalCount: layout.length
-    })), [layout, model, isLazy]);
+    }));
+    console.timeEnd("SceneGridLayoutRenderer");
     return /* @__PURE__ */ React.createElement("div", {
       ref,
       style: { width: `${width2}px`, height: "100%" },
@@ -89,6 +92,7 @@ function SceneGridLayoutRenderer({ model }) {
 }
 const GridItemWrapper = React.forwardRef((props, ref) => {
   var _b;
+  console.time("GridItemWrapper");
   const _a = props, { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children } = _a, divProps = __objRest(_a, ["grid", "layoutItem", "index", "totalCount", "isLazy", "style", "onLoad", "onChange", "children"]);
   const sceneChild = grid.getSceneLayoutChild(layoutItem.i);
   const className = (_b = sceneChild.getClassName) == null ? void 0 : _b.call(sceneChild);
@@ -96,6 +100,7 @@ const GridItemWrapper = React.forwardRef((props, ref) => {
     model: sceneChild,
     key: sceneChild.state.key
   });
+  console.timeEnd("GridItemWrapper");
   if (isLazy) {
     return /* @__PURE__ */ React.createElement(LazyLoader, __spreadProps(__spreadValues({}, divProps), {
       key: sceneChild.state.key,

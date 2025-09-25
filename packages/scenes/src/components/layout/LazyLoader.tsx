@@ -26,6 +26,7 @@ export interface LazyLoaderType extends ForwardRefExoticComponent<Props> {
 
 export const LazyLoader: LazyLoaderType = React.forwardRef<HTMLDivElement, Props>(
   ({ children, onLoad, onChange, className, ...rest }, ref) => {
+    console.time('LazyLoader');
     const id = useUniqueId();
     const { hideEmpty } = useStyles2(getStyles);
     const [loaded, setLoaded] = useState(false);
@@ -66,6 +67,7 @@ export const LazyLoader: LazyLoaderType = React.forwardRef<HTMLDivElement, Props
     // We always include the `className` class, as this is coming from the
     // caller of the `LazyLoader` component.
     const classes = `${loaded ? hideEmpty : ''} ${className}`;
+    console.timeEnd('LazyLoader');
     return (
       <div id={id} ref={innerRef} className={classes} {...rest}>
         {loaded && (typeof children === 'function' ? children({ isInView }) : children)}

@@ -3825,6 +3825,7 @@ __metadata:
     jest: "npm:29.7.0"
     jest-environment-jsdom: "npm:29.7.0"
     jest-matcher-utils: "npm:29.7.0"
+    js-sizeof: "npm:^0.0.1"
     lodash: "npm:4.17.21"
     prettier: "npm:2.5.1"
     react-grid-layout: "npm:^1.3.4"
@@ -17075,6 +17076,13 @@ __metadata:
   version: 4.4.1
   resolution: "js-sdsl@npm:4.4.1"
   checksum: 10/f1f6faa0bdd8aa2acf58a2b2bddc85fc203937cad458b3802f4fe9dc335978753c88b28ae210e999d4b3a12f9f31f29494dff31aa46a89d3855e9a5e920bc908
+  languageName: node
+  linkType: hard
+
+"js-sizeof@npm:^0.0.1":
+  version: 0.0.1
+  resolution: "js-sizeof@npm:0.0.1"
+  checksum: 10/388a0c95ce600dc0559b4f629467b4c6a3bba37202ee8e2d19e72aa8b7dbb4330e70e8679fde79d9d691c2760522bbf0ec0efcc1173a527fed11fea4f5f5ccbd
   languageName: node
   linkType: hard
 

@@ -1,3 +1,4 @@
+import { sizeof } from 'js-sizeof';
 import { SceneObjectBase } from '../../../core/SceneObjectBase.js';
 import { DEFAULT_PANEL_SPAN } from './constants.js';
 import { isSceneGridRow } from './SceneGridItem.js';
@@ -258,6 +259,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     this._skipOnLayoutChange = false;
     return cells;
+  }
+  onRenderLog() {
+    console.log("SceneGridLayout onRenderLog", sizeof(this), this);
   }
 };
 let SceneGridLayout = _SceneGridLayout;

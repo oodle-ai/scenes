@@ -41,6 +41,7 @@ function useUniqueId() {
 const LazyLoader = React.forwardRef(
   (_a, ref) => {
     var _b = _a, { children, onLoad, onChange, className } = _b, rest = __objRest(_b, ["children", "onLoad", "onChange", "className"]);
+    console.time("LazyLoader");
     const id = useUniqueId();
     const { hideEmpty } = useStyles2(getStyles);
     const [loaded, setLoaded] = useState(false);
@@ -69,6 +70,7 @@ const LazyLoader = React.forwardRef(
       };
     });
     const classes = `${loaded ? hideEmpty : ""} ${className}`;
+    console.timeEnd("LazyLoader");
     return /* @__PURE__ */ React.createElement("div", __spreadValues({
       id,
       ref: innerRef,
