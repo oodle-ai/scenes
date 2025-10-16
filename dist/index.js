@@ -2698,8 +2698,8 @@ function VariableValueSelectMulti({ model }) {
     filterOption: filterNoOp$2,
     "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
     onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
+      if (action.action === "clear") {
+        model.changeValueTo(["$__all"]);
       }
       setUncommittedValue(newValue.map((x) => x.value));
     }

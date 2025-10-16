@@ -166,8 +166,8 @@ function VariableValueSelectMulti({ model }) {
     filterOption: filterNoOp,
     "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
     onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
+      if (action.action === "clear") {
+        model.changeValueTo(["$__all"]);
       }
       setUncommittedValue(newValue.map((x) => x.value));
     }
