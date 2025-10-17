@@ -172,7 +172,6 @@ export function VariableValueSelectMulti({ model }: SceneComponentProps<MultiVal
       filterOption={filterNoOp}
       data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`)}
       onChange={(newValue, action) => {
-        console.log({ action });
         if (action.action === 'clear') {
           model.changeValueTo(['$__all']);
         }
