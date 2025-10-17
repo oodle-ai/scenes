@@ -2636,16 +2636,7 @@ function VariableValueSelect({ model }) {
   });
 }
 function VariableValueSelectMulti({ model }) {
-  const {
-    value,
-    options,
-    key,
-    maxVisibleValues,
-    noValueOnClear,
-    includeAll,
-    isReadOnly,
-    allowCustomValue = true
-  } = model.useState();
+  const { value, options, key, maxVisibleValues, includeAll, isReadOnly, allowCustomValue = true } = model.useState();
   const arrayValue = React.useMemo(() => lodash.isArray(value) ? value : [value], [value]);
   const [uncommittedValue, setUncommittedValue] = React.useState(arrayValue);
   const [inputValue, setInputValue] = React.useState("");
@@ -2698,8 +2689,9 @@ function VariableValueSelectMulti({ model }) {
     filterOption: filterNoOp$2,
     "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
     onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
+      console.log({ action });
+      if (action.action === "clear") {
+        model.changeValueTo(["$__all"]);
       }
       setUncommittedValue(newValue.map((x) => x.value));
     }
