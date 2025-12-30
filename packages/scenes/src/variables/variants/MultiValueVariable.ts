@@ -226,6 +226,8 @@ export abstract class MultiValueVariable<TState extends MultiValueVariableState 
       if (!isNaN(index) && index >= 0 && index < value.length) {
         return value[index];
       }
+
+      return new CustomAllValue('.*', this);
     }
 
     return value;
