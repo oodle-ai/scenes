@@ -31,17 +31,11 @@ function SceneContextProvider({ children, timeRange, withQueryController }) {
   if (!childContext) {
     return null;
   }
-  const innerProvider = /* @__PURE__ */ React.createElement(SceneContext.Provider, {
-    value: childContext
-  }, children);
+  const innerProvider = /* @__PURE__ */ React.createElement(SceneContext.Provider, { value: childContext }, children);
   if (parentContext) {
     return innerProvider;
   }
-  return /* @__PURE__ */ React.createElement(UrlSyncContextProvider, {
-    scene: childContext,
-    updateUrlOnInit: true,
-    createBrowserHistorySteps: true
-  }, innerProvider);
+  return /* @__PURE__ */ React.createElement(UrlSyncContextProvider, { scene: childContext, updateUrlOnInit: true, createBrowserHistorySteps: true }, innerProvider);
 }
 
 export { SceneContext, SceneContextProvider };

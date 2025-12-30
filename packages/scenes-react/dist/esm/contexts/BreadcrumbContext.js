@@ -1,6 +1,6 @@
 import { urlUtil } from '@grafana/data';
 import { locationSearchToObject, locationService } from '@grafana/runtime';
-import React, { createContext, useState, useCallback, useContext, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useVariables, useTimeRange } from '../hooks/hooks.js';
 
@@ -13,16 +13,20 @@ const BreadcrumbContext = createContext({
 });
 function BreadcrumbProvider({ children }) {
   const [breadcrumbs, setBreadcrumbs] = useState([]);
-  return /* @__PURE__ */ React.createElement(BreadcrumbContext.Provider, {
-    value: {
-      breadcrumbs,
-      addBreadcrumb: useCallback((breadcrumb) => setBreadcrumbs((prev) => [...prev, breadcrumb]), []),
-      removeBreadcrumb: useCallback(
-        (breadcrumb) => setBreadcrumbs((prev) => prev.filter((b) => b.url !== breadcrumb.url)),
-        []
-      )
-    }
-  }, children);
+  return /* @__PURE__ */ React.createElement(
+    BreadcrumbContext.Provider,
+    {
+      value: {
+        breadcrumbs,
+        addBreadcrumb: useCallback((breadcrumb) => setBreadcrumbs((prev) => [...prev, breadcrumb]), []),
+        removeBreadcrumb: useCallback(
+          (breadcrumb) => setBreadcrumbs((prev) => prev.filter((b) => b.url !== breadcrumb.url)),
+          []
+        )
+      }
+    },
+    children
+  );
 }
 function Breadcrumb({ text, path, extraKeys }) {
   const { addBreadcrumb, removeBreadcrumb } = useContext(BreadcrumbContext);

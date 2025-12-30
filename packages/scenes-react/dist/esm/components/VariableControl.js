@@ -8,12 +8,7 @@ function VariableControl({ name, hideLabel, layout }) {
   if (!variable) {
     return /* @__PURE__ */ React.createElement("div", null, "Variable ", name, " not found");
   }
-  return /* @__PURE__ */ React.createElement(VariableValueSelectWrapper, {
-    key: variable.state.key,
-    variable,
-    hideLabel,
-    layout
-  });
+  return /* @__PURE__ */ React.createElement(VariableValueSelectWrapper, { key: variable.state.key, variable, hideLabel, layout });
 }
 
 export { VariableControl };

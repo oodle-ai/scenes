@@ -31,17 +31,6 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
 
     const layout = model.buildGridLayout(width, height);
 
-    const children = React.useMemo(() => layout.map((gridItem, index) => (
-      <GridItemWrapper
-        key={gridItem.i}
-        grid={model}
-        layoutItem={gridItem}
-        index={index}
-        isLazy={isLazy}
-        totalCount={layout.length}
-      />
-    )), [layout, model, isLazy]);
-
     return (
       /**
        * The children is using a width of 100% so we need to guarantee that it is wrapped
@@ -73,7 +62,16 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
           isBounded={false}
           resizeHandle={<ResizeHandle />}
         >
-          {children}
+          {layout.map((gridItem, index) => (
+            <GridItemWrapper
+              key={gridItem.i}
+              grid={model}
+              layoutItem={gridItem}
+              index={index}
+              isLazy={isLazy}
+              totalCount={layout.length}
+            />
+          ))}
         </ReactGridLayout>
       </div>
     );

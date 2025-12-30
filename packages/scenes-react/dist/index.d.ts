@@ -1,4 +1,4 @@
-import { SceneQueryRunner, SceneDataQuery, SceneDataTransformer, CustomTransformerDefinition, SceneDataProvider, SceneObjectBase, SceneObject, SceneVariable, SceneObjectState, SceneTimeRangeState, ControlsLayout, VizConfig, VizPanelMenu, VizPanel as VizPanel$1, VariableValue, VariableValueSingle, QueryVariable as QueryVariable$1, EmbeddedScene, EmbeddedSceneState, SceneComponentProps, SceneTimeRangeLike } from '@grafana/scenes';
+import { SceneDataQuery, SceneQueryRunner, CustomTransformerDefinition, SceneDataProvider, SceneDataTransformer, SceneObjectBase, SceneObjectState, SceneObject, SceneVariable, SceneTimeRangeState, ControlsLayout, VizConfig, VizPanelMenu, VizPanel as VizPanel$1, VariableValue, VariableValueSingle, QueryVariable as QueryVariable$1, EmbeddedScene, EmbeddedSceneState, SceneComponentProps, SceneTimeRangeLike } from '@grafana/scenes';
 import { DataSourceRef, DataTransformerConfig, VariableHide, VariableRefresh, VariableSort } from '@grafana/schema';
 import React from 'react';
 import { PanelContext } from '@grafana/ui';
@@ -14,6 +14,7 @@ interface UseQueryOptions {
     cacheKey?: CacheKey;
     liveStreaming?: boolean;
     maxDataPointsFromWidth?: boolean;
+    minInterval?: string;
 }
 /**
  * Maintains the state of SceneQueryRunner in the scene
@@ -111,6 +112,7 @@ interface VariableProps {
     label?: string;
     hide?: VariableHide;
     initialValue?: VariableValue;
+    skipUrlSync?: boolean;
 }
 
 interface CustomVariableProps extends VariableProps {
@@ -119,7 +121,7 @@ interface CustomVariableProps extends VariableProps {
     includeAll?: boolean;
     children: React.ReactNode;
 }
-declare function CustomVariable({ query, name, label, hide, initialValue, isMulti, includeAll, children, }: CustomVariableProps): React.ReactNode;
+declare function CustomVariable({ query, name, label, hide, initialValue, isMulti, includeAll, skipUrlSync, children, }: CustomVariableProps): React.ReactNode;
 
 interface DataSourceVariableProps extends VariableProps {
     pluginId: string;
@@ -130,7 +132,7 @@ interface DataSourceVariableProps extends VariableProps {
     includeAll?: boolean;
     children: React.ReactNode;
 }
-declare function DataSourceVariable({ pluginId, regex, name, label, hide, initialValue, isMulti, includeAll, children, }: DataSourceVariableProps): React.ReactNode;
+declare function DataSourceVariable({ pluginId, regex, name, label, hide, initialValue, isMulti, includeAll, skipUrlSync, children, }: DataSourceVariableProps): React.ReactNode;
 
 interface QueryVariableProps extends VariableProps {
     query: string | SceneDataQuery;
@@ -142,7 +144,7 @@ interface QueryVariableProps extends VariableProps {
     includeAll?: boolean;
     children: React.ReactNode;
 }
-declare function QueryVariable({ query, name, datasource, label, hide, regex, refresh, sort, initialValue, isMulti, includeAll, children, }: QueryVariableProps): React.ReactNode;
+declare function QueryVariable({ query, name, datasource, label, hide, regex, refresh, sort, initialValue, isMulti, includeAll, skipUrlSync, children, }: QueryVariableProps): React.ReactNode;
 
 /**
  * Code and concepts copied from https://github.com/grafana/hackathon-2023-12-grafana-react/blob/main/src/grafana-react
@@ -246,4 +248,5 @@ declare function useUpdateWhenSceneChanges({ timeRange, variables }: UseUpdateWh
  */
 declare function useVariableInterpolator(options: UseUpdateWhenSceneChangesOptions): (str: string) => string;
 
-export { AnnotationLayer, Breadcrumb, BreadcrumbContext, BreadcrumbProvider, CustomVariable, DataLayerControl, DataSourceVariable, EmbeddedSceneWithContext, QueryVariable, RefreshPicker, SceneContext, SceneContextObject, SceneContextProvider, SceneContextProviderProps, TimeRangePicker, UseUpdateWhenSceneChangesOptions, UseUpdateWhenSceneChangesReason, VariableControl, VizGridLayout, VizPanel, useDataTransformer, useQueryRunner, useQueryVariable, useSceneContext, useTimeRange, useUpdateWhenSceneChanges, useVariableInterpolator, useVariableValue, useVariableValues, useVariables };
+export { AnnotationLayer, Breadcrumb, BreadcrumbContext, BreadcrumbProvider, CustomVariable, DataLayerControl, DataSourceVariable, EmbeddedSceneWithContext, QueryVariable, RefreshPicker, SceneContext, SceneContextObject, SceneContextProvider, TimeRangePicker, VariableControl, VizGridLayout, VizPanel, useDataTransformer, useQueryRunner, useQueryVariable, useSceneContext, useTimeRange, useUpdateWhenSceneChanges, useVariableInterpolator, useVariableValue, useVariableValues, useVariables };
+export type { SceneContextProviderProps, UseUpdateWhenSceneChangesOptions, UseUpdateWhenSceneChangesReason };
