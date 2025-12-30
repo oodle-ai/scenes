@@ -10,13 +10,23 @@ function CustomVariable({
   initialValue,
   isMulti,
   includeAll,
+  skipUrlSync,
   children
 }) {
   const scene = useSceneContext();
   const [variableAdded, setVariableAdded] = useState();
   let variable = scene.findVariable(name);
   if (!variable) {
-    variable = new CustomVariable$1({ name, label, query, value: initialValue, isMulti, includeAll, hide });
+    variable = new CustomVariable$1({
+      name,
+      label,
+      query,
+      value: initialValue,
+      isMulti,
+      includeAll,
+      hide,
+      skipUrlSync
+    });
   }
   useEffect(() => {
     const removeFn = scene.addVariable(variable);
@@ -29,9 +39,10 @@ function CustomVariable({
       query,
       hide,
       isMulti,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
-  }, [hide, includeAll, isMulti, label, query, variable]);
+  }, [skipUrlSync, hide, includeAll, isMulti, label, query, variable]);
   if (!variableAdded) {
     return null;
   }

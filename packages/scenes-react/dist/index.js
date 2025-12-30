@@ -10,12 +10,13 @@ var lruCache = require('lru-cache');
 var ui = require('@grafana/ui');
 var reactUse = require('react-use');
 var data = require('@grafana/data');
+var css = require('@emotion/css');
 var runtime = require('@grafana/runtime');
 var reactRouterDom = require('react-router-dom');
 
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+function _interopDefaultCompat (e) { return e && typeof e === 'object' && 'default' in e ? e : { default: e }; }
 
-var React__default = /*#__PURE__*/_interopDefaultLegacy(React);
+var React__default = /*#__PURE__*/_interopDefaultCompat(React);
 
 function writeSceneLog(logger, message, ...rest) {
   let loggingEnabled = false;
@@ -27,32 +28,14 @@ function writeSceneLog(logger, message, ...rest) {
   }
 }
 
-var __defProp$2 = Object.defineProperty;
-var __defProps$1 = Object.defineProperties;
-var __getOwnPropDescs$1 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$2 = Object.getOwnPropertySymbols;
-var __hasOwnProp$2 = Object.prototype.hasOwnProperty;
-var __propIsEnum$2 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$2 = (obj, key, value) => key in obj ? __defProp$2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$2 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$2.call(b, prop))
-      __defNormalProp$2(a, prop, b[prop]);
-  if (__getOwnPropSymbols$2)
-    for (var prop of __getOwnPropSymbols$2(b)) {
-      if (__propIsEnum$2.call(b, prop))
-        __defNormalProp$2(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$1 = (a, b) => __defProps$1(a, __getOwnPropDescs$1(b));
 class SceneContextObject extends scenes.SceneObjectBase {
   constructor(state) {
     var _a, _b;
-    super(__spreadProps$1(__spreadValues$2({}, state), {
+    super({
+      ...state,
       children: (_a = state == null ? void 0 : state.children) != null ? _a : [],
       childContexts: (_b = state == null ? void 0 : state.childContexts) != null ? _b : []
-    }));
+    });
   }
   addToScene(obj) {
     this.publishEvent(new scenes.NewSceneObjectAddedEvent(obj), true);
@@ -134,17 +117,11 @@ function SceneContextProvider({ children, timeRange, withQueryController }) {
   if (!childContext) {
     return null;
   }
-  const innerProvider = /* @__PURE__ */ React__default["default"].createElement(SceneContext.Provider, {
-    value: childContext
-  }, children);
+  const innerProvider = /* @__PURE__ */ React__default.default.createElement(SceneContext.Provider, { value: childContext }, children);
   if (parentContext) {
     return innerProvider;
   }
-  return /* @__PURE__ */ React__default["default"].createElement(scenes.UrlSyncContextProvider, {
-    scene: childContext,
-    updateUrlOnInit: true,
-    createBrowserHistorySteps: true
-  }, innerProvider);
+  return /* @__PURE__ */ React__default.default.createElement(scenes.UrlSyncContextProvider, { scene: childContext, updateUrlOnInit: true, createBrowserHistorySteps: true }, innerProvider);
 }
 
 function useSceneContext() {
@@ -205,38 +182,25 @@ function useVariableInterpolator(options) {
   );
 }
 
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
+var __typeError = (msg) => {
+  throw TypeError(msg);
 };
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
-var __privateWrapper = (obj, member, setter, getter) => {
-  return {
-    set _(value) {
-      __privateSet(obj, member, value, setter);
-    },
-    get _() {
-      return __privateGet(obj, member, getter);
-    }
-  };
-};
+var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
+var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), member.set(obj, value), value);
+var __privateWrapper = (obj, member, setter, getter) => ({
+  set _(value) {
+    __privateSet(obj, member, value);
+  },
+  get _() {
+    return __privateGet(obj, member, getter);
+  }
+});
 var _cache, _objectRefIds, _objectRefIdCounter;
 class SceneObjectCache {
   constructor() {
-    __privateAdd(this, _cache, void 0);
+    __privateAdd(this, _cache);
     __privateAdd(this, _objectRefIds, /* @__PURE__ */ new WeakMap());
     __privateAdd(this, _objectRefIdCounter, 0);
     __privateSet(this, _cache, new lruCache.LRUCache({
@@ -327,7 +291,8 @@ function useQueryRunner(options) {
       maxDataPoints: options.maxDataPoints,
       datasource: options.datasource,
       liveStreaming: options.liveStreaming,
-      maxDataPointsFromWidth: options.maxDataPointsFromWidth
+      maxDataPointsFromWidth: options.maxDataPointsFromWidth,
+      minInterval: options.minInterval
     }),
     objectConstructor: scenes.SceneQueryRunner,
     cacheKey: options.cacheKey
@@ -364,36 +329,34 @@ function useDataTransformer(options) {
 
 function TimeRangePicker(props) {
   const [value, sceneTimeRange] = useTimeRange();
-  return /* @__PURE__ */ React__default["default"].createElement(ui.TimeRangePicker, {
-    isOnCanvas: true,
-    value,
-    onChange: sceneTimeRange.onTimeRangeChange,
-    timeZone: sceneTimeRange.getTimeZone(),
-    onMoveBackward: () => {
-    },
-    onMoveForward: () => {
-    },
-    onZoom: () => {
-    },
-    onChangeTimeZone: () => {
-    },
-    onChangeFiscalYearStartMonth: () => {
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.TimeRangePicker,
+    {
+      isOnCanvas: true,
+      value,
+      onChange: sceneTimeRange.onTimeRangeChange,
+      timeZone: sceneTimeRange.getTimeZone(),
+      onMoveBackward: () => {
+      },
+      onMoveForward: () => {
+      },
+      onZoom: () => {
+      },
+      onChangeTimeZone: () => {
+      },
+      onChangeFiscalYearStartMonth: () => {
+      }
     }
-  });
+  );
 }
 
 function VariableControl({ name, hideLabel, layout }) {
   const scene = useSceneContext();
   const variable = scenes.sceneGraph.lookupVariable(name, scene);
   if (!variable) {
-    return /* @__PURE__ */ React__default["default"].createElement("div", null, "Variable ", name, " not found");
+    return /* @__PURE__ */ React__default.default.createElement("div", null, "Variable ", name, " not found");
   }
-  return /* @__PURE__ */ React__default["default"].createElement(scenes.VariableValueSelectWrapper, {
-    key: variable.state.key,
-    variable,
-    hideLabel,
-    layout
-  });
+  return /* @__PURE__ */ React__default.default.createElement(scenes.VariableValueSelectWrapper, { key: variable.state.key, variable, hideLabel, layout });
 }
 
 function VizPanel(props) {
@@ -524,9 +487,7 @@ function VizPanel(props) {
     collapsed,
     prevProps
   ]);
-  return /* @__PURE__ */ React__default["default"].createElement(panel.Component, {
-    model: panel
-  });
+  return /* @__PURE__ */ React__default.default.createElement(panel.Component, { model: panel });
 }
 function getDataProviderForVizPanel(data) {
   if (data && !(data instanceof scenes.SceneDataNode)) {
@@ -535,31 +496,16 @@ function getDataProviderForVizPanel(data) {
   return data;
 }
 
-var __defProp$1 = Object.defineProperty;
-var __getOwnPropSymbols$1 = Object.getOwnPropertySymbols;
-var __hasOwnProp$1 = Object.prototype.hasOwnProperty;
-var __propIsEnum$1 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$1 = (obj, key, value) => key in obj ? __defProp$1(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$1 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$1.call(b, prop))
-      __defNormalProp$1(a, prop, b[prop]);
-  if (__getOwnPropSymbols$1)
-    for (var prop of __getOwnPropSymbols$1(b)) {
-      if (__propIsEnum$1.call(b, prop))
-        __defNormalProp$1(a, prop, b[prop]);
-    }
-  return a;
-};
 function RefreshPicker(props) {
   const scene = useSceneContext();
   const key = React.useId();
   const prevProps = reactUse.usePrevious(props);
   let picker = scene.findByKey(key);
   if (!picker) {
-    picker = new scenes.SceneRefreshPicker(__spreadValues$1({
-      key
-    }, props));
+    picker = new scenes.SceneRefreshPicker({
+      key,
+      ...props
+    });
   }
   React.useEffect(() => scene.addToScene(picker), [picker, scene]);
   React.useEffect(() => {
@@ -575,22 +521,39 @@ function RefreshPicker(props) {
     }
     picker.setState(stateUpdate);
   }, [picker, props, prevProps]);
-  return /* @__PURE__ */ React__default["default"].createElement(picker.Component, {
-    model: picker
-  });
+  return /* @__PURE__ */ React__default.default.createElement(picker.Component, { model: picker });
 }
 
 function DataLayerControl({ name }) {
+  var _a, _b, _c;
   const scene = useSceneContext();
+  const styles = ui.useStyles2(getStyles);
   const layerSets = scenes.sceneGraph.getDataLayers(scene);
   const layer = getLayer(layerSets, name);
+  const isLoading = Boolean(layer && ((_a = layer.state.data) == null ? void 0 : _a.state) === data.LoadingState.Loading);
   if (!layer) {
-    return /* @__PURE__ */ React__default["default"].createElement("div", null, "Annotation ", name, " not found");
+    return /* @__PURE__ */ React__default.default.createElement("div", null, "Annotation ", name, " not found");
   }
-  return /* @__PURE__ */ React__default["default"].createElement(layer.Component, {
-    model: layer
-  });
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.container }, /* @__PURE__ */ React__default.default.createElement(
+    scenes.ControlsLabel,
+    {
+      htmlFor: `data-layer-${layer.state.key}`,
+      isLoading,
+      onCancel: () => {
+        var _a2;
+        return (_a2 = layer.cancelQuery) == null ? void 0 : _a2.call(layer);
+      },
+      label: layer.state.name,
+      description: layer.state.description,
+      error: (_c = (_b = layer.state.data) == null ? void 0 : _b.errors) == null ? void 0 : _c[0].message
+    }
+  ), /* @__PURE__ */ React__default.default.createElement(layer.Component, { model: layer }));
 }
+const getStyles = () => ({
+  container: css.css({
+    display: "flex"
+  })
+});
 function getLayer(layers, name) {
   for (let i = 0; i < layers.length; i++) {
     const layer = layers[i].state.layers.find((layer2) => layer2.state.name === name);
@@ -609,13 +572,23 @@ function CustomVariable({
   initialValue,
   isMulti,
   includeAll,
+  skipUrlSync,
   children
 }) {
   const scene = useSceneContext();
   const [variableAdded, setVariableAdded] = React.useState();
   let variable = scene.findVariable(name);
   if (!variable) {
-    variable = new scenes.CustomVariable({ name, label, query, value: initialValue, isMulti, includeAll, hide });
+    variable = new scenes.CustomVariable({
+      name,
+      label,
+      query,
+      value: initialValue,
+      isMulti,
+      includeAll,
+      hide,
+      skipUrlSync
+    });
   }
   React.useEffect(() => {
     const removeFn = scene.addVariable(variable);
@@ -628,9 +601,10 @@ function CustomVariable({
       query,
       hide,
       isMulti,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
-  }, [hide, includeAll, isMulti, label, query, variable]);
+  }, [skipUrlSync, hide, includeAll, isMulti, label, query, variable]);
   if (!variableAdded) {
     return null;
   }
@@ -646,6 +620,7 @@ function DataSourceVariable({
   initialValue,
   isMulti,
   includeAll,
+  skipUrlSync,
   children
 }) {
   const scene = useSceneContext();
@@ -660,7 +635,8 @@ function DataSourceVariable({
       value: initialValue,
       isMulti,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
   }
   React.useEffect(() => {
@@ -672,7 +648,7 @@ function DataSourceVariable({
     if (!variableAdded) {
       return;
     }
-    if (variable.state.pluginId === pluginId && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll) {
+    if (variable.state.pluginId === pluginId && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll && variable.state.skipUrlSync === skipUrlSync) {
       return;
     }
     variable.setState({
@@ -680,10 +656,11 @@ function DataSourceVariable({
       regex,
       label,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
     variable.refreshOptions();
-  }, [hide, includeAll, label, pluginId, regex, variable, variableAdded]);
+  }, [skipUrlSync, hide, includeAll, label, pluginId, regex, variable, variableAdded]);
   if (!variableAdded) {
     return null;
   }
@@ -702,6 +679,7 @@ function QueryVariable({
   initialValue,
   isMulti,
   includeAll,
+  skipUrlSync,
   children
 }) {
   const scene = useSceneContext();
@@ -719,7 +697,8 @@ function QueryVariable({
       value: initialValue,
       isMulti,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
   }
   React.useEffect(() => {
@@ -731,7 +710,7 @@ function QueryVariable({
     if (!variableAdded) {
       return;
     }
-    if (lodash.isEqual(variable.state.query, query) && lodash.isEqual(variable.state.datasource, datasource) && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll && variable.state.refresh === refresh && variable.state.sort === sort) {
+    if (lodash.isEqual(variable.state.query, query) && lodash.isEqual(variable.state.datasource, datasource) && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll && variable.state.refresh === refresh && variable.state.sort === sort && variable.state.skipUrlSync === skipUrlSync) {
       return;
     }
     variable.setState({
@@ -742,10 +721,11 @@ function QueryVariable({
       sort,
       regex,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
     variable.refreshOptions();
-  }, [datasource, hide, includeAll, label, query, refresh, regex, sort, variable, variableAdded]);
+  }, [skipUrlSync, datasource, hide, includeAll, label, query, refresh, regex, sort, variable, variableAdded]);
   if (!variableAdded) {
     return null;
   }
@@ -761,16 +741,20 @@ const BreadcrumbContext = React.createContext({
 });
 function BreadcrumbProvider({ children }) {
   const [breadcrumbs, setBreadcrumbs] = React.useState([]);
-  return /* @__PURE__ */ React__default["default"].createElement(BreadcrumbContext.Provider, {
-    value: {
-      breadcrumbs,
-      addBreadcrumb: React.useCallback((breadcrumb) => setBreadcrumbs((prev) => [...prev, breadcrumb]), []),
-      removeBreadcrumb: React.useCallback(
-        (breadcrumb) => setBreadcrumbs((prev) => prev.filter((b) => b.url !== breadcrumb.url)),
-        []
-      )
-    }
-  }, children);
+  return /* @__PURE__ */ React__default.default.createElement(
+    BreadcrumbContext.Provider,
+    {
+      value: {
+        breadcrumbs,
+        addBreadcrumb: React.useCallback((breadcrumb) => setBreadcrumbs((prev) => [...prev, breadcrumb]), []),
+        removeBreadcrumb: React.useCallback(
+          (breadcrumb) => setBreadcrumbs((prev) => prev.filter((b) => b.url !== breadcrumb.url)),
+          []
+        )
+      }
+    },
+    children
+  );
 }
 function Breadcrumb({ text, path, extraKeys }) {
   const { addBreadcrumb, removeBreadcrumb } = React.useContext(BreadcrumbContext);
@@ -928,36 +912,13 @@ function addAnnotationLayer(scene, layer) {
   };
 }
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class EmbeddedSceneWithContext extends scenes.EmbeddedScene {
   constructor(state) {
-    super(__spreadProps(__spreadValues({}, state), { context: new SceneContextObject() }));
+    super({ ...state, context: new SceneContextObject() });
   }
 }
 EmbeddedSceneWithContext.Component = ({ model }) => {
-  return /* @__PURE__ */ React__default["default"].createElement(SceneContext.Provider, {
-    value: model.state.context
-  }, /* @__PURE__ */ React__default["default"].createElement(scenes.EmbeddedScene.Component, {
-    model
-  }));
+  return /* @__PURE__ */ React__default.default.createElement(SceneContext.Provider, { value: model.state.context }, /* @__PURE__ */ React__default.default.createElement(scenes.EmbeddedScene.Component, { model }));
 };
 
 function VizGridLayout({ children, minWidth = 400, minHeight = 320 }) {
@@ -970,9 +931,7 @@ function VizGridLayout({ children, minWidth = 400, minHeight = 320 }) {
     columnGap: theme.spacing(1),
     rowGap: theme.spacing(1)
   };
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    style
-  }, children);
+  return /* @__PURE__ */ React__default.default.createElement("div", { style }, children);
 }
 
 exports.AnnotationLayer = AnnotationLayer;

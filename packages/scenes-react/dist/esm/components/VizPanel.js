@@ -133,9 +133,7 @@ function VizPanel(props) {
     collapsed,
     prevProps
   ]);
-  return /* @__PURE__ */ React.createElement(panel.Component, {
-    model: panel
-  });
+  return /* @__PURE__ */ React.createElement(panel.Component, { model: panel });
 }
 function getDataProviderForVizPanel(data) {
   if (data && !(data instanceof SceneDataNode)) {

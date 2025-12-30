@@ -11,7 +11,8 @@ function useQueryRunner(options) {
       maxDataPoints: options.maxDataPoints,
       datasource: options.datasource,
       liveStreaming: options.liveStreaming,
-      maxDataPointsFromWidth: options.maxDataPointsFromWidth
+      maxDataPointsFromWidth: options.maxDataPointsFromWidth,
+      minInterval: options.minInterval
     }),
     objectConstructor: SceneQueryRunner,
     cacheKey: options.cacheKey

@@ -112,16 +112,13 @@ export function AdHocFilterRenderer({ filter, model }: Props) {
     },
   };
 
-  const operatorDefinition = OPERATORS.find((op) => filter.operator === op.value);
-
   const valueSelect = (
     <Select
       virtualized
       allowCustomValue={model.state.allowCustomValue ?? true}
-      createOptionPosition={operatorDefinition?.isRegex ? 'first' : 'last'}
+      createOptionPosition="first"
       isValidNewOption={(inputValue) => inputValue.trim().length > 0}
       allowCreateWhileLoading
-      createOptionPosition="first"
       formatCreateLabel={(inputValue) => `Use custom value: ${inputValue}`}
       disabled={model.state.readOnly}
       className={cx(styles.value, isValuesOpen ? styles.widthWhenOpen : undefined)}

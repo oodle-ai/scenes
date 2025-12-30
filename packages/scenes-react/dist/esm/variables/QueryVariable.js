@@ -15,6 +15,7 @@ function QueryVariable({
   initialValue,
   isMulti,
   includeAll,
+  skipUrlSync,
   children
 }) {
   const scene = useSceneContext();
@@ -32,7 +33,8 @@ function QueryVariable({
       value: initialValue,
       isMulti,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
   }
   useEffect(() => {
@@ -44,7 +46,7 @@ function QueryVariable({
     if (!variableAdded) {
       return;
     }
-    if (isEqual(variable.state.query, query) && isEqual(variable.state.datasource, datasource) && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll && variable.state.refresh === refresh && variable.state.sort === sort) {
+    if (isEqual(variable.state.query, query) && isEqual(variable.state.datasource, datasource) && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll && variable.state.refresh === refresh && variable.state.sort === sort && variable.state.skipUrlSync === skipUrlSync) {
       return;
     }
     variable.setState({
@@ -55,10 +57,11 @@ function QueryVariable({
       sort,
       regex,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
     variable.refreshOptions();
-  }, [datasource, hide, includeAll, label, query, refresh, regex, sort, variable, variableAdded]);
+  }, [skipUrlSync, datasource, hide, includeAll, label, query, refresh, regex, sort, variable, variableAdded]);
   if (!variableAdded) {
     return null;
   }

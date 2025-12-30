@@ -11,9 +11,7 @@ function VizGridLayout({ children, minWidth = 400, minHeight = 320 }) {
     columnGap: theme.spacing(1),
     rowGap: theme.spacing(1)
   };
-  return /* @__PURE__ */ React.createElement("div", {
-    style
-  }, children);
+  return /* @__PURE__ */ React.createElement("div", { style }, children);
 }
 
 export { VizGridLayout };

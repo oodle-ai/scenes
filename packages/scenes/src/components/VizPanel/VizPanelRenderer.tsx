@@ -280,7 +280,6 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
                         fill="outline"
                         type="button"
                         data-testid="send-query-button"
-                        tooltip={"Oodle insight"}
                         tooltipPlacement="top"
                         hidden={datasource?.type !== 'prometheus'}
                         onClick={() => {

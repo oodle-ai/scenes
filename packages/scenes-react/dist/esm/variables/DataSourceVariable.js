@@ -11,6 +11,7 @@ function DataSourceVariable({
   initialValue,
   isMulti,
   includeAll,
+  skipUrlSync,
   children
 }) {
   const scene = useSceneContext();
@@ -25,7 +26,8 @@ function DataSourceVariable({
       value: initialValue,
       isMulti,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
   }
   useEffect(() => {
@@ -37,7 +39,7 @@ function DataSourceVariable({
     if (!variableAdded) {
       return;
     }
-    if (variable.state.pluginId === pluginId && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll) {
+    if (variable.state.pluginId === pluginId && variable.state.regex === regex && variable.state.label === label && variable.state.hide === hide && variable.state.includeAll === includeAll && variable.state.skipUrlSync === skipUrlSync) {
       return;
     }
     variable.setState({
@@ -45,10 +47,11 @@ function DataSourceVariable({
       regex,
       label,
       hide,
-      includeAll
+      includeAll,
+      skipUrlSync
     });
     variable.refreshOptions();
-  }, [hide, includeAll, label, pluginId, regex, variable, variableAdded]);
+  }, [skipUrlSync, hide, includeAll, label, pluginId, regex, variable, variableAdded]);
   if (!variableAdded) {
     return null;
   }
