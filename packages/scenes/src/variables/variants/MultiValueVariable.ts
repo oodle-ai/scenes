@@ -220,7 +220,8 @@ export abstract class MultiValueVariable<TState extends MultiValueVariableState 
       if (this.state.allValue) {
         return new CustomAllValue(this.state.allValue, this);
       }
-      value = this.state.options.map((o) => o.value);
+
+      return new CustomAllValue('.*', this);
     }
 
     if (fieldPath != null) {
@@ -237,7 +238,11 @@ export abstract class MultiValueVariable<TState extends MultiValueVariableState 
         });
       }
 
-      return new CustomAllValue('.*', this);
+      const accesor = this.getFieldAccessor(fieldPath);
+      const o = this.state.options.find((o) => o.value === value);
+      if (o) {
+        return accesor(o.properties);
+      }
     }
 
     return value;

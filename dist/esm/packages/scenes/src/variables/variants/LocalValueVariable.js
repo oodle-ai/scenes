@@ -1,0 +1,54 @@
+import { property } from 'lodash';
+import { SceneObjectBase } from '../../core/SceneObjectBase.js';
+import { sceneGraph } from '../../core/sceneGraph/index.js';
+
+const _LocalValueVariable = class _LocalValueVariable extends SceneObjectBase {
+  constructor(initialState) {
+    super({
+      type: "system",
+      value: "",
+      text: "",
+      name: "",
+      ...initialState,
+      skipUrlSync: true
+    });
+  }
+  getValue(fieldPath) {
+    if (fieldPath != null && this.state.properties) {
+      return this.getFieldAccessor(fieldPath)(this.state.properties);
+    }
+    return this.state.value;
+  }
+  getFieldAccessor(fieldPath) {
+    const accessor = _LocalValueVariable.fieldAccessorCache[fieldPath];
+    if (accessor) {
+      return accessor;
+    }
+    return _LocalValueVariable.fieldAccessorCache[fieldPath] = property(fieldPath);
+  }
+  getValueText() {
+    return this.state.text.toString();
+  }
+  /**
+   * Checks the ancestor of our parent SceneVariableSet for loading state of a variable with the same name
+   * This function is unit tested from SceneVariableSet tests.
+   */
+  isAncestorLoading() {
+    var _a, _b;
+    const ancestorScope = (_b = (_a = this.parent) == null ? void 0 : _a.parent) == null ? void 0 : _b.parent;
+    if (!ancestorScope) {
+      throw new Error("LocalValueVariable requires a parent SceneVariableSet that has an ancestor SceneVariableSet");
+    }
+    const set = sceneGraph.getVariables(ancestorScope);
+    const parentVar = sceneGraph.lookupVariable(this.state.name, ancestorScope);
+    if (set && parentVar) {
+      return set.isVariableLoadingOrWaitingToUpdate(parentVar);
+    }
+    return false;
+  }
+};
+_LocalValueVariable.fieldAccessorCache = {};
+let LocalValueVariable = _LocalValueVariable;
+
+export { LocalValueVariable };
+//# sourceMappingURL=LocalValueVariable.js.map
