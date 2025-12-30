@@ -237,11 +237,7 @@ export abstract class MultiValueVariable<TState extends MultiValueVariableState 
         });
       }
 
-      const accesor = this.getFieldAccessor(fieldPath);
-      const o = this.state.options.find((o) => o.value === value);
-      if (o) {
-        return accesor(o.properties);
-      }
+      return new CustomAllValue('.*', this);
     }
 
     return value;

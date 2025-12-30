@@ -121,6 +121,7 @@ export function AdHocFilterRenderer({ filter, model }: Props) {
       createOptionPosition={operatorDefinition?.isRegex ? 'first' : 'last'}
       isValidNewOption={(inputValue) => inputValue.trim().length > 0}
       allowCreateWhileLoading
+      createOptionPosition="first"
       formatCreateLabel={(inputValue) => `Use custom value: ${inputValue}`}
       disabled={model.state.readOnly}
       className={cx(styles.value, isValuesOpen ? styles.widthWhenOpen : undefined)}
@@ -181,7 +182,7 @@ export function AdHocFilterRenderer({ filter, model }: Props) {
       className={cx(styles.key, isKeysOpen ? styles.widthWhenOpen : undefined)}
       width="auto"
       allowCustomValue={model.state.allowCustomValue ?? true}
-      createOptionPosition={operatorDefinition?.isRegex ? 'first' : 'last'}
+      createOptionPosition="first"
       value={keyValue}
       placeholder={t(
         'grafana-scenes.variables.ad-hoc-filter-renderer.key-select.placeholder-select-label',
