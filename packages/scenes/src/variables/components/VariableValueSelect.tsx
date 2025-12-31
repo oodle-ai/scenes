@@ -122,7 +122,6 @@ export function VariableValueSelectMulti({
     options,
     key,
     maxVisibleValues,
-    noValueOnClear,
     includeAll,
     isReadOnly,
     allowCustomValue = true,
@@ -190,8 +189,8 @@ export function VariableValueSelectMulti({
       filterOption={filterNoOp}
       data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`)}
       onChange={(newValue, action) => {
-        if (action.action === 'clear' && noValueOnClear) {
-          model.changeValueTo([], undefined, true);
+        if (action.action === 'clear') {
+          model.changeValueTo(['$__all']);
         }
         setUncommittedValue(newValue.map((x) => x.value!));
       }}

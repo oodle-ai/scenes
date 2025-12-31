@@ -3,10 +3,10 @@ import React, { RefCallback, useCallback, useEffect, useLayoutEffect, useMemo } 
 import { useMeasure } from 'react-use';
 
 // @ts-ignore
-import { AlertState, GrafanaTheme2, PanelData, PluginContextProvider, SetPanelAttentionEvent, RawTimeRange, TimeRange } from '@grafana/data';
+import { AlertState, GrafanaTheme2, PanelData, PluginContextProvider, SetPanelAttentionEvent } from '@grafana/data';
 
-import {getAppEvents, getDataSourceSrv} from '@grafana/runtime';
-import { PanelChrome, ErrorBoundaryAlert, PanelContextProvider, Tooltip, useStyles2, Icon, Button } from '@grafana/ui';
+import { getAppEvents } from '@grafana/runtime';
+import { PanelChrome, ErrorBoundaryAlert, PanelContextProvider, Tooltip, useStyles2, Icon } from '@grafana/ui';
 
 import { sceneGraph } from '../../core/sceneGraph';
 import { isSceneObject, SceneComponentProps, SceneLayout, SceneObject } from '../../core/types';
@@ -231,10 +231,8 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
   const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
 
-  let datasource = data.request?.targets[0]?.datasource
-
   return (
-    <div className={relativeWrapper + " oodle-panel"}>
+    <div className={relativeWrapper + ' oodle-panel'}>
       <div ref={ref as RefCallback<HTMLDivElement>} className={absoluteWrapper} data-viz-panel-key={model.state.key}>
         {width > 0 && height > 0 && (
           <PanelChrome
@@ -273,67 +271,6 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
           >
             {(innerWidth, innerHeight) => (
               <>
-                {plugin.meta.id === 'timeseries' && (
-                    <Button
-                        style={{top: model.state.title?.length > 0 ? "-32px" : "0px", right: "28px", position: "absolute", border: 0, padding: 0}}
-                        variant="secondary"
-                        fill="outline"
-                        type="button"
-                        data-testid="send-query-button"
-                        tooltipPlacement="top"
-                        hidden={datasource?.type !== 'prometheus'}
-                        onClick={() => {
-                          const variables = { ...data?.request?.scopedVars };
-                          variables.__interval = {
-                            value: '$__interval',
-                          }
-                          variables.__interval_ms = {
-                            value: '$__interval_ms',
-                          }
-
-                          let timeRange = data.request?.range as TimeRange
-                          let rangeDurationMs = timeRange.to.valueOf() - timeRange.from.valueOf()
-
-                          getDataSourceSrv().get(datasource, variables)
-                              .then(ds => {
-                                if (ds.interpolateVariablesInQueries) {
-                                  let targets = ds.interpolateVariablesInQueries(data.request?.targets as DataQuery[], variables);
-                                  sendOodleInsightEvent(
-                                      data.request?.dashboardUID as string,
-                                      "Insights",
-                                      model.state.title,
-                                      data.request?.panelId as number,
-                                      targets,
-                                      timeRange,
-                                      rangeDurationMs,
-                                      model.state?.fieldConfig?.defaults?.unit,
-                                  );
-                                } else {
-                                  throw new Error('datasource does not support variable interpolation');
-                                }
-                              })
-                              .catch(_ => {
-                                sendOodleInsightEvent(
-                                    data.request?.dashboardUID as string,
-                                    "Insights",
-                                    model.state.title,
-                                    data.request?.panelId as number,
-                                    data.request?.targets as DataQuery[],
-                                    timeRange,
-                                    rangeDurationMs,
-                                    model.state?.fieldConfig?.defaults?.unit,
-                                );
-                              });
-                        }}
-                    >
-                      <img
-                          src="https://imagedelivery.net/oP5rEbdkySYwiZY4N9HGRw/d0e74e50-902c-4b3c-90af-cabc367bcb00/public"
-                          alt="Insight icon"
-                          data-testid="insight-icon"
-                          style={{ height: '25px' }}
-                      />
-                    </Button>
-                )}
                 <ErrorBoundaryAlert dependencies={[plugin, data]}>
                   <PluginContextProvider meta={plugin.meta}>
                     <PanelContextProvider value={context}>
@@ -368,51 +305,8 @@ export function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>) {
     </div>
   );
 }
-const sendOodleInsightEvent = (
-    dashboardUId: string,
-    dashboardTitle: string,
-    panelTitle: string,
-    panelId: number,
-    expressionData: DataQuery[],
-    dashboardTime: TimeRange,
-    rangeDurationMs: number,
-    unit: string | undefined
-) => {
-  const eventData = {
-    dashboardUId: dashboardUId,
-    dashboardTitle: dashboardTitle,
-    panelTitle: panelTitle,
-    panelId: panelId,
-    expressionData: expressionData,
-    dashboardTime: dashboardTime,
-    rangeDurationMs: rangeDurationMs,
-    unit: unit
-  }
-
-  sendEventToParent({
-    type: 'message',
-    payload: {
-      source: 'oodle-grafana',
-      eventType: 'sendQuery',
-      value: JSON.parse(JSON.stringify(eventData)),
-    },
-  });
-}
-
-// Custom type
-interface SendDataToParentProps {
-  type: string;
-  payload: {
-    eventType: string;
-    source: string;
-    value: any;
-  };
-}
 
 // Custom function
-function sendEventToParent(data: SendDataToParentProps) {
-  window.parent.postMessage(data, '*');
-}
 
 function useDataWithSeriesLimit(data: PanelData | undefined, seriesLimit?: number, showAllSeries?: boolean) {
   return useMemo(() => {
