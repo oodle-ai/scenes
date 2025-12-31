@@ -1,10 +1,11 @@
 import React from 'react';
 import { useLocalStorage } from 'react-use';
 import { uniqBy } from 'lodash';
-import { toUtc, rangeUtil, isDateTime } from '@grafana/data';
+import { intervalToAbbreviatedDurationString, rangeUtil, isDateTime, toUtc } from '@grafana/data';
 import { TimeRangePicker } from '@grafana/ui';
 import { SceneObjectBase } from '../core/SceneObjectBase.js';
 import { sceneGraph } from '../core/sceneGraph/index.js';
+import { t } from '@grafana/i18n';
 
 class SceneTimePicker extends SceneObjectBase {
   constructor() {
@@ -30,20 +31,20 @@ class SceneTimePicker extends SceneObjectBase {
       const {
         state: { value: range }
       } = timeRange;
-      timeRange.onTimeRangeChange(getShiftedTimeRange(TimeRangeDirection.Backward, range, Date.now()));
+      timeRange.onTimeRangeChange(getShiftedTimeRange(0 /* Backward */, range));
     };
     this.onMoveForward = () => {
       const timeRange = sceneGraph.getTimeRange(this);
       const {
         state: { value: range }
       } = timeRange;
-      timeRange.onTimeRangeChange(getShiftedTimeRange(TimeRangeDirection.Forward, range, Date.now()));
+      timeRange.onTimeRangeChange(getShiftedTimeRange(1 /* Forward */, range, Date.now()));
     };
   }
 }
 SceneTimePicker.Component = SceneTimePickerRenderer;
 function SceneTimePickerRenderer({ model }) {
-  const { hidePicker, isOnCanvas } = model.useState();
+  const { hidePicker, isOnCanvas, quickRanges, defaultQuickRanges } = model.useState();
   const timeRange = sceneGraph.getTimeRange(model);
   const timeZone = timeRange.getTimeZone();
   const timeRangeState = timeRange.useState();
@@ -55,25 +56,45 @@ function SceneTimePickerRenderer({ model }) {
   if (hidePicker) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement(TimeRangePicker, {
-    isOnCanvas: isOnCanvas != null ? isOnCanvas : true,
-    value: timeRangeState.value,
-    onChange: (range) => {
-      if (isAbsolute(range)) {
-        setTimeRangeHistory([range, ...timeRangeHistory != null ? timeRangeHistory : []]);
-      }
-      timeRange.onTimeRangeChange(range);
-    },
-    timeZone,
-    fiscalYearStartMonth: timeRangeState.fiscalYearStartMonth,
-    onMoveBackward: model.onMoveBackward,
-    onMoveForward: model.onMoveForward,
-    onZoom: model.onZoom,
-    onChangeTimeZone: timeRange.onTimeZoneChange,
-    onChangeFiscalYearStartMonth: model.onChangeFiscalYearStartMonth,
-    weekStart: timeRangeState.weekStart,
-    history: timeRangeHistory
+  const rangesToUse = quickRanges || defaultQuickRanges;
+  const halfSpanMs = (timeRangeState.value.to.valueOf() - timeRangeState.value.from.valueOf()) / 2;
+  const moveBackwardDuration = intervalToAbbreviatedDurationString({
+    start: new Date(timeRangeState.value.from.valueOf()),
+    end: new Date(timeRangeState.value.from.valueOf() + halfSpanMs)
   });
+  const canMoveForward = timeRangeState.value.to.valueOf() + halfSpanMs <= Date.now();
+  const moveForwardDuration = canMoveForward ? moveBackwardDuration : void 0;
+  return /* @__PURE__ */ React.createElement(
+    TimeRangePicker,
+    {
+      isOnCanvas: isOnCanvas != null ? isOnCanvas : true,
+      value: timeRangeState.value,
+      onChange: (range) => {
+        if (isAbsolute(range)) {
+          setTimeRangeHistory([range, ...timeRangeHistory != null ? timeRangeHistory : []]);
+        }
+        timeRange.onTimeRangeChange(range);
+      },
+      timeZone,
+      fiscalYearStartMonth: timeRangeState.fiscalYearStartMonth,
+      onMoveBackward: model.onMoveBackward,
+      onMoveForward: model.onMoveForward,
+      moveForwardTooltip: moveForwardDuration ? t("grafana-scenes.components.time-picker.move-forward-tooltip", "Move {{moveForwardDuration}} forward", {
+        moveForwardDuration
+      }) : void 0,
+      moveBackwardTooltip: t(
+        "grafana-scenes.components.time-picker.move-backward-tooltip",
+        "Move {{moveBackwardDuration}} backward",
+        { moveBackwardDuration }
+      ),
+      onZoom: model.onZoom,
+      onChangeTimeZone: timeRange.onTimeZoneChange,
+      onChangeFiscalYearStartMonth: model.onChangeFiscalYearStartMonth,
+      weekStart: timeRangeState.weekStart,
+      history: timeRangeHistory,
+      quickRanges: rangesToUse
+    }
+  );
 }
 function getZoomedTimeRange(timeRange, factor) {
   const timespan = timeRange.to.valueOf() - timeRange.from.valueOf();
@@ -83,11 +104,6 @@ function getZoomedTimeRange(timeRange, factor) {
   const from = center - newTimespan / 2;
   return { from: toUtc(from), to: toUtc(to), raw: { from: toUtc(from), to: toUtc(to) } };
 }
-var TimeRangeDirection = /* @__PURE__ */ ((TimeRangeDirection2) => {
-  TimeRangeDirection2[TimeRangeDirection2["Backward"] = 0] = "Backward";
-  TimeRangeDirection2[TimeRangeDirection2["Forward"] = 1] = "Forward";
-  return TimeRangeDirection2;
-})(TimeRangeDirection || {});
 function getShiftedTimeRange(dir, timeRange, upperLimit) {
   const oldTo = timeRange.to.valueOf();
   const oldFrom = timeRange.from.valueOf();
@@ -100,7 +116,7 @@ function getShiftedTimeRange(dir, timeRange, upperLimit) {
   } else {
     fromRaw = oldFrom + halfSpan;
     toRaw = oldTo + halfSpan;
-    if (toRaw > upperLimit && oldTo < upperLimit) {
+    if (upperLimit !== void 0 && toRaw > upperLimit && oldTo < upperLimit) {
       toRaw = upperLimit;
       fromRaw = oldFrom;
     }
@@ -135,5 +151,5 @@ function isAbsolute(value) {
   return isDateTime(value.raw.from) || isDateTime(value.raw.to);
 }
 
-export { SceneTimePicker, TimeRangeDirection, getShiftedTimeRange, getZoomedTimeRange };
+export { SceneTimePicker, getShiftedTimeRange, getZoomedTimeRange };
 //# sourceMappingURL=SceneTimePicker.js.map

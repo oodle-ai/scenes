@@ -9,6 +9,9 @@ class PanelOptionsBuilder {
   setDefaults() {
     this._options = this.defaultOptions ? cloneDeep(this.defaultOptions()) : {};
   }
+  /**
+   * Set an individual panel option. This will merge the value with the existing options.
+   */
   setOption(id, value) {
     this._options = merge(this._options, { [id]: value });
     return this;

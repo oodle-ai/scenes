@@ -11,7 +11,8 @@ class SceneCanvasText extends SceneObjectBase {
     this._variableDependency = new VariableDependencyConfig(this, { statePaths: ["text"] });
   }
 }
-SceneCanvasText.Component = ({ model }) => {
+SceneCanvasText.Component = SceneCanvasTextRenderer;
+function SceneCanvasTextRenderer({ model }) {
   const { text, fontSize = 20, align = "left", key, spacing } = model.useState();
   const theme = useTheme2();
   const style = css({
@@ -22,11 +23,8 @@ SceneCanvasText.Component = ({ model }) => {
     padding: spacing ? theme.spacing(spacing, 0) : void 0,
     justifyContent: align
   });
-  return /* @__PURE__ */ React.createElement("div", {
-    className: style,
-    "data-testid": key
-  }, sceneGraph.interpolate(model, text));
-};
+  return /* @__PURE__ */ React.createElement("div", { className: style, "data-testid": key }, sceneGraph.interpolate(model, text));
+}
 
 export { SceneCanvasText };
 //# sourceMappingURL=SceneCanvasText.js.map

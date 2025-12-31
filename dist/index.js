@@ -2,21 +2,22 @@
 
 Object.defineProperty(exports, '__esModule', { value: true });
 
-var React = require('react');
 var reactRouterDom = require('react-router-dom');
 var data = require('@grafana/data');
 var runtime = require('@grafana/runtime');
+var React = require('react');
 var rxjs = require('rxjs');
 var uuid = require('uuid');
 var lodash = require('lodash');
 var schema = require('@grafana/schema');
+var i18n = require('@grafana/i18n');
 var ui = require('@grafana/ui');
 var e2eSelectors = require('@grafana/e2e-selectors');
 var css = require('@emotion/css');
-var react = require('@floating-ui/react');
-var reactVirtual = require('@tanstack/react-virtual');
 var uFuzzy = require('@leeoniya/ufuzzy');
 var reactUse = require('react-use');
+var react = require('@floating-ui/react');
+var reactVirtual = require('@tanstack/react-virtual');
 var operators = require('rxjs/operators');
 var ReactGridLayout = require('react-grid-layout');
 var BarChartPanelCfg_types_gen = require('@grafana/schema/dist/esm/raw/composable/barchart/panelcfg/x/BarChartPanelCfg_types.gen');
@@ -35,34 +36,18 @@ var TablePanelCfg_types_gen = require('@grafana/schema/dist/esm/raw/composable/t
 var TextPanelCfg_types_gen = require('@grafana/schema/dist/esm/raw/composable/text/panelcfg/x/TextPanelCfg_types.gen');
 var XYChartPanelCfg_types_gen = require('@grafana/schema/dist/esm/raw/composable/xychart/panelcfg/x/XYChartPanelCfg_types.gen');
 
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+function _interopDefaultCompat (e) { return e && typeof e === 'object' && 'default' in e ? e : { default: e }; }
 
-var React__default = /*#__PURE__*/_interopDefaultLegacy(React);
-var uFuzzy__default = /*#__PURE__*/_interopDefaultLegacy(uFuzzy);
-var ReactGridLayout__default = /*#__PURE__*/_interopDefaultLegacy(ReactGridLayout);
+var React__default = /*#__PURE__*/_interopDefaultCompat(React);
+var uFuzzy__default = /*#__PURE__*/_interopDefaultCompat(uFuzzy);
+var ReactGridLayout__default = /*#__PURE__*/_interopDefaultCompat(ReactGridLayout);
 
-var __defProp$Q = Object.defineProperty;
-var __getOwnPropSymbols$Q = Object.getOwnPropertySymbols;
-var __hasOwnProp$Q = Object.prototype.hasOwnProperty;
-var __propIsEnum$Q = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$Q = (obj, key, value) => key in obj ? __defProp$Q(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$Q = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$Q.call(b, prop))
-      __defNormalProp$Q(a, prop, b[prop]);
-  if (__getOwnPropSymbols$Q)
-    for (var prop of __getOwnPropSymbols$Q(b)) {
-      if (__propIsEnum$Q.call(b, prop))
-        __defNormalProp$Q(a, prop, b[prop]);
-    }
-  return a;
-};
 function useAppQueryParams() {
   const location = reactRouterDom.useLocation();
   return runtime.locationSearchToObject(location.search || "");
 }
 function getUrlWithAppState(path, searchObject, preserveParams) {
-  const paramsCopy = __spreadValues$Q({}, searchObject);
+  const paramsCopy = { ...searchObject };
   if (preserveParams) {
     for (const key of Object.keys(paramsCopy)) {
       if (!preserveParams.includes(key)) {
@@ -72,35 +57,33 @@ function getUrlWithAppState(path, searchObject, preserveParams) {
   }
   return data.urlUtil.renderUrl(data.locationUtil.assureBaseUrl(path), paramsCopy);
 }
-function renderSceneComponentWithRouteProps(sceneObject, routeProps) {
-  return React__default["default"].createElement(sceneObject.Component, { model: sceneObject, routeProps });
+function useSceneRouteMatch(path) {
+  const params = reactRouterDom.useParams();
+  const location = reactRouterDom.useLocation();
+  const isExact = reactRouterDom.matchPath(
+    {
+      path,
+      caseSensitive: false,
+      end: true
+    },
+    location.pathname
+  );
+  const match = {
+    params,
+    isExact: isExact !== null,
+    path: location.pathname,
+    url: location.pathname
+  };
+  return match;
 }
 
-var __defProp$P = Object.defineProperty;
-var __defProps$x = Object.defineProperties;
-var __getOwnPropDescs$x = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$P = Object.getOwnPropertySymbols;
-var __hasOwnProp$P = Object.prototype.hasOwnProperty;
-var __propIsEnum$P = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$P = (obj, key, value) => key in obj ? __defProp$P(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$P = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$P.call(b, prop))
-      __defNormalProp$P(a, prop, b[prop]);
-  if (__getOwnPropSymbols$P)
-    for (var prop of __getOwnPropSymbols$P(b)) {
-      if (__propIsEnum$P.call(b, prop))
-        __defNormalProp$P(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$x = (a, b) => __defProps$x(a, __getOwnPropDescs$x(b));
 const runtimePanelPlugins = /* @__PURE__ */ new Map();
 function registerRuntimePanelPlugin({ pluginId, plugin }) {
   if (runtimePanelPlugins.has(pluginId)) {
     throw new Error(`A runtime panel plugin with id ${pluginId} has already been registered`);
   }
-  plugin.meta = __spreadProps$x(__spreadValues$P({}, plugin.meta), {
+  plugin.meta = {
+    ...plugin.meta,
     id: pluginId,
     name: pluginId,
     module: "runtime plugin",
@@ -119,7 +102,7 @@ function registerRuntimePanelPlugin({ pluginId, plugin }) {
       updated: "",
       version: ""
     }
-  });
+  };
   runtimePanelPlugins.set(pluginId, plugin);
 }
 function loadPanelPluginSync(pluginId) {
@@ -128,41 +111,9 @@ function loadPanelPluginSync(pluginId) {
   return (_a = getPanelPluginFromCache(pluginId)) != null ? _a : runtimePanelPlugins.get(pluginId);
 }
 
-var __defProp$O = Object.defineProperty;
-var __defProps$w = Object.defineProperties;
-var __getOwnPropDescs$w = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$O = Object.getOwnPropertySymbols;
-var __hasOwnProp$O = Object.prototype.hasOwnProperty;
-var __propIsEnum$O = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$O = (obj, key, value) => key in obj ? __defProp$O(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$O = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$O.call(b, prop))
-      __defNormalProp$O(a, prop, b[prop]);
-  if (__getOwnPropSymbols$O)
-    for (var prop of __getOwnPropSymbols$O(b)) {
-      if (__propIsEnum$O.call(b, prop))
-        __defNormalProp$O(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$w = (a, b) => __defProps$w(a, __getOwnPropDescs$w(b));
-var __objRest$5 = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp$O.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols$O)
-    for (var prop of __getOwnPropSymbols$O(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum$O.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
-function SceneComponentWrapperWithoutMemo(_a) {
-  var _b = _a, { model } = _b, otherProps = __objRest$5(_b, ["model"]);
-  var _a2;
-  const Component = (_a2 = model.constructor["Component"]) != null ? _a2 : EmptyRenderer;
+function SceneComponentWrapperWithoutMemo({ model, ...otherProps }) {
+  var _a;
+  const Component = (_a = model.constructor["Component"]) != null ? _a : EmptyRenderer;
   const [_, setValue] = React.useState(0);
   React.useEffect(() => {
     const unsub = model.activate();
@@ -172,11 +123,9 @@ function SceneComponentWrapperWithoutMemo(_a) {
   if (!model.isActive && !model.renderBeforeActivation) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement(Component, __spreadProps$w(__spreadValues$O({}, otherProps), {
-    model
-  }));
+  return /* @__PURE__ */ React__default.default.createElement(Component, { ...otherProps, model });
 }
-const SceneComponentWrapper = React__default["default"].memo(SceneComponentWrapperWithoutMemo);
+const SceneComponentWrapper = React__default.default.memo(SceneComponentWrapperWithoutMemo);
 function EmptyRenderer(_) {
   return null;
 }
@@ -188,52 +137,25 @@ class UserActionEvent extends data.BusEventWithPayload {
 }
 UserActionEvent.type = "scene-object-user-action";
 
-var __accessCheck$3 = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
+var __typeError$5 = (msg) => {
+  throw TypeError(msg);
 };
-var __privateGet$3 = (obj, member, getter) => {
-  __accessCheck$3(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd$3 = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet$2 = (obj, member, value, setter) => {
-  __accessCheck$3(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
+var __accessCheck$5 = (obj, member, msg) => member.has(obj) || __typeError$5("Cannot " + msg);
+var __privateGet$5 = (obj, member, getter) => (__accessCheck$5(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd$5 = (obj, member, value) => member.has(obj) ? __typeError$5("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet$5 = (obj, member, value, setter) => (__accessCheck$5(obj, member, "write to private field"), member.set(obj, value), value);
 var _ref;
 class SceneObjectRef {
   constructor(ref) {
-    __privateAdd$3(this, _ref, void 0);
-    __privateSet$2(this, _ref, ref);
+    __privateAdd$5(this, _ref);
+    __privateSet$5(this, _ref, ref);
   }
   resolve() {
-    return __privateGet$3(this, _ref);
+    return __privateGet$5(this, _ref);
   }
 }
 _ref = new WeakMap();
 
-var __defProp$N = Object.defineProperty;
-var __getOwnPropSymbols$N = Object.getOwnPropertySymbols;
-var __hasOwnProp$N = Object.prototype.hasOwnProperty;
-var __propIsEnum$N = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$N = (obj, key, value) => key in obj ? __defProp$N(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$N = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$N.call(b, prop))
-      __defNormalProp$N(a, prop, b[prop]);
-  if (__getOwnPropSymbols$N)
-    for (var prop of __getOwnPropSymbols$N(b)) {
-      if (__propIsEnum$N.call(b, prop))
-        __defNormalProp$N(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneObjectBase {
   constructor(state) {
     this._isActive = false;
@@ -249,24 +171,33 @@ class SceneObjectBase {
     this._state = Object.freeze(state);
     this._setParent(this._state);
   }
+  /** Current state */
   get state() {
     return this._state;
   }
+  /** True if currently being active (ie displayed for visual objects) */
   get isActive() {
     return this._isActive;
   }
   get renderBeforeActivation() {
     return this._renderBeforeActivation;
   }
+  /** Returns the parent, undefined for root object */
   get parent() {
     return this._parent;
   }
+  /** Returns variable dependency config */
   get variableDependency() {
     return this._variableDependency;
   }
+  /** Returns url sync config */
   get urlSync() {
     return this._urlSync;
   }
+  /**
+   * Used in render functions when rendering a SceneObject.
+   * Wraps the component in an EditWrapper that handles edit mode
+   */
   get Component() {
     return SceneComponentWrapper;
   }
@@ -282,9 +213,16 @@ class SceneObjectBase {
       child._parent = this;
     });
   }
+  /**
+   * Sometimes you want to move one instance to another parent.
+   * This is a way to do that without getting the console warning.
+   */
   clearParent() {
     this._parent = void 0;
   }
+  /**
+   * Subscribe to the scene state subject
+   **/
   subscribeToState(handler) {
     return this._events.subscribe(SceneObjectStateChangedEvent, (event) => {
       if (event.payload.changedObject === this) {
@@ -292,12 +230,18 @@ class SceneObjectBase {
       }
     });
   }
+  /**
+   * Subscribe to the scene event
+   **/
   subscribeToEvent(eventType, handler) {
     return this._events.subscribe(eventType, handler);
   }
   setState(update) {
     const prevState = this._state;
-    const newState = __spreadValues$N(__spreadValues$N({}, this._state), update);
+    const newState = {
+      ...this._state,
+      ...update
+    };
     this._state = Object.freeze(newState);
     this._setParent(update);
     this._handleActivationOfChangedStateProps(prevState, newState);
@@ -311,6 +255,10 @@ class SceneObjectBase {
       true
     );
   }
+  /**
+   * This handles activation and deactivation of $data, $timeRange and $variables when they change
+   * during the active phase of the scene object.
+   */
   _handleActivationOfChangedStateProps(prevState, newState) {
     if (!this.isActive) {
       return;
@@ -360,6 +308,9 @@ class SceneObjectBase {
       }
     }
   }
+  /*
+   * Publish an event and optionally bubble it up the scene
+   **/
   publishEvent(event, bubble) {
     this._events.publish(event);
     if (bubble && this.parent) {
@@ -403,6 +354,11 @@ class SceneObjectBase {
       }
     }
   }
+  /**
+   * This is primarily called from SceneComponentWrapper when the SceneObject's Component is mounted.
+   * But in some scenarios this can also be called directly from another scene object. When called manually from another scene object
+   * make sure to call the returned function when the source scene object is deactivated.
+   */
   activate() {
     if (!this.isActive) {
       this._internalActivate();
@@ -421,6 +377,10 @@ class SceneObjectBase {
       }
     };
   }
+  /**
+   * Called by the SceneComponentWrapper when the react component is unmounted.
+   * Don't override this, instead use addActivationHandler. The activation handler can return a deactivation handler.
+   */
   _internalDeactivate() {
     this._isActive = false;
     for (let handler of this._deactivationHandlers.values()) {
@@ -431,26 +391,50 @@ class SceneObjectBase {
     this._subs.unsubscribe();
     this._subs = new rxjs.Subscription();
   }
+  /**
+   * Utility hook to get and subscribe to state
+   */
   useState() {
     return useSceneObjectState(this);
   }
+  /** Force a re-render, should only be needed when variable values change */
   forceRender() {
     this.setState({});
   }
+  /**
+   * Will create new SceneObject with shallow-cloned state, but all state items of type SceneObject are deep cloned
+   */
   clone(withState) {
     return cloneSceneObject(this, withState);
   }
+  /**
+   * Allows external code to register code that is executed on activate and deactivate. This allow you
+   * to wire up scene objects that need to respond to state changes in other objects from the outside.
+   **/
   addActivationHandler(handler) {
     this._activationHandlers.push(handler);
   }
+  /**
+   * Loop through state and call callback for each direct child scene object.
+   * Checks 1 level deep properties and arrays. So a scene object hidden in a nested plain object will not be detected.
+   * Return false to exit loop early.
+   */
   forEachChild(callback) {
     forEachChild(this.state, callback);
   }
+  /** Returns a SceneObjectRef that will resolve to this object */
   getRef() {
     if (!this._ref) {
       this._ref = new SceneObjectRef(this);
     }
     return this._ref;
+  }
+  toJSON() {
+    return {
+      type: Object.getPrototypeOf(this).constructor.name,
+      isActive: this.isActive,
+      state: this.state
+    };
   }
 }
 function useSceneObjectState(model, options) {
@@ -481,75 +465,66 @@ function useSceneObjectState(model, options) {
 function forEachChild(state, callback) {
   for (const propValue of Object.values(state)) {
     if (propValue instanceof SceneObjectBase) {
-      callback(propValue);
+      const result = callback(propValue);
+      if (result === false) {
+        break;
+      }
     }
     if (Array.isArray(propValue)) {
+      let exitEarly = false;
       for (const child of propValue) {
         if (child instanceof SceneObjectBase) {
-          callback(child);
+          const result = callback(child);
+          if (result === false) {
+            exitEarly = true;
+            break;
+          }
         }
+      }
+      if (exitEarly) {
+        break;
       }
     }
   }
 }
 
-var __defProp$M = Object.defineProperty;
-var __getOwnPropSymbols$M = Object.getOwnPropertySymbols;
-var __hasOwnProp$M = Object.prototype.hasOwnProperty;
-var __propIsEnum$M = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$M = (obj, key, value) => key in obj ? __defProp$M(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$M = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$M.call(b, prop))
-      __defNormalProp$M(a, prop, b[prop]);
-  if (__getOwnPropSymbols$M)
-    for (var prop of __getOwnPropSymbols$M(b)) {
-      if (__propIsEnum$M.call(b, prop))
-        __defNormalProp$M(a, prop, b[prop]);
-    }
-  return a;
-};
 function cloneSceneObject(sceneObject, withState) {
   const clonedState = cloneSceneObjectState(sceneObject.state, withState);
   return new sceneObject.constructor(clonedState);
 }
 function cloneSceneObjectState(sceneState, withState) {
-  const clonedState = __spreadValues$M({}, sceneState);
+  const clonedState = { ...sceneState };
   Object.assign(clonedState, withState);
   for (const key in clonedState) {
     if (withState && withState[key] !== void 0) {
       continue;
     }
     const propValue = clonedState[key];
-    if (propValue instanceof SceneObjectBase) {
-      clonedState[key] = propValue.clone();
-    }
     if (propValue instanceof SceneObjectRef) {
       console.warn("Cloning object with SceneObjectRef");
       continue;
     }
-    if (Array.isArray(propValue)) {
+    if (propValue instanceof SceneObjectBase) {
+      clonedState[key] = propValue.clone();
+    } else if (Array.isArray(propValue)) {
       const newArray = [];
       for (const child of propValue) {
         if (child instanceof SceneObjectBase) {
           newArray.push(child.clone());
+        } else if (typeof child === "object") {
+          newArray.push(lodash.cloneDeep(child));
         } else {
           newArray.push(child);
         }
       }
       clonedState[key] = newArray;
+    } else if (typeof propValue === "object") {
+      clonedState[key] = lodash.cloneDeep(propValue);
+    } else {
+      clonedState[key] = propValue;
     }
   }
   return clonedState;
-}
-function getClosest(sceneObject, extract) {
-  let curSceneObject = sceneObject;
-  let extracted = void 0;
-  while (curSceneObject && !extracted) {
-    extracted = extract(curSceneObject);
-    curSceneObject = curSceneObject.parent;
-  }
-  return extracted;
 }
 
 class RuntimeDataSource extends data.DataSourceApi {
@@ -597,6 +572,144 @@ function registerRuntimeDataSource({ dataSource }) {
   runtimeDataSources.set(dataSource.uid, dataSource);
 }
 
+const DEFAULT_NAMESPACE = "";
+const DEFAULT_EXCLUDE_FROM_NAMESPACE = ["from", "to", "timezone"];
+class UniqueUrlKeyMapper {
+  constructor(options) {
+    this.index = /* @__PURE__ */ new Map();
+    this.options = {
+      namespace: (options == null ? void 0 : options.namespace) || DEFAULT_NAMESPACE,
+      excludeFromNamespace: (options == null ? void 0 : options.excludeFromNamespace) || DEFAULT_EXCLUDE_FROM_NAMESPACE
+    };
+  }
+  getOptions() {
+    return this.options;
+  }
+  getNamespacedKey(keyWithoutNamespace) {
+    if (this.options.namespace && !this.options.excludeFromNamespace.includes(keyWithoutNamespace)) {
+      return `${this.options.namespace}-${keyWithoutNamespace}`;
+    }
+    return keyWithoutNamespace;
+  }
+  getUniqueKey(keyWithoutNamespace, obj) {
+    const key = this.getNamespacedKey(keyWithoutNamespace);
+    const objectsWithKey = this.index.get(key);
+    if (!objectsWithKey) {
+      this.index.set(key, [obj]);
+      return key;
+    }
+    let address = objectsWithKey.findIndex((o) => o === obj);
+    if (address === -1) {
+      filterOutOrphanedObjects(objectsWithKey, obj.getRoot());
+      objectsWithKey.push(obj);
+      address = objectsWithKey.length - 1;
+    }
+    if (address > 0) {
+      return `${key}-${address + 1}`;
+    }
+    return key;
+  }
+  clear() {
+    this.index.clear();
+  }
+}
+function filterOutOrphanedObjects(sceneObjects, root) {
+  for (let i = 0; i < sceneObjects.length; i++) {
+    const obj = sceneObjects[i];
+    if (isOrphan(obj)) {
+      sceneObjects.splice(i, 1);
+      i--;
+    }
+  }
+}
+function isOrphan(obj, root) {
+  if (!obj.parent) {
+    return false;
+  }
+  let found = false;
+  obj.parent.forEachChild((child) => {
+    if (child === obj) {
+      found = true;
+      return false;
+    }
+    return;
+  });
+  if (!found) {
+    return true;
+  }
+  return isOrphan(obj.parent);
+}
+
+function getUrlState(root, uniqueUrlKeyMapperOptions) {
+  const urlKeyMapper = new UniqueUrlKeyMapper(uniqueUrlKeyMapperOptions);
+  const result = {};
+  const visitNode = (obj) => {
+    if (obj.urlSync) {
+      const newUrlState = obj.urlSync.getUrlState();
+      for (const [key, value] of Object.entries(newUrlState)) {
+        if (value != null) {
+          const uniqueKey = urlKeyMapper.getUniqueKey(key, obj);
+          result[uniqueKey] = value;
+        }
+      }
+    }
+    obj.forEachChild(visitNode);
+  };
+  visitNode(root);
+  return result;
+}
+function syncStateFromSearchParams(root, urlParams, uniqueUrlKeyMapperOptions) {
+  const urlKeyMapper = new UniqueUrlKeyMapper(uniqueUrlKeyMapperOptions);
+  syncStateFromUrl(root, urlParams, urlKeyMapper);
+}
+function syncStateFromUrl(root, urlParams, urlKeyMapper, onlyChildren) {
+  if (!onlyChildren) {
+    syncUrlStateToObject(root, urlParams, urlKeyMapper);
+  }
+  root.forEachChild((child) => {
+    syncUrlStateToObject(child, urlParams, urlKeyMapper);
+  });
+  root.forEachChild((child) => syncStateFromUrl(child, urlParams, urlKeyMapper, true));
+}
+function syncUrlStateToObject(sceneObject, urlParams, urlKeyMapper) {
+  if (sceneObject.urlSync) {
+    const urlState = {};
+    const currentState = sceneObject.urlSync.getUrlState();
+    for (const key of sceneObject.urlSync.getKeys()) {
+      const uniqueKey = urlKeyMapper.getUniqueKey(key, sceneObject);
+      const newValue = urlParams.getAll(uniqueKey);
+      const currentValue = currentState[key];
+      if (isUrlValueEqual(newValue, currentValue)) {
+        continue;
+      }
+      if (newValue.length > 0) {
+        if (Array.isArray(currentValue)) {
+          urlState[key] = newValue;
+        } else {
+          urlState[key] = newValue[0];
+        }
+      } else {
+        urlState[key] = null;
+      }
+    }
+    if (Object.keys(urlState).length > 0) {
+      sceneObject.urlSync.updateFromUrl(urlState);
+    }
+  }
+}
+function isUrlValueEqual(currentUrlValue, newUrlValue) {
+  if (currentUrlValue.length === 0 && newUrlValue == null) {
+    return true;
+  }
+  if (!Array.isArray(newUrlValue) && (currentUrlValue == null ? void 0 : currentUrlValue.length) === 1) {
+    return newUrlValue === currentUrlValue[0];
+  }
+  if ((newUrlValue == null ? void 0 : newUrlValue.length) === 0 && currentUrlValue === null) {
+    return true;
+  }
+  return lodash.isEqual(currentUrlValue, newUrlValue);
+}
+
 function lookupVariable(name, sceneObject) {
   const variables = sceneObject.state.$variables;
   if (!variables) {
@@ -615,27 +728,128 @@ function lookupVariable(name, sceneObject) {
   return null;
 }
 
-var __defProp$L = Object.defineProperty;
-var __getOwnPropSymbols$L = Object.getOwnPropertySymbols;
-var __hasOwnProp$L = Object.prototype.hasOwnProperty;
-var __propIsEnum$L = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$L = (obj, key, value) => key in obj ? __defProp$L(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$L = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$L.call(b, prop))
-      __defNormalProp$L(a, prop, b[prop]);
-  if (__getOwnPropSymbols$L)
-    for (var prop of __getOwnPropSymbols$L(b)) {
-      if (__propIsEnum$L.call(b, prop))
-        __defNormalProp$L(a, prop, b[prop]);
-    }
-  return a;
+function writeSceneLog(logger, message, ...rest) {
+  let loggingEnabled = false;
+  if (typeof window !== "undefined") {
+    loggingEnabled = localStorage.getItem("grafana.debug.scenes") === "true";
+  }
+  if (loggingEnabled) {
+    console.log(`${logger}: `, message, ...rest);
+  }
+}
+
+var __typeError$4 = (msg) => {
+  throw TypeError(msg);
 };
+var __accessCheck$4 = (obj, member, msg) => member.has(obj) || __typeError$4("Cannot " + msg);
+var __privateGet$4 = (obj, member, getter) => (__accessCheck$4(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd$4 = (obj, member, value) => member.has(obj) ? __typeError$4("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet$4 = (obj, member, value, setter) => (__accessCheck$4(obj, member, "write to private field"), member.set(obj, value), value);
+var _running, _tryCompleteProfileFrameId;
+function isQueryController(s) {
+  return "isQueryController" in s;
+}
+class SceneQueryController extends SceneObjectBase {
+  constructor(state = {}, profiler) {
+    super({ ...state, isRunning: false });
+    this.profiler = profiler;
+    this.isQueryController = true;
+    __privateAdd$4(this, _running, /* @__PURE__ */ new Set());
+    __privateAdd$4(this, _tryCompleteProfileFrameId, null);
+    this.runningQueriesCount = () => {
+      return __privateGet$4(this, _running).size;
+    };
+    if (profiler) {
+      this.profiler = profiler;
+      profiler.setQueryController(this);
+    }
+    this.addActivationHandler(() => {
+      var _a;
+      (_a = this.profiler) == null ? void 0 : _a.setQueryController(this);
+      return () => __privateGet$4(this, _running).clear();
+    });
+  }
+  startProfile(name) {
+    var _a;
+    if (!this.state.enableProfiling) {
+      return;
+    }
+    (_a = this.profiler) == null ? void 0 : _a.startProfile(name);
+  }
+  cancelProfile() {
+    var _a;
+    (_a = this.profiler) == null ? void 0 : _a.cancelProfile();
+  }
+  queryStarted(entry) {
+    __privateGet$4(this, _running).add(entry);
+    this.changeRunningQueryCount(1, entry);
+    if (!this.state.isRunning) {
+      this.setState({ isRunning: true });
+    }
+  }
+  queryCompleted(entry) {
+    if (!__privateGet$4(this, _running).has(entry)) {
+      return;
+    }
+    __privateGet$4(this, _running).delete(entry);
+    this.changeRunningQueryCount(-1);
+    if (__privateGet$4(this, _running).size === 0) {
+      this.setState({ isRunning: false });
+    }
+  }
+  changeRunningQueryCount(dir, entry) {
+    var _a, _b, _c, _d;
+    window.__grafanaRunningQueryCount = ((_a = window.__grafanaRunningQueryCount) != null ? _a : 0) + dir;
+    if (dir === 1 && this.state.enableProfiling) {
+      if (entry) {
+        (_b = this.profiler) == null ? void 0 : _b.addCrumb(`${entry.type}`);
+      }
+      if ((_c = this.profiler) == null ? void 0 : _c.isTailRecording()) {
+        writeSceneLog("SceneQueryController", "New query started, cancelling tail recording");
+        (_d = this.profiler) == null ? void 0 : _d.cancelTailRecording();
+      }
+    }
+    if (this.state.enableProfiling) {
+      if (__privateGet$4(this, _tryCompleteProfileFrameId)) {
+        cancelAnimationFrame(__privateGet$4(this, _tryCompleteProfileFrameId));
+      }
+      __privateSet$4(this, _tryCompleteProfileFrameId, requestAnimationFrame(() => {
+        var _a2;
+        (_a2 = this.profiler) == null ? void 0 : _a2.tryCompletingProfile();
+      }));
+    }
+  }
+  cancelAll() {
+    var _a;
+    for (const entry of __privateGet$4(this, _running).values()) {
+      (_a = entry.cancel) == null ? void 0 : _a.call(entry);
+    }
+  }
+}
+_running = new WeakMap();
+_tryCompleteProfileFrameId = new WeakMap();
+
+function getQueryController(sceneObject) {
+  let parent = sceneObject;
+  while (parent) {
+    if (parent.state.$behaviors) {
+      for (const behavior of parent.state.$behaviors) {
+        if (isQueryController(behavior)) {
+          return behavior;
+        }
+      }
+    }
+    parent = parent.parent;
+  }
+  return void 0;
+}
+
 class SceneDataNode extends SceneObjectBase {
   constructor(state) {
-    super(__spreadValues$L({
-      data: emptyPanelData
-    }, state));
+    super({
+      data: emptyPanelData,
+      ...state
+    });
   }
   getResultsStream() {
     const result = {
@@ -669,14 +883,24 @@ class SceneObjectUrlSyncConfig {
   updateFromUrl(values) {
     this._sceneObject.updateFromUrl(values);
   }
+  shouldCreateHistoryStep(values) {
+    return this._nextChangeShouldAddHistoryStep;
+  }
   performBrowserHistoryAction(callback) {
     this._nextChangeShouldAddHistoryStep = true;
     callback();
     this._nextChangeShouldAddHistoryStep = false;
   }
-  shouldCreateHistoryStep(values) {
-    return this._nextChangeShouldAddHistoryStep;
+}
+
+function getClosest(sceneObject, extract) {
+  let curSceneObject = sceneObject;
+  let extracted = void 0;
+  while (curSceneObject && !extracted) {
+    extracted = extract(curSceneObject);
+    curSceneObject = curSceneObject.parent;
   }
+  return extracted;
 }
 
 const INTERVAL_STRING_REGEX = /^\d+[yYmMsSwWhHdD]$/;
@@ -767,28 +991,23 @@ function isValid$1(value, roundUp, timeZone) {
   return parsed.isValid();
 }
 
-var __defProp$K = Object.defineProperty;
-var __getOwnPropSymbols$K = Object.getOwnPropertySymbols;
-var __hasOwnProp$K = Object.prototype.hasOwnProperty;
-var __propIsEnum$K = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$K = (obj, key, value) => key in obj ? __defProp$K(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$K = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$K.call(b, prop))
-      __defNormalProp$K(a, prop, b[prop]);
-  if (__getOwnPropSymbols$K)
-    for (var prop of __getOwnPropSymbols$K(b)) {
-      if (__propIsEnum$K.call(b, prop))
-        __defNormalProp$K(a, prop, b[prop]);
-    }
-  return a;
-};
+const REFRESH_INTERACTION = "refresh";
+const TIME_RANGE_CHANGE_INTERACTION = "time_range_change";
+const FILTER_REMOVED_INTERACTION = "filter_removed";
+const FILTER_CHANGED_INTERACTION = "filter_changed";
+const FILTER_RESTORED_INTERACTION = "filter_restored";
+const VARIABLE_VALUE_CHANGED_INTERACTION = "variable_value_changed";
+const SCOPES_CHANGED_INTERACTION = "scopes_changed";
+const ADHOC_KEYS_DROPDOWN_INTERACTION = "adhoc_keys_dropdown";
+const ADHOC_VALUES_DROPDOWN_INTERACTION = "adhoc_values_dropdown";
+const GROUPBY_DIMENSIONS_INTERACTION = "groupby_dimensions";
+
 class SceneTimeRange extends SceneObjectBase {
   constructor(state = {}) {
     var _a;
     const from = state.from && isValid$1(state.from) ? state.from : "now-6h";
     const to = state.to && isValid$1(state.to) ? state.to : "now";
-    const timeZone = state.timeZone;
+    const timeZone = getValidTimeZone(state.timeZone);
     const value = evaluateTimeRange(
       from,
       to,
@@ -798,7 +1017,7 @@ class SceneTimeRange extends SceneObjectBase {
       state.weekStart
     );
     const refreshOnActivate = (_a = state.refreshOnActivate) != null ? _a : { percent: 10 };
-    super(__spreadValues$K({ from, to, timeZone, value, refreshOnActivate }, state));
+    super({ from, to, timeZone, value, refreshOnActivate, ...state });
     this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: ["from", "to", "timezone", "time", "time.window"] });
     this.onTimeRangeChange = (timeRange) => {
       const update = {};
@@ -821,6 +1040,8 @@ class SceneTimeRange extends SceneObjectBase {
         this.state.weekStart
       );
       if (update.from !== this.state.from || update.to !== this.state.to) {
+        const queryController = getQueryController(this);
+        queryController == null ? void 0 : queryController.startProfile(TIME_RANGE_CHANGE_INTERACTION);
         this._urlSync.performBrowserHistoryAction(() => {
           this.setState(update);
         });
@@ -828,7 +1049,17 @@ class SceneTimeRange extends SceneObjectBase {
     };
     this.onTimeZoneChange = (timeZone) => {
       this._urlSync.performBrowserHistoryAction(() => {
-        this.setState({ timeZone });
+        var _a;
+        const validTimeZone = (_a = getValidTimeZone(timeZone)) != null ? _a : schema.defaultTimeZone;
+        const updatedValue = evaluateTimeRange(
+          this.state.from,
+          this.state.to,
+          validTimeZone,
+          this.state.fiscalYearStartMonth,
+          this.state.UNSAFE_nowDelay,
+          this.state.weekStart
+        );
+        this.setState({ timeZone: validTimeZone, value: updatedValue });
       });
     };
     this.onRefresh = () => {
@@ -872,6 +1103,9 @@ class SceneTimeRange extends SceneObjectBase {
       this.refreshRange(ms);
     }
   }
+  /**
+   * Will traverse up the scene graph to find the closest SceneTimeRangeLike with time zone set
+   */
   getTimeZoneSource() {
     if (!this.parent || !this.parent.parent) {
       return this;
@@ -887,6 +1121,11 @@ class SceneTimeRange extends SceneObjectBase {
     }
     return source;
   }
+  /**
+   * Refreshes time range if it is older than the invalidation interval
+   * @param refreshAfterMs invalidation interval (milliseconds)
+   * @private
+   */
   refreshRange(refreshAfterMs) {
     var _a;
     const value = evaluateTimeRange(
@@ -904,14 +1143,14 @@ class SceneTimeRange extends SceneObjectBase {
   }
   calculatePercentOfInterval(percent) {
     const intervalMs = this.state.value.to.diff(this.state.value.from, "milliseconds");
-    return Math.ceil(intervalMs / percent);
+    return Math.ceil(intervalMs / 100 * percent);
   }
   getTimeZone() {
-    if (this.state.timeZone) {
+    if (this.state.timeZone && getValidTimeZone(this.state.timeZone)) {
       return this.state.timeZone;
     }
     const timeZoneSource = this.getTimeZoneSource();
-    if (timeZoneSource !== this) {
+    if (timeZoneSource !== this && getValidTimeZone(timeZoneSource.state.timeZone)) {
       return timeZoneSource.state.timeZone;
     }
     return data.getTimeZone();
@@ -976,6 +1215,22 @@ function getTimeWindow(time, timeWindow) {
     from: data.toUtc(valueTime - timeWindowMs / 2).toISOString(),
     to: data.toUtc(valueTime + timeWindowMs / 2).toISOString()
   };
+}
+function getValidTimeZone(timeZone) {
+  if (timeZone === void 0) {
+    return void 0;
+  }
+  if (lodash.isEmpty(timeZone)) {
+    return runtime.config.bootData.user.timezone;
+  }
+  if (timeZone === schema.defaultTimeZone) {
+    return timeZone;
+  }
+  if (data.getZone(timeZone)) {
+    return timeZone;
+  }
+  writeSceneLog("SceneTimeRange", `Invalid timeZone "${timeZone}" provided.`);
+  return;
 }
 
 const EmptyDataNode = new SceneDataNode();
@@ -1056,6 +1311,7 @@ const AUTO_VARIABLE_TEXT = "Auto";
 const AUTO_VARIABLE_VALUE = "$__auto";
 const VARIABLE_REGEX = /\$(\w+)|\[\[(\w+?)(?::(\w+))?\]\]|\${(\w+)(?:\.([^:^\}]+))?(?::([^\}]+))?}/g;
 const SEARCH_FILTER_VARIABLE = "__searchFilter";
+const SCOPES_VARIABLE_NAME = "__scopes";
 
 const formatRegistry = new data.Registry(() => {
   const formats = [
@@ -1083,7 +1339,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.Raw,
       name: "raw",
-      description: "Keep value as is",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.keep-value-as-is",
+        "Keep value as is"
+      ),
       formatter: (value) => String(value)
     },
     {
@@ -1113,7 +1372,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.Pipe,
       name: "Pipe",
-      description: "Values are separated by | character",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.values-are-separated-by-character",
+        "Values are separated by | character"
+      ),
       formatter: (value) => {
         if (typeof value === "string") {
           return value;
@@ -1127,7 +1389,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.Distributed,
       name: "Distributed",
-      description: "Multiple values are formatted like variable=value",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.multiple-values-are-formatted-like-variablevalue",
+        "Multiple values are formatted like variable=value"
+      ),
       formatter: (value, args, variable) => {
         if (typeof value === "string") {
           return value;
@@ -1148,7 +1413,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.CSV,
       name: "Csv",
-      description: "Comma-separated values",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.commaseparated-values",
+        "Comma-separated values"
+      ),
       formatter: (value) => {
         if (typeof value === "string") {
           return value;
@@ -1162,7 +1430,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.HTML,
       name: "HTML",
-      description: "HTML escaping of values",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.html-escaping-of-values",
+        "HTML escaping of values"
+      ),
       formatter: (value) => {
         if (typeof value === "string") {
           return data.textUtil.escapeHtml(value);
@@ -1176,7 +1447,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.JSON,
       name: "JSON",
-      description: "JSON stringify value",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.json-stringify-value",
+        "JSON stringify value"
+      ),
       formatter: (value) => {
         if (typeof value === "string") {
           return value;
@@ -1187,7 +1461,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.PercentEncode,
       name: "Percent encode",
-      description: "Useful for URL escaping values",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.useful-for-url-escaping-values",
+        "Useful for URL escaping values"
+      ),
       formatter: (value) => {
         if (lodash.isArray(value)) {
           return encodeURIComponentStrict("{" + value.join(",") + "}");
@@ -1198,7 +1475,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.SingleQuote,
       name: "Single quote",
-      description: "Single quoted values",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.single-quoted-values",
+        "Single quoted values"
+      ),
       formatter: (value) => {
         const regExp = new RegExp(`'`, "g");
         if (lodash.isArray(value)) {
@@ -1211,7 +1491,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.DoubleQuote,
       name: "Double quote",
-      description: "Double quoted values",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.double-quoted-values",
+        "Double quoted values"
+      ),
       formatter: (value) => {
         const regExp = new RegExp('"', "g");
         if (lodash.isArray(value)) {
@@ -1228,9 +1511,26 @@ const formatRegistry = new data.Registry(() => {
       formatter: sqlStringFormatter
     },
     {
+      id: "join",
+      // join not yet available in depended @grafana/schema version
+      name: "Join",
+      description: "Join values with a comma",
+      formatter: (value, args) => {
+        var _a;
+        if (lodash.isArray(value)) {
+          const separator = (_a = args[0]) != null ? _a : ",";
+          return value.join(separator);
+        }
+        return String(value);
+      }
+    },
+    {
       id: schema.VariableFormatID.Date,
       name: "Date",
-      description: "Format date in different ways",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.format-date-in-different-ways",
+        "Format date in different ways"
+      ),
       formatter: (value, args) => {
         var _a;
         let nrValue = NaN;
@@ -1261,7 +1561,10 @@ const formatRegistry = new data.Registry(() => {
     {
       id: schema.VariableFormatID.Glob,
       name: "Glob",
-      description: "Format multi-valued variables using glob syntax, example {value1,value2}",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.format-multivalued-variables-using-syntax-example",
+        "Format multi-valued variables using glob syntax, example {value1,value2}"
+      ),
       formatter: (value) => {
         if (lodash.isArray(value) && value.length > 1) {
           return "{" + value.join(",") + "}";
@@ -1296,9 +1599,25 @@ const formatRegistry = new data.Registry(() => {
       }
     },
     {
+      id: "customqueryparam",
+      name: "Custom query parameter",
+      description: "Format variables as URL parameters with custom name and value prefix. Example in multi-variable scenario A + B + C => p-foo=x-A&p-foo=x-B&p-foo=x-C.",
+      formatter: (value, args, variable) => {
+        const name = encodeURIComponentStrict(args[0] || variable.state.name);
+        const valuePrefix = encodeURIComponentStrict(args[1] || "");
+        if (Array.isArray(value)) {
+          return value.map((v) => customFormatQueryParameter(name, v, valuePrefix)).join("&");
+        }
+        return customFormatQueryParameter(name, value, valuePrefix);
+      }
+    },
+    {
       id: schema.VariableFormatID.UriEncode,
       name: "Percent encode as URI",
-      description: "Useful for URL escaping values, taking into URI syntax characters",
+      description: i18n.t(
+        "grafana-scenes.variables.format-registry.formats.description.useful-escaping-values-taking-syntax-characters",
+        "Useful for URL escaping values, taking into URI syntax characters"
+      ),
       formatter: (value) => {
         if (lodash.isArray(value)) {
           return encodeURIStrict("{" + value.join(",") + "}");
@@ -1327,6 +1646,9 @@ const replaceSpecialCharactersToASCII = (value) => value.replace(/[!'()*]/g, (c)
 });
 function formatQueryParameter(name, value) {
   return `var-${name}=${encodeURIComponentStrict(value)}`;
+}
+function customFormatQueryParameter(name, value, valuePrefix = "") {
+  return `${name}=${valuePrefix}${encodeURIComponentStrict(value)}`;
 }
 const SQL_ESCAPE_MAP = {
   "'": "''",
@@ -1365,9 +1687,6 @@ class UrlTimeRangeMacro {
     var _a;
     const timeRange = getTimeRange(this._sceneObject);
     const urlState = (_a = timeRange.urlSync) == null ? void 0 : _a.getUrlState();
-    if ((urlState == null ? void 0 : urlState.timezone) === "browser") {
-      urlState.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    }
     return new SkipFormattingValue(data.urlUtil.toUrlParams(urlState));
   }
   getValueText() {
@@ -1441,12 +1760,25 @@ function setBaseClassState(sceneObject, newState) {
 function useLocationServiceSafe() {
   return runtime.useLocationService ? runtime.useLocationService() : runtime.locationService;
 }
+function isRepeatCloneOrChildOf(scene) {
+  let obj = scene;
+  do {
+    if ("repeatSourceKey" in obj.state && obj.state.repeatSourceKey) {
+      return true;
+    }
+    obj = obj.parent;
+  } while (obj);
+  return false;
+}
 
 class MultiValueVariable extends SceneObjectBase {
   constructor() {
     super(...arguments);
     this._urlSync = new MultiValueUrlSyncHandler(this);
   }
+  /**
+   * This function is called on when SceneVariableSet is activated or when a dependency changes.
+   */
   validateAndUpdate() {
     return this.getValueOptions({}).pipe(
       rxjs.map((options) => {
@@ -1460,6 +1792,9 @@ class MultiValueVariable extends SceneObjectBase {
     const sceneVarSet = this.parent;
     sceneVarSet == null ? void 0 : sceneVarSet.cancel(this);
   }
+  /**
+   * Check if current value is valid given new options. If not update the value.
+   */
   updateValueGivenNewOptions(options) {
     const { value: currentValue, text: currentText, options: oldOptions } = this.state;
     const stateUpdate = this.getStateUpdateGivenNewOptions(options, currentValue, currentText);
@@ -1525,16 +1860,16 @@ class MultiValueVariable extends SceneObjectBase {
       stateUpdate.text = matchingOption.label;
       stateUpdate.value = matchingOption.value;
     } else {
-      if (this.state.defaultToAll) {
-        stateUpdate.value = ALL_VARIABLE_VALUE;
-        stateUpdate.text = ALL_VARIABLE_TEXT;
-      } else {
-        stateUpdate.value = options[0].value;
-        stateUpdate.text = options[0].label;
-      }
+      const defaultState = this.getDefaultSingleState(options);
+      stateUpdate.value = defaultState.value;
+      stateUpdate.text = defaultState.text;
     }
     return stateUpdate;
   }
+  /**
+   * Values set by initial URL sync needs to survive the next validation and update.
+   * This function can intercept and make sure those values are preserved.
+   */
   interceptStateUpdateAfterValidation(stateUpdate) {
     const isAllValueFix = stateUpdate.value === ALL_VARIABLE_VALUE && this.state.text === ALL_VARIABLE_TEXT;
     if (this.skipNextValidation && stateUpdate.value !== this.state.value && stateUpdate.text !== this.state.text && !isAllValueFix) {
@@ -1543,14 +1878,22 @@ class MultiValueVariable extends SceneObjectBase {
     }
     this.skipNextValidation = false;
   }
-  getValue() {
+  getValue(fieldPath) {
+    let value = this.state.value;
     if (this.hasAllValue()) {
       if (this.state.allValue) {
         return new CustomAllValue(this.state.allValue, this);
       }
+      value = this.state.options.map((x) => x.value);
+    }
+    if (fieldPath != null && Array.isArray(value)) {
+      const index = parseInt(fieldPath, 10);
+      if (!isNaN(index) && index >= 0 && index < value.length) {
+        return value[index];
+      }
       return new CustomAllValue(".*", this);
     }
-    return this.state.value;
+    return value;
   }
   getValueText() {
     if (this.hasAllValue()) {
@@ -1574,7 +1917,20 @@ class MultiValueVariable extends SceneObjectBase {
       return { value: [], text: [] };
     }
   }
-  changeValueTo(value, text) {
+  getDefaultSingleState(options) {
+    if (this.state.defaultToAll) {
+      return { value: ALL_VARIABLE_VALUE, text: ALL_VARIABLE_TEXT };
+    } else if (options.length > 0) {
+      return { value: options[0].value, text: options[0].label };
+    } else {
+      return { value: "", text: "" };
+    }
+  }
+  /**
+   * Change the value and publish SceneVariableValueChangedEvent event.
+   */
+  changeValueTo(value, text, isUserAction = false) {
+    var _a, _b;
     if (value === this.state.value && text === this.state.text) {
       return;
     }
@@ -1604,7 +1960,14 @@ class MultiValueVariable extends SceneObjectBase {
     if (lodash.isEqual(value, this.state.value) && lodash.isEqual(text, this.state.text)) {
       return;
     }
-    this.setStateHelper({ value, text, loading: false });
+    const stateChangeAction = () => this.setStateHelper({ value, text, loading: false });
+    if (isUserAction) {
+      const queryController = getQueryController(this);
+      queryController == null ? void 0 : queryController.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
+      (_b = (_a = this._urlSync).performBrowserHistoryAction) == null ? void 0 : _b.call(_a, stateChangeAction);
+    } else {
+      stateChangeAction();
+    }
     this.publishEvent(new SceneVariableValueChangedEvent(this), true);
   }
   findLabelTextForValue(value) {
@@ -1621,15 +1984,18 @@ class MultiValueVariable extends SceneObjectBase {
     }
     return value;
   }
+  /**
+   * This helper function is to counter the contravariance of setState
+   */
   setStateHelper(state) {
     setBaseClassState(this, state);
   }
-  getOptionsForSelect() {
+  getOptionsForSelect(includeCurrentValue = true) {
     let options = this.state.options;
     if (this.state.includeAll) {
       options = [{ value: ALL_VARIABLE_VALUE, label: ALL_VARIABLE_TEXT }, ...options];
     }
-    if (!Array.isArray(this.state.value)) {
+    if (includeCurrentValue && !Array.isArray(this.state.value)) {
       const current = options.find((x) => x.value === this.state.value);
       if (!current) {
         options = [{ value: this.state.value, label: String(this.state.text) }, ...options];
@@ -1658,6 +2024,7 @@ function findOptionMatchingCurrent(currentValue, currentText, options) {
 class MultiValueUrlSyncHandler {
   constructor(_sceneObject) {
     this._sceneObject = _sceneObject;
+    this._nextChangeShouldAddHistoryStep = false;
   }
   getKey() {
     return `var-${this._sceneObject.state.name}`;
@@ -1697,6 +2064,14 @@ class MultiValueUrlSyncHandler {
       }
       this._sceneObject.changeValueTo(urlValue);
     }
+  }
+  performBrowserHistoryAction(callback) {
+    this._nextChangeShouldAddHistoryStep = true;
+    callback();
+    this._nextChangeShouldAddHistoryStep = false;
+  }
+  shouldCreateHistoryStep(values) {
+    return this._nextChangeShouldAddHistoryStep;
   }
 }
 function handleLegacyUrlAllValue(value) {
@@ -1774,28 +2149,10 @@ function collectAllVariables(sceneObject, record = {}) {
   return record;
 }
 
-var __defProp$J = Object.defineProperty;
-var __defProps$v = Object.defineProperties;
-var __getOwnPropDescs$v = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$J = Object.getOwnPropertySymbols;
-var __hasOwnProp$J = Object.prototype.hasOwnProperty;
-var __propIsEnum$J = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$J = (obj, key, value) => key in obj ? __defProp$J(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$J = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$J.call(b, prop))
-      __defNormalProp$J(a, prop, b[prop]);
-  if (__getOwnPropSymbols$J)
-    for (var prop of __getOwnPropSymbols$J(b)) {
-      if (__propIsEnum$J.call(b, prop))
-        __defNormalProp$J(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$v = (a, b) => __defProps$v(a, __getOwnPropDescs$v(b));
 function getTemplateProxyForField(field, frame, frames) {
   return new Proxy(
     {},
+    // This object shows up in test snapshots
     {
       get: (obj, key) => {
         if (key === "name") {
@@ -1808,12 +2165,13 @@ function getTemplateProxyForField(field, frame, frames) {
           if (!field.labels) {
             return "";
           }
-          return __spreadProps$v(__spreadValues$J({}, field.labels), {
+          return {
+            ...field.labels,
             __values: Object.values(field.labels).sort().join(", "),
             toString: () => {
               return data.formatLabels(field.labels, "", true);
             }
-          });
+          };
         }
         return void 0;
       }
@@ -2056,13 +2414,17 @@ const macrosIndex = /* @__PURE__ */ new Map([
   ["__interval", IntervalMacro],
   ["__interval_ms", IntervalMacro]
 ]);
-function registerVariableMacro(name, macro) {
-  if (macrosIndex.get(name)) {
+function registerVariableMacro(name, macro, replace = false) {
+  if (!replace && macrosIndex.get(name)) {
     throw new Error(`Macro already registered ${name}`);
   }
   macrosIndex.set(name, macro);
   return () => {
-    macrosIndex.delete(name);
+    if (replace) {
+      throw new Error(`Replaced macros can not be unregistered. They need to be restored manually.`);
+    } else {
+      macrosIndex.delete(name);
+    }
   };
 }
 
@@ -2156,73 +2518,175 @@ function isDataLayer(obj) {
   return "isDataLayer" in obj;
 }
 
-var __accessCheck$2 = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
-};
-var __privateGet$2 = (obj, member, getter) => {
-  __accessCheck$2(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd$2 = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var _running;
-function isQueryController(s) {
-  return "isQueryController" in s;
+function generateOperationId(prefix = "op") {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    const uuid = crypto.randomUUID();
+    return `${prefix}-${uuid}`;
+  }
+  const randomPart = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+  return `${prefix}-${randomPart}`;
 }
-class SceneQueryController extends SceneObjectBase {
+const _ScenePerformanceTracker = class _ScenePerformanceTracker {
   constructor() {
-    super({ isRunning: false });
-    this.isQueryController = true;
-    __privateAdd$2(this, _running, /* @__PURE__ */ new Set());
-    this.addActivationHandler(() => {
-      return () => __privateGet$2(this, _running).clear();
+    this.observers = [];
+  }
+  static getInstance() {
+    if (!_ScenePerformanceTracker.instance) {
+      _ScenePerformanceTracker.instance = new _ScenePerformanceTracker();
+    }
+    return _ScenePerformanceTracker.instance;
+  }
+  /**
+   * Register a performance observer
+   */
+  addObserver(observer) {
+    this.observers.push(observer);
+    return () => {
+      const index = this.observers.indexOf(observer);
+      if (index > -1) {
+        this.observers.splice(index, 1);
+      }
+    };
+  }
+  /**
+   * Remove all observers (for testing)
+   */
+  clearObservers() {
+    this.observers = [];
+  }
+  /**
+   * Get current observer count (for debugging)
+   */
+  getObserverCount() {
+    return this.observers.length;
+  }
+  notifyObservers(methodName, data, errorContext) {
+    this.observers.forEach((observer) => {
+      try {
+        const method = observer[methodName];
+        method == null ? void 0 : method(data);
+      } catch (error) {
+        console.warn(`Error in ${errorContext} observer:`, error);
+      }
     });
   }
-  queryStarted(entry) {
-    __privateGet$2(this, _running).add(entry);
-    this.changeRunningQueryCount(1);
-    if (!this.state.isRunning) {
-      this.setState({ isRunning: true });
-    }
+  notifyDashboardInteractionStart(data) {
+    this.notifyObservers("onDashboardInteractionStart", data, "dashboard interaction start");
   }
-  queryCompleted(entry) {
-    if (!__privateGet$2(this, _running).has(entry)) {
-      return;
-    }
-    __privateGet$2(this, _running).delete(entry);
-    this.changeRunningQueryCount(-1);
-    if (__privateGet$2(this, _running).size === 0) {
-      this.setState({ isRunning: false });
-    }
+  notifyDashboardInteractionMilestone(data) {
+    this.notifyObservers("onDashboardInteractionMilestone", data, "dashboard interaction milestone");
   }
-  changeRunningQueryCount(dir) {
-    var _a;
-    window.__grafanaRunningQueryCount = ((_a = window.__grafanaRunningQueryCount) != null ? _a : 0) + dir;
+  notifyDashboardInteractionComplete(data) {
+    this.notifyObservers("onDashboardInteractionComplete", data, "dashboard interaction complete");
   }
-  cancelAll() {
-    var _a;
-    for (const entry of __privateGet$2(this, _running).values()) {
-      (_a = entry.cancel) == null ? void 0 : _a.call(entry);
-    }
+  notifyPanelOperationStart(data) {
+    this.notifyObservers("onPanelOperationStart", data, "panel operation start");
   }
+  notifyPanelOperationComplete(data) {
+    this.notifyObservers("onPanelOperationComplete", data, "panel operation complete");
+  }
+  notifyQueryStart(data) {
+    this.notifyObservers("onQueryStart", data, "query start");
+  }
+  notifyQueryComplete(data) {
+    this.notifyObservers("onQueryComplete", data, "query complete");
+  }
+};
+_ScenePerformanceTracker.instance = null;
+let ScenePerformanceTracker = _ScenePerformanceTracker;
+function getScenePerformanceTracker() {
+  return ScenePerformanceTracker.getInstance();
 }
-_running = new WeakMap();
 
-function writeSceneLog(logger, message, ...rest) {
-  let loggingEnabled = false;
-  if (typeof window !== "undefined") {
-    loggingEnabled = localStorage.getItem("grafana.debug.scenes") === "true";
-  }
-  if (loggingEnabled) {
-    console.log(`${logger}: `, message, ...rest);
-  }
+function registerQueryWithController(entry, profiler) {
+  return (queryStream) => {
+    const queryControler = sceneGraph.getQueryController(entry.origin);
+    if (!queryControler) {
+      return queryStream;
+    }
+    return new rxjs.Observable((observer) => {
+      var _a;
+      if (!entry.cancel) {
+        entry.cancel = () => observer.complete();
+      }
+      const queryId = ((_a = entry.request) == null ? void 0 : _a.requestId) || `${entry.type}-${Math.floor(performance.now()).toString(36)}`;
+      const startTimestamp = performance.now();
+      let endQueryCallback = null;
+      if (profiler) {
+        endQueryCallback = profiler.onQueryStarted(startTimestamp, entry, queryId);
+      } else {
+        const operationId = generateOperationId("query");
+        getScenePerformanceTracker().notifyQueryStart({
+          operationId,
+          queryId,
+          queryType: entry.type,
+          origin: entry.origin.constructor.name,
+          timestamp: startTimestamp
+        });
+        endQueryCallback = (endTimestamp, error) => {
+          getScenePerformanceTracker().notifyQueryComplete({
+            operationId,
+            queryId,
+            queryType: entry.type,
+            origin: entry.origin.constructor.name,
+            timestamp: endTimestamp,
+            duration: endTimestamp - startTimestamp,
+            error: error ? (error == null ? void 0 : error.message) || String(error) || "Unknown error" : void 0
+          });
+        };
+      }
+      queryControler.queryStarted(entry);
+      let markedAsCompleted = false;
+      const sub = queryStream.subscribe({
+        next: (v) => {
+          if (!markedAsCompleted && v.state !== schema.LoadingState.Loading) {
+            markedAsCompleted = true;
+            queryControler.queryCompleted(entry);
+            endQueryCallback == null ? void 0 : endQueryCallback(performance.now());
+          }
+          observer.next(v);
+        },
+        error: (e) => {
+          if (!markedAsCompleted) {
+            markedAsCompleted = true;
+            queryControler.queryCompleted(entry);
+            endQueryCallback == null ? void 0 : endQueryCallback(performance.now(), e);
+          }
+          observer.error(e);
+        },
+        complete: () => {
+          observer.complete();
+        }
+      });
+      return () => {
+        sub.unsubscribe();
+        if (!markedAsCompleted) {
+          queryControler.queryCompleted(entry);
+          endQueryCallback == null ? void 0 : endQueryCallback(performance.now());
+        }
+      };
+    });
+  };
+}
+function wrapPromiseInStateObservable(promise) {
+  return new rxjs.Observable((observer) => {
+    observer.next({ state: schema.LoadingState.Loading });
+    const promiseObservable = rxjs.from(promise);
+    promiseObservable.pipe(
+      rxjs.map(() => ({ state: schema.LoadingState.Done })),
+      rxjs.catchError(() => {
+        observer.next({ state: schema.LoadingState.Error });
+        return [];
+      })
+    ).subscribe({
+      next: (result) => observer.next(result),
+      complete: () => observer.complete()
+    });
+  });
 }
 
 async function getDataSource(datasource, scopedVars) {
+  var _a;
   if (datasource == null ? void 0 : datasource.uid) {
     const runtimeDataSource = runtimeDataSources.get(datasource.uid);
     if (runtimeDataSource) {
@@ -2232,7 +2696,21 @@ async function getDataSource(datasource, scopedVars) {
   if (datasource && datasource.query) {
     return datasource;
   }
-  return await runtime.getDataSourceSrv().get(datasource, scopedVars);
+  const dsPromise = runtime.getDataSourceSrv().get(datasource, scopedVars);
+  if (scopedVars.__sceneObject && scopedVars.__sceneObject.value.valueOf()) {
+    const queryControler = sceneGraph.getQueryController(scopedVars.__sceneObject.value.valueOf());
+    if (queryControler && queryControler.state.enableProfiling) {
+      wrapPromiseInStateObservable(dsPromise).pipe(
+        registerQueryWithController({
+          type: `getDataSource/${(_a = datasource == null ? void 0 : datasource.type) != null ? _a : "unknown"}`,
+          origin: scopedVars.__sceneObject.value.valueOf()
+        })
+      ).subscribe(() => {
+      });
+    }
+  }
+  const result = await dsPromise;
+  return result;
 }
 
 class VariableValueRecorder {
@@ -2305,25 +2783,6 @@ function isExtraQueryProvider(obj) {
   return typeof obj === "object" && "getExtraQueries" in obj;
 }
 
-var __defProp$I = Object.defineProperty;
-var __defProps$u = Object.defineProperties;
-var __getOwnPropDescs$u = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$I = Object.getOwnPropertySymbols;
-var __hasOwnProp$I = Object.prototype.hasOwnProperty;
-var __propIsEnum$I = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$I = (obj, key, value) => key in obj ? __defProp$I(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$I = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$I.call(b, prop))
-      __defNormalProp$I(a, prop, b[prop]);
-  if (__getOwnPropSymbols$I)
-    for (var prop of __getOwnPropSymbols$I(b)) {
-      if (__propIsEnum$I.call(b, prop))
-        __defNormalProp$I(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$u = (a, b) => __defProps$u(a, __getOwnPropDescs$u(b));
 const passthroughProcessor = (_, secondary) => rxjs.of(secondary);
 const extraQueryProcessingOperator = (processors) => (data) => {
   return data.pipe(
@@ -2336,36 +2795,18 @@ const extraQueryProcessingOperator = (processors) => (data) => {
     }),
     rxjs.map(([primary, ...processedSecondaries]) => {
       var _a;
-      return __spreadProps$u(__spreadValues$I({}, primary), {
+      return {
+        ...primary,
         series: [...primary.series, ...processedSecondaries.flatMap((s) => s.series)],
         annotations: [...(_a = primary.annotations) != null ? _a : [], ...processedSecondaries.flatMap((s) => {
           var _a2;
           return (_a2 = s.annotations) != null ? _a2 : [];
         })]
-      });
+      };
     })
   );
 };
 
-var __defProp$H = Object.defineProperty;
-var __defProps$t = Object.defineProperties;
-var __getOwnPropDescs$t = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$H = Object.getOwnPropertySymbols;
-var __hasOwnProp$H = Object.prototype.hasOwnProperty;
-var __propIsEnum$H = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$H = (obj, key, value) => key in obj ? __defProp$H(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$H = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$H.call(b, prop))
-      __defNormalProp$H(a, prop, b[prop]);
-  if (__getOwnPropSymbols$H)
-    for (var prop of __getOwnPropSymbols$H(b)) {
-      if (__propIsEnum$H.call(b, prop))
-        __defNormalProp$H(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$t = (a, b) => __defProps$t(a, __getOwnPropDescs$t(b));
 const GLOBAL_ANNOTATION_ID = 0;
 function filterAnnotations(data, filters) {
   var _a;
@@ -2417,14 +2858,16 @@ function filterAnnotations(data, filters) {
           continue;
         }
       }
-      fields.push(__spreadProps$t(__spreadValues$H({}, field), {
+      fields.push({
+        ...field,
         values: buffer
-      }));
+      });
     }
-    processed.push(__spreadProps$t(__spreadValues$H({}, frame), {
+    processed.push({
+      ...frame,
       fields,
       length: frameLength
-    }));
+    });
     frameIdx++;
   }
   return processed;
@@ -2438,84 +2881,6 @@ function getEnrichedDataRequest(sourceRunner) {
   return null;
 }
 
-let originalGetAdhocFilters = void 0;
-let allActiveFilterSets = /* @__PURE__ */ new Set();
-function patchGetAdhocFilters(filterVar) {
-  filterVar.addActivationHandler(() => {
-    allActiveFilterSets.add(filterVar);
-    return () => allActiveFilterSets.delete(filterVar);
-  });
-  if (originalGetAdhocFilters) {
-    return;
-  }
-  const templateSrv = runtime.getTemplateSrv();
-  if (!(templateSrv == null ? void 0 : templateSrv.getAdhocFilters)) {
-    console.log("Failed to patch getAdhocFilters");
-    return;
-  }
-  originalGetAdhocFilters = templateSrv.getAdhocFilters;
-  templateSrv.getAdhocFilters = function getAdhocFiltersScenePatch(dsName) {
-    var _a;
-    if (allActiveFilterSets.size === 0) {
-      return originalGetAdhocFilters.call(templateSrv, dsName);
-    }
-    const ds = runtime.getDataSourceSrv().getInstanceSettings(dsName);
-    if (!ds) {
-      return [];
-    }
-    for (const filter of allActiveFilterSets.values()) {
-      if (((_a = filter.state.datasource) == null ? void 0 : _a.uid) === ds.uid) {
-        return filter.state.filters;
-      }
-    }
-    return [];
-  }.bind(templateSrv);
-}
-function findActiveAdHocFilterVariableByUid(dsUid) {
-  var _a;
-  for (const filter of allActiveFilterSets.values()) {
-    if (interpolate(filter, (_a = filter.state.datasource) == null ? void 0 : _a.uid) === dsUid) {
-      return filter;
-    }
-  }
-  return void 0;
-}
-
-function registerQueryWithController(entry) {
-  return (queryStream) => {
-    const queryControler = sceneGraph.getQueryController(entry.origin);
-    if (!queryControler) {
-      return queryStream;
-    }
-    return new rxjs.Observable((observer) => {
-      if (!entry.cancel) {
-        entry.cancel = () => observer.complete();
-      }
-      queryControler.queryStarted(entry);
-      let markedAsCompleted = false;
-      const sub = queryStream.subscribe({
-        next: (v) => {
-          if (!markedAsCompleted && v.state !== schema.LoadingState.Loading) {
-            markedAsCompleted = true;
-            queryControler.queryCompleted(entry);
-          }
-          observer.next(v);
-        },
-        error: (e) => observer.error(e),
-        complete: () => {
-          observer.complete();
-        }
-      });
-      return () => {
-        sub.unsubscribe();
-        if (!markedAsCompleted) {
-          queryControler.queryCompleted(entry);
-        }
-      };
-    });
-  };
-}
-
 const allActiveGroupByVariables = /* @__PURE__ */ new Set();
 function findActiveGroupByVariablesByUid(dsUid) {
   var _a;
@@ -2527,47 +2892,51 @@ function findActiveGroupByVariablesByUid(dsUid) {
   return void 0;
 }
 
+const REGEXP_NON_ASCII = /[^ -~]/m;
+const REGEXP_ONLY_SYMBOLS = /^[\x21-\x2F\x3A-\x40\x5B-\x60\x7B-\x7E]+$/m;
+const outOfOrderLimit = 5;
+const maxNeedleLength = 25;
+const maxFuzzyTerms = 5;
+const rankThreshold = 1e4;
+const uf = new uFuzzy__default.default({ intraMode: 1 });
+function fuzzyFind(options, haystack, needle) {
+  let matches = [];
+  if (needle === "") {
+    matches = options;
+  } else if (
+    // contains non-ascii
+    REGEXP_NON_ASCII.test(needle) || // is only ascii symbols (operators)
+    REGEXP_ONLY_SYMBOLS.test(needle) || // too long (often copy-paste from somewhere)
+    needle.length > maxNeedleLength || uf.split(needle).length > maxFuzzyTerms
+  ) {
+    for (let i = 0; i < haystack.length; i++) {
+      let item = haystack[i];
+      if (item.includes(needle)) {
+        matches.push(options[i]);
+      }
+    }
+  } else {
+    const [idxs, info, order] = uf.search(haystack, needle, outOfOrderLimit, rankThreshold);
+    if (idxs == null ? void 0 : idxs.length) {
+      if (info && order) {
+        matches = order.map((idx) => options[info.idx[idx]]);
+      } else {
+        matches = idxs.map((idx) => options[idx]);
+      }
+    }
+  }
+  return matches;
+}
+
 function getOptionSearcher(options, includeAll = false) {
   let allOptions = options;
   if (includeAll) {
     allOptions = [{ value: ALL_VARIABLE_VALUE, label: ALL_VARIABLE_TEXT }, ...allOptions];
   }
   const haystack = allOptions.map((o) => o.label);
-  const fuzzySearch = getFuzzySearcher(haystack);
-  return (search) => fuzzySearch(search).map((i) => allOptions[i]);
+  return (search) => fuzzyFind(allOptions, haystack, search);
 }
 
-var __defProp$G = Object.defineProperty;
-var __defProps$s = Object.defineProperties;
-var __getOwnPropDescs$s = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$G = Object.getOwnPropertySymbols;
-var __hasOwnProp$G = Object.prototype.hasOwnProperty;
-var __propIsEnum$G = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$G = (obj, key, value) => key in obj ? __defProp$G(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$G = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$G.call(b, prop))
-      __defNormalProp$G(a, prop, b[prop]);
-  if (__getOwnPropSymbols$G)
-    for (var prop of __getOwnPropSymbols$G(b)) {
-      if (__propIsEnum$G.call(b, prop))
-        __defNormalProp$G(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$s = (a, b) => __defProps$s(a, __getOwnPropDescs$s(b));
-var __objRest$4 = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp$G.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols$G)
-    for (var prop of __getOwnPropSymbols$G(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum$G.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 const filterNoOp$2 = () => true;
 const filterAll = (v) => v.value !== "$__all";
 const determineToggleAllState = (selectedValues, options) => {
@@ -2585,11 +2954,12 @@ function toSelectableValue$2(value, label) {
     label: label != null ? label : String(value)
   };
 }
-function VariableValueSelect({ model }) {
-  const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = model.useState();
+function VariableValueSelect({ model, state }) {
+  const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = state;
   const [inputValue, setInputValue] = React.useState("");
   const [hasCustomValue, setHasCustomValue] = React.useState(false);
   const selectValue = toSelectableValue$2(value, String(text));
+  const queryController = sceneGraph.getQueryController(model);
   const optionSearcher = React.useMemo(() => getOptionSearcher(options, includeAll), [options, includeAll]);
   const onInputChange = (value2, { action }) => {
     if (action === "input-change") {
@@ -2610,32 +2980,39 @@ function VariableValueSelect({ model }) {
   const onCloseMenu = () => {
     setInputValue("");
   };
-  return /* @__PURE__ */ React__default["default"].createElement(ui.Select, {
-    id: key,
-    isValidNewOption: (inputValue2) => inputValue2.trim().length > 0,
-    placeholder: "Select value",
-    width: "auto",
-    disabled: isReadOnly,
-    value: selectValue,
-    inputValue,
-    allowCustomValue,
-    virtualized: true,
-    filterOption: filterNoOp$2,
-    tabSelectsValue: false,
-    onInputChange,
-    onOpenMenu,
-    onCloseMenu,
-    options: filteredOptions,
-    "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
-    onChange: (newValue) => {
-      model.changeValueTo(newValue.value, newValue.label);
-      if (hasCustomValue !== newValue.__isNew__) {
-        setHasCustomValue(newValue.__isNew__);
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.Select,
+    {
+      id: key,
+      isValidNewOption: (inputValue2) => inputValue2.trim().length > 0,
+      placeholder: i18n.t("grafana-scenes.variables.variable-value-select.placeholder-select-value", "Select value"),
+      width: "auto",
+      disabled: isReadOnly,
+      value: selectValue,
+      inputValue,
+      allowCustomValue,
+      virtualized: true,
+      filterOption: filterNoOp$2,
+      tabSelectsValue: false,
+      onInputChange,
+      onOpenMenu,
+      onCloseMenu,
+      options: filteredOptions,
+      "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
+      onChange: (newValue) => {
+        model.changeValueTo(newValue.value, newValue.label, true);
+        queryController == null ? void 0 : queryController.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
+        if (hasCustomValue !== newValue.__isNew__) {
+          setHasCustomValue(newValue.__isNew__);
+        }
       }
     }
-  });
+  );
 }
-function VariableValueSelectMulti({ model }) {
+function VariableValueSelectMulti({
+  model,
+  state
+}) {
   const {
     value,
     options,
@@ -2645,7 +3022,7 @@ function VariableValueSelectMulti({ model }) {
     includeAll,
     isReadOnly,
     allowCustomValue = true
-  } = model.useState();
+  } = state;
   const arrayValue = React.useMemo(() => lodash.isArray(value) ? value : [value], [value]);
   const [uncommittedValue, setUncommittedValue] = React.useState(arrayValue);
   const [inputValue, setInputValue] = React.useState("");
@@ -2669,41 +3046,44 @@ function VariableValueSelectMulti({ model }) {
   };
   const placeholder = options.length > 0 ? "Select value" : "";
   const filteredOptions = optionSearcher(inputValue);
-  return /* @__PURE__ */ React__default["default"].createElement(ui.MultiSelect, {
-    id: key,
-    placeholder,
-    width: "auto",
-    inputValue,
-    disabled: isReadOnly,
-    value: uncommittedValue,
-    noMultiValueWrap: true,
-    maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
-    tabSelectsValue: false,
-    virtualized: true,
-    allowCustomValue,
-    toggleAllOptions: {
-      enabled: true,
-      optionsFilter: filterAll,
-      determineToggleAllState
-    },
-    options: filteredOptions,
-    closeMenuOnSelect: false,
-    components: { Option: OptionWithCheckbox },
-    isClearable: true,
-    hideSelectedOptions: false,
-    onInputChange,
-    onBlur: () => {
-      model.changeValueTo(uncommittedValue);
-    },
-    filterOption: filterNoOp$2,
-    "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
-    onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.MultiSelect,
+    {
+      id: key,
+      placeholder,
+      width: "auto",
+      inputValue,
+      disabled: isReadOnly,
+      value: uncommittedValue,
+      noMultiValueWrap: true,
+      maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
+      tabSelectsValue: false,
+      virtualized: true,
+      allowCustomValue,
+      toggleAllOptions: {
+        enabled: true,
+        optionsFilter: filterAll,
+        determineToggleAllState
+      },
+      options: filteredOptions,
+      closeMenuOnSelect: false,
+      components: { Option: OptionWithCheckbox },
+      isClearable: true,
+      hideSelectedOptions: false,
+      onInputChange,
+      onBlur: () => {
+        model.changeValueTo(uncommittedValue, void 0, true);
+      },
+      filterOption: filterNoOp$2,
+      "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
+      onChange: (newValue, action) => {
+        if (action.action === "clear" && noValueOnClear) {
+          model.changeValueTo([], void 0, true);
+        }
+        setUncommittedValue(newValue.map((x) => x.value));
       }
-      setUncommittedValue(newValue.map((x) => x.value));
     }
-  });
+  );
 }
 const OptionWithCheckbox = ({
   children,
@@ -2715,28 +3095,32 @@ const OptionWithCheckbox = ({
   indeterminate,
   renderOptionLabel
 }) => {
-  var _b;
-  const _a = innerProps, rest = __objRest$4(_a, ["onMouseMove", "onMouseOver"]);
+  var _a;
+  const { onMouseMove, onMouseOver, ...rest } = innerProps;
   const theme = ui.useTheme2();
   const selectStyles = ui.getSelectStyles(theme);
   const optionStyles = ui.useStyles2(getOptionStyles);
-  return /* @__PURE__ */ React__default["default"].createElement("div", __spreadProps$s(__spreadValues$G({
-    ref: innerRef,
-    className: css.cx(selectStyles.option, isFocused && selectStyles.optionFocused)
-  }, rest), {
-    "data-testid": "data-testid Select option",
-    title: data.title
-  }), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: optionStyles.checkbox
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Checkbox, {
-    indeterminate,
-    value: isSelected
-  })), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: selectStyles.optionBody,
-    "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownOptionTexts(
-      (_b = data.label) != null ? _b : String(data.value)
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      ref: innerRef,
+      className: css.cx(selectStyles.option, isFocused && selectStyles.optionFocused),
+      ...rest,
+      "data-testid": "data-testid Select option",
+      title: data.title
+    },
+    /* @__PURE__ */ React__default.default.createElement("div", { className: optionStyles.checkbox }, /* @__PURE__ */ React__default.default.createElement(ui.Checkbox, { indeterminate, value: isSelected })),
+    /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        className: selectStyles.optionBody,
+        "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownOptionTexts(
+          (_a = data.label) != null ? _a : String(data.value)
+        )
+      },
+      /* @__PURE__ */ React__default.default.createElement("span", null, children)
     )
-  }, /* @__PURE__ */ React__default["default"].createElement("span", null, children)));
+  );
 };
 OptionWithCheckbox.displayName = "SelectMenuOptions";
 const getOptionStyles = (theme) => ({
@@ -2744,21 +3128,22 @@ const getOptionStyles = (theme) => ({
     marginRight: theme.spacing(2)
   })
 });
-function renderSelectForVariable(model) {
-  if (model.state.isMulti) {
-    return /* @__PURE__ */ React__default["default"].createElement(VariableValueSelectMulti, {
-      model
-    });
+function MultiOrSingleValueSelect({ model }) {
+  const state = model.useState();
+  if (state.isMulti) {
+    return /* @__PURE__ */ React__default.default.createElement(VariableValueSelectMulti, { model, state });
   } else {
-    return /* @__PURE__ */ React__default["default"].createElement(VariableValueSelect, {
-      model
-    });
+    return /* @__PURE__ */ React__default.default.createElement(VariableValueSelect, { model, state });
   }
 }
 
 class GroupByVariableUrlSyncHandler {
   constructor(_sceneObject) {
     this._sceneObject = _sceneObject;
+    this._nextChangeShouldAddHistoryStep = false;
+  }
+  getRestorableKey() {
+    return `restorable-var-${this._sceneObject.state.name}`;
   }
   getKey() {
     return `var-${this._sceneObject.state.name}`;
@@ -2767,23 +3152,42 @@ class GroupByVariableUrlSyncHandler {
     if (this._sceneObject.state.skipUrlSync) {
       return [];
     }
-    return [this.getKey()];
+    return [this.getKey(), this.getRestorableKey()];
   }
   getUrlState() {
     if (this._sceneObject.state.skipUrlSync) {
       return {};
     }
-    return { [this.getKey()]: toUrlValues(this._sceneObject.state.value, this._sceneObject.state.text) };
+    return {
+      [this.getKey()]: this._sceneObject.state.defaultValue && !this._sceneObject.state.restorable ? [""] : toUrlValues(this._sceneObject.state.value, this._sceneObject.state.text),
+      [this.getRestorableKey()]: this._sceneObject.state.defaultValue ? this._sceneObject.state.restorable ? "true" : "false" : null
+    };
   }
   updateFromUrl(values) {
     let urlValue = values[this.getKey()];
+    let restorableValue = values[this.getRestorableKey()];
     if (urlValue != null) {
       if (!this._sceneObject.isActive) {
         this._sceneObject.skipNextValidation = true;
       }
       const { values: values2, texts } = fromUrlValues(urlValue);
+      if (this._sceneObject.state.defaultValue && (restorableValue === "false" || restorableValue === void 0)) {
+        return;
+      }
+      if (restorableValue === "false") {
+        this._sceneObject.changeValueTo([], [], false);
+        return;
+      }
       this._sceneObject.changeValueTo(values2, texts);
     }
+  }
+  performBrowserHistoryAction(callback) {
+    this._nextChangeShouldAddHistoryStep = true;
+    callback();
+    this._nextChangeShouldAddHistoryStep = false;
+  }
+  shouldCreateHistoryStep(values) {
+    return this._nextChangeShouldAddHistoryStep;
   }
 }
 function toUrlValues(values, texts) {
@@ -2823,33 +3227,22 @@ function getEnrichedFiltersRequest(sourceRunner) {
   return null;
 }
 
-var __accessCheck$1 = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
+var __typeError$3 = (msg) => {
+  throw TypeError(msg);
 };
-var __privateGet$1 = (obj, member, getter) => {
-  __accessCheck$1(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd$1 = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet$1 = (obj, member, value, setter) => {
-  __accessCheck$1(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
+var __accessCheck$3 = (obj, member, msg) => member.has(obj) || __typeError$3("Cannot " + msg);
+var __privateGet$3 = (obj, member, getter) => (__accessCheck$3(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd$3 = (obj, member, value) => member.has(obj) ? __typeError$3("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet$3 = (obj, member, value, setter) => (__accessCheck$3(obj, member, "write to private field"), member.set(obj, value), value);
 var _value;
 class SafeSerializableSceneObject {
   constructor(value) {
-    __privateAdd$1(this, _value, void 0);
+    __privateAdd$3(this, _value);
     this.text = "__sceneObject";
     this.valueOf = () => {
-      return __privateGet$1(this, _value);
+      return __privateGet$3(this, _value);
     };
-    __privateSet$1(this, _value, value);
+    __privateSet$3(this, _value, value);
   }
   toString() {
     return void 0;
@@ -2885,28 +3278,168 @@ function wrapInSafeSerializableSceneObject(sceneObject) {
   return { value: sceneObject, text: "__sceneObject" };
 }
 
-var __defProp$F = Object.defineProperty;
-var __defProps$r = Object.defineProperties;
-var __getOwnPropDescs$r = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$F = Object.getOwnPropertySymbols;
-var __hasOwnProp$F = Object.prototype.hasOwnProperty;
-var __propIsEnum$F = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$F = (obj, key, value) => key in obj ? __defProp$F(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$F = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$F.call(b, prop))
-      __defNormalProp$F(a, prop, b[prop]);
-  if (__getOwnPropSymbols$F)
-    for (var prop of __getOwnPropSymbols$F(b)) {
-      if (__propIsEnum$F.call(b, prop))
-        __defNormalProp$F(a, prop, b[prop]);
+function DefaultGroupByCustomIndicatorContainer(props) {
+  const { model } = props;
+  const theme = ui.useTheme2();
+  const styles = getStyles$j(theme);
+  const inputStyles = ui.getInputStyles({ theme, invalid: false });
+  const value = lodash.isArray(model.state.value) ? model.state.value : model.state.value ? [model.state.value] : [];
+  let buttons = [];
+  if (value && value.length) {
+    buttons.push(
+      /* @__PURE__ */ React__default.default.createElement(
+        ui.IconButton,
+        {
+          "aria-label": i18n.t("grafana-scenes.variables.default-group-by-custom-indicator-container.aria-label-clear", "clear"),
+          key: "clear",
+          name: "times",
+          size: "md",
+          className: styles.clearIcon,
+          onClick: (e) => {
+            model.changeValueTo([], void 0, true);
+            if (model.checkIfRestorable([])) {
+              model.setState({ restorable: true });
+            }
+          }
+        }
+      )
+    );
+  }
+  if (model.state.restorable) {
+    buttons.push(
+      /* @__PURE__ */ React__default.default.createElement(
+        ui.IconButton,
+        {
+          onClick: (e) => {
+            props.model.restoreDefaultValues();
+          },
+          onKeyDownCapture: (e) => {
+            if (e.key === "Enter") {
+              props.model.restoreDefaultValues();
+            }
+          },
+          key: "restore",
+          name: "history",
+          size: "md",
+          className: styles.clearIcon,
+          tooltip: i18n.t(
+            "grafana-scenes.variables.default-group-by-custom-indicator-container.tooltip-restore-groupby-set-by-this-dashboard",
+            "Restore groupby set by this dashboard."
+          )
+        }
+      )
+    );
+  }
+  if (!model.state.restorable) {
+    buttons.push(
+      /* @__PURE__ */ React__default.default.createElement(
+        ui.Tooltip,
+        {
+          key: "tooltip",
+          content: i18n.t(
+            "grafana-scenes.variables.default-group-by-custom-indicator-container.tooltip",
+            "Applied by default in this dashboard. If edited, it carries over to other dashboards."
+          ),
+          placement: "bottom"
+        },
+        /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "info-circle", size: "md" })
+      )
+    );
+  }
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      onMouseDown: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      },
+      className: css.cx(
+        inputStyles.suffix,
+        css.css({
+          position: "relative"
+        })
+      )
+    },
+    buttons
+  );
+}
+const getStyles$j = (theme) => ({
+  clearIcon: css.css({
+    color: theme.colors.action.disabledText,
+    cursor: "pointer",
+    "&:hover:before": {
+      backgroundColor: "transparent"
+    },
+    "&:hover": {
+      color: theme.colors.text.primary
     }
-  return a;
+  })
+});
+
+const GroupByValueContainer = ({
+  keysApplicability,
+  children
+}) => {
+  var _a, _b;
+  const theme = ui.useTheme2();
+  const styles = ui.getSelectStyles(theme);
+  const { disabledPill, strikethrough } = getNonApplicablePillStyles(theme);
+  const firstChild = React__default.default.Children.toArray(children)[0];
+  let isApplicable = true;
+  if (React__default.default.isValidElement(firstChild) && ((_b = (_a = firstChild.props) == null ? void 0 : _a.data) == null ? void 0 : _b.value)) {
+    const value = firstChild.props.data.value;
+    const applicability = keysApplicability == null ? void 0 : keysApplicability.find((item) => item.key === value);
+    if (applicability && !applicability.applicable) {
+      isApplicable = false;
+    }
+  }
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: css.cx(styles.multiValueContainer, !isApplicable && css.cx(disabledPill, strikethrough)) }, children);
 };
-var __spreadProps$r = (a, b) => __defProps$r(a, __getOwnPropDescs$r(b));
+
+function isInteractionTracker(s) {
+  return "isInteractionTracker" in s;
+}
+class SceneInteractionTracker extends SceneObjectBase {
+  constructor(state = {}, renderProfiler) {
+    super(state);
+    this.renderProfiler = renderProfiler;
+    this.isInteractionTracker = true;
+    if (renderProfiler) {
+      this.renderProfiler = renderProfiler;
+      this.renderProfiler.setInteractionCompleteHandler(state.onInteractionComplete);
+    }
+  }
+  startInteraction(name) {
+    var _a;
+    if (!this.state.enableInteractionTracking) {
+      return;
+    }
+    (_a = this.renderProfiler) == null ? void 0 : _a.startInteraction(name);
+  }
+  stopInteraction() {
+    var _a;
+    (_a = this.renderProfiler) == null ? void 0 : _a.stopInteraction();
+  }
+}
+
+function getInteractionTracker(sceneObject) {
+  let parent = sceneObject;
+  while (parent) {
+    if (parent.state.$behaviors) {
+      for (const behavior of parent.state.$behaviors) {
+        if (isInteractionTracker(behavior)) {
+          return behavior;
+        }
+      }
+    }
+    parent = parent.parent;
+  }
+  return void 0;
+}
+
 class GroupByVariable extends MultiValueVariable {
   constructor(initialState) {
-    super(__spreadProps$r(__spreadValues$F({
+    super({
       isMulti: true,
       name: "",
       value: [],
@@ -2916,12 +3449,28 @@ class GroupByVariable extends MultiValueVariable {
       baseFilters: [],
       applyMode: "auto",
       layout: "horizontal",
-      type: "groupby"
-    }, initialState), {
+      type: "groupby",
+      ...initialState,
       noValueOnClear: true
-    }));
+    });
     this.isLazy = true;
     this._urlSync = new GroupByVariableUrlSyncHandler(this);
+    this._activationHandler = () => {
+      this._verifyApplicability();
+      if (this.state.defaultValue) {
+        if (this.checkIfRestorable(this.state.value)) {
+          this.setState({ restorable: true });
+        }
+      }
+      return () => {
+        if (this.state.defaultValue) {
+          this.restoreDefaultValues();
+        }
+      };
+    };
+    /**
+     * Get possible keys given current filters. Do not call from plugins directly
+     */
     this._getKeys = async (ds) => {
       var _a, _b, _c;
       const override = await ((_b = (_a = this.state).getTagKeysProvider) == null ? void 0 : _b.call(_a, this, null));
@@ -2937,11 +3486,13 @@ class GroupByVariable extends MultiValueVariable {
       const queries = getQueriesForVariables(this);
       const otherFilters = this.state.baseFilters || [];
       const timeRange = sceneGraph.getTimeRange(this).state.value;
-      const response = await ds.getTagKeys(__spreadValues$F({
+      const response = await ds.getTagKeys({
         filters: otherFilters,
         queries,
-        timeRange
-      }, getEnrichedFiltersRequest(this)));
+        timeRange,
+        scopes: sceneGraph.getScopes(this),
+        ...getEnrichedFiltersRequest(this)
+      });
       if (responseHasError(response)) {
         this.setState({ error: response.error.message });
       }
@@ -2955,12 +3506,16 @@ class GroupByVariable extends MultiValueVariable {
       }
       return keys;
     };
+    if (this.state.defaultValue) {
+      this.changeValueTo(this.state.defaultValue.value, this.state.defaultValue.text, false);
+    }
     if (this.state.applyMode === "auto") {
       this.addActivationHandler(() => {
         allActiveGroupByVariables.add(this);
         return () => allActiveGroupByVariables.delete(this);
       });
     }
+    this.addActivationHandler(this._activationHandler);
   }
   validateAndUpdate() {
     return this.getValueOptions({}).pipe(
@@ -3019,6 +3574,62 @@ class GroupByVariable extends MultiValueVariable {
       })
     );
   }
+  getApplicableKeys() {
+    const { value, keysApplicability } = this.state;
+    const valueArray = lodash.isArray(value) ? value : value ? [value] : [];
+    if (!keysApplicability || keysApplicability.length === 0) {
+      return valueArray;
+    }
+    const applicableValues = valueArray.filter((val) => {
+      const applicability = keysApplicability.find((item) => item.key === val);
+      return !applicability || applicability.applicable !== false;
+    });
+    return applicableValues;
+  }
+  async _verifyApplicability() {
+    const ds = await getDataSource(this.state.datasource, {
+      __sceneObject: wrapInSafeSerializableSceneObject(this)
+    });
+    if (!ds.getDrilldownsApplicability) {
+      return;
+    }
+    const queries = getQueriesForVariables(this);
+    const timeRange = sceneGraph.getTimeRange(this).state.value;
+    const value = this.state.value;
+    const response = await ds.getDrilldownsApplicability({
+      groupByKeys: Array.isArray(value) ? value.map((v) => String(v)) : value ? [String(value)] : [],
+      queries,
+      timeRange,
+      scopes: sceneGraph.getScopes(this),
+      ...getEnrichedFiltersRequest(this)
+    });
+    if (!lodash.isEqual(response, this.state.keysApplicability)) {
+      this.setState({ keysApplicability: response != null ? response : void 0 });
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    }
+  }
+  // This method is related to the defaultValue property. We check if the current value
+  // is different from the default value. If it is, the groupBy will show a button
+  // allowing the user to restore the default values.
+  checkIfRestorable(values) {
+    var _a, _b, _c, _d;
+    const originalValues = lodash.isArray((_a = this.state.defaultValue) == null ? void 0 : _a.value) ? (_b = this.state.defaultValue) == null ? void 0 : _b.value : ((_c = this.state.defaultValue) == null ? void 0 : _c.value) ? [(_d = this.state.defaultValue) == null ? void 0 : _d.value] : [];
+    const vals = lodash.isArray(values) ? values : [values];
+    if (vals.length !== originalValues.length) {
+      return true;
+    }
+    return !lodash.isEqual(vals, originalValues);
+  }
+  restoreDefaultValues() {
+    this.setState({ restorable: false });
+    if (!this.state.defaultValue) {
+      return;
+    }
+    this.changeValueTo(this.state.defaultValue.value, this.state.defaultValue.text, true);
+  }
+  /**
+   * Allows clearing the value of the variable to an empty value. Overrides default behavior of a MultiValueVariable
+   */
   getDefaultMultiState(options) {
     return { value: [], text: [] };
   }
@@ -3034,7 +3645,9 @@ function GroupByVariableRenderer({ model }) {
     noValueOnClear,
     options,
     includeAll,
-    allowCustomValue = true
+    allowCustomValue = true,
+    defaultValue,
+    keysApplicability
   } = model.useState();
   const values = React.useMemo(() => {
     const arrayValue = lodash.isArray(value) ? value : [value];
@@ -3052,6 +3665,7 @@ function GroupByVariableRenderer({ model }) {
   const [inputValue, setInputValue] = React.useState("");
   const [uncommittedValue, setUncommittedValue] = React.useState(values);
   const optionSearcher = React.useMemo(() => getOptionSearcher(options, includeAll), [options, includeAll]);
+  const hasDefaultValue = defaultValue !== void 0;
   React.useEffect(() => {
     setUncommittedValue(values);
   }, [values]);
@@ -3073,95 +3687,131 @@ function GroupByVariableRenderer({ model }) {
     () => handleOptionGroups(optionSearcher(inputValue).map(toSelectableValue$1)),
     [optionSearcher, inputValue]
   );
-  return isMulti ? /* @__PURE__ */ React__default["default"].createElement(ui.MultiSelect, {
-    "aria-label": "Group by selector",
-    "data-testid": `GroupBySelect-${key}`,
-    id: key,
-    placeholder: "Select value",
-    width: "auto",
-    allowCustomValue,
-    inputValue,
-    value: uncommittedValue,
-    noMultiValueWrap: true,
-    maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
-    tabSelectsValue: false,
-    virtualized: true,
-    options: filteredOptions,
-    filterOption: filterNoOp$1,
-    closeMenuOnSelect: false,
-    isOpen: isOptionsOpen,
-    isClearable: true,
-    hideSelectedOptions: false,
-    isLoading: isFetchingOptions,
-    components: { Option: OptionWithCheckbox },
-    onInputChange,
-    onBlur: () => {
-      model.changeValueTo(
-        uncommittedValue.map((x) => x.value),
-        uncommittedValue.map((x) => x.label)
-      );
-    },
-    onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
-      }
-      setUncommittedValue(newValue);
-    },
-    onOpenMenu: async () => {
-      setIsFetchingOptions(true);
-      await rxjs.lastValueFrom(model.validateAndUpdate());
-      setIsFetchingOptions(false);
-      setIsOptionsOpen(true);
-    },
-    onCloseMenu: () => {
-      setIsOptionsOpen(false);
-    }
-  }) : /* @__PURE__ */ React__default["default"].createElement(ui.Select, {
-    "aria-label": "Group by selector",
-    "data-testid": `GroupBySelect-${key}`,
-    id: key,
-    placeholder: "Select value",
-    width: "auto",
-    inputValue,
-    value: uncommittedValue,
-    allowCustomValue,
-    createOptionPosition: "first",
-    noMultiValueWrap: true,
-    maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
-    tabSelectsValue: false,
-    virtualized: true,
-    options: filteredOptions,
-    filterOption: filterNoOp$1,
-    closeMenuOnSelect: true,
-    isOpen: isOptionsOpen,
-    isClearable: true,
-    hideSelectedOptions: false,
-    noValueOnClear: true,
-    isLoading: isFetchingOptions,
-    onInputChange,
-    onChange: (newValue, action) => {
-      if (action.action === "clear") {
-        setUncommittedValue([]);
-        if (noValueOnClear) {
-          model.changeValueTo([]);
+  return isMulti ? /* @__PURE__ */ React__default.default.createElement(
+    ui.MultiSelect,
+    {
+      "aria-label": i18n.t(
+        "grafana-scenes.variables.group-by-variable-renderer.aria-label-group-by-selector",
+        "Group by selector"
+      ),
+      "data-testid": `GroupBySelect-${key}`,
+      id: key,
+      placeholder: i18n.t(
+        "grafana-scenes.variables.group-by-variable-renderer.placeholder-group-by-label",
+        "Group by label"
+      ),
+      width: "auto",
+      allowCustomValue,
+      inputValue,
+      value: uncommittedValue,
+      noMultiValueWrap: true,
+      maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
+      tabSelectsValue: false,
+      virtualized: true,
+      options: filteredOptions,
+      filterOption: filterNoOp$1,
+      closeMenuOnSelect: false,
+      isOpen: isOptionsOpen,
+      isClearable: true,
+      hideSelectedOptions: false,
+      isLoading: isFetchingOptions,
+      components: {
+        Option: OptionWithCheckbox,
+        ...hasDefaultValue ? {
+          IndicatorsContainer: () => /* @__PURE__ */ React__default.default.createElement(DefaultGroupByCustomIndicatorContainer, { model })
+        } : {},
+        MultiValueContainer: ({ innerProps, children }) => /* @__PURE__ */ React__default.default.createElement(GroupByValueContainer, { innerProps, keysApplicability }, children)
+      },
+      onInputChange,
+      onBlur: () => {
+        model.changeValueTo(
+          uncommittedValue.map((x) => x.value),
+          uncommittedValue.map((x) => x.label),
+          true
+        );
+        const restorable = model.checkIfRestorable(uncommittedValue.map((v) => v.value));
+        if (restorable !== model.state.restorable) {
+          model.setState({ restorable });
         }
-        return;
+        model._verifyApplicability();
+      },
+      onChange: (newValue, action) => {
+        if (action.action === "clear" && noValueOnClear) {
+          model.changeValueTo([], void 0, true);
+        }
+        setUncommittedValue(newValue);
+      },
+      onOpenMenu: async () => {
+        const profiler = getInteractionTracker(model);
+        profiler == null ? void 0 : profiler.startInteraction(GROUPBY_DIMENSIONS_INTERACTION);
+        setIsFetchingOptions(true);
+        await rxjs.lastValueFrom(model.validateAndUpdate());
+        setIsFetchingOptions(false);
+        setIsOptionsOpen(true);
+        profiler == null ? void 0 : profiler.stopInteraction();
+      },
+      onCloseMenu: () => {
+        setIsOptionsOpen(false);
       }
-      if (newValue == null ? void 0 : newValue.value) {
-        setUncommittedValue([newValue]);
-        model.changeValueTo([newValue.value], newValue.label ? [newValue.label] : void 0);
-      }
-    },
-    onOpenMenu: async () => {
-      setIsFetchingOptions(true);
-      await rxjs.lastValueFrom(model.validateAndUpdate());
-      setIsFetchingOptions(false);
-      setIsOptionsOpen(true);
-    },
-    onCloseMenu: () => {
-      setIsOptionsOpen(false);
     }
-  });
+  ) : /* @__PURE__ */ React__default.default.createElement(
+    ui.Select,
+    {
+      "aria-label": i18n.t(
+        "grafana-scenes.variables.group-by-variable-renderer.aria-label-group-by-selector",
+        "Group by selector"
+      ),
+      "data-testid": `GroupBySelect-${key}`,
+      id: key,
+      placeholder: i18n.t(
+        "grafana-scenes.variables.group-by-variable-renderer.placeholder-group-by-label",
+        "Group by label"
+      ),
+      width: "auto",
+      inputValue,
+      value: uncommittedValue && uncommittedValue.length > 0 ? uncommittedValue : null,
+      allowCustomValue,
+      createOptionPosition: "first",
+      noMultiValueWrap: true,
+      maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
+      tabSelectsValue: false,
+      virtualized: true,
+      options: filteredOptions,
+      filterOption: filterNoOp$1,
+      closeMenuOnSelect: true,
+      isOpen: isOptionsOpen,
+      isClearable: true,
+      hideSelectedOptions: false,
+      noValueOnClear: true,
+      isLoading: isFetchingOptions,
+      onInputChange,
+      onChange: (newValue, action) => {
+        if (action.action === "clear") {
+          setUncommittedValue([]);
+          if (noValueOnClear) {
+            model.changeValueTo([]);
+          }
+          return;
+        }
+        if (newValue == null ? void 0 : newValue.value) {
+          setUncommittedValue([newValue]);
+          model.changeValueTo([newValue.value], newValue.label ? [newValue.label] : void 0);
+        }
+      },
+      onOpenMenu: async () => {
+        const profiler = getInteractionTracker(model);
+        profiler == null ? void 0 : profiler.startInteraction(GROUPBY_DIMENSIONS_INTERACTION);
+        setIsFetchingOptions(true);
+        await rxjs.lastValueFrom(model.validateAndUpdate());
+        setIsFetchingOptions(false);
+        setIsOptionsOpen(true);
+        profiler == null ? void 0 : profiler.stopInteraction();
+      },
+      onCloseMenu: () => {
+        setIsOptionsOpen(false);
+      }
+    }
+  );
 }
 const filterNoOp$1 = () => true;
 function toSelectableValue$1(input) {
@@ -3176,3874 +3826,38 @@ function toSelectableValue$1(input) {
   return result;
 }
 
-function LoadingIndicator(props) {
-  return /* @__PURE__ */ React__default["default"].createElement(ui.Tooltip, {
-    content: "Cancel query"
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    className: "spin-clockwise",
-    name: "sync",
-    size: "xs",
-    role: "button",
-    onMouseDown: (e) => {
-      props.onCancel(e);
-    }
-  }));
-}
-
-function ControlsLabel(props) {
-  const styles = ui.useStyles2(getStyles$g);
-  const theme = ui.useTheme2();
-  const isVertical = props.layout === "vertical";
-  const loadingIndicator = Boolean(props.isLoading) ? /* @__PURE__ */ React__default["default"].createElement("div", {
-    style: { marginLeft: theme.spacing(1), marginTop: "-1px" },
-    "aria-label": e2eSelectors.selectors.components.LoadingIndicator.icon
-  }, /* @__PURE__ */ React__default["default"].createElement(LoadingIndicator, {
-    onCancel: (e) => {
-      var _a;
-      e.preventDefault();
-      e.stopPropagation();
-      (_a = props.onCancel) == null ? void 0 : _a.call(props);
-    }
-  })) : null;
-  let errorIndicator = null;
-  if (props.error) {
-    errorIndicator = /* @__PURE__ */ React__default["default"].createElement(ui.Tooltip, {
-      content: props.error,
-      placement: "bottom"
-    }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-      className: styles.errorIcon,
-      name: "exclamation-triangle"
-    }));
-  }
-  let descriptionIndicator = null;
-  if (props.description) {
-    descriptionIndicator = /* @__PURE__ */ React__default["default"].createElement(ui.Tooltip, {
-      content: props.description,
-      placement: isVertical ? "top" : "bottom"
-    }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-      className: styles.normalIcon,
-      name: "info-circle"
-    }));
-  }
-  const testId = typeof props.label === "string" ? e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemLabels(props.label) : "";
-  let labelElement;
-  if (isVertical) {
-    labelElement = /* @__PURE__ */ React__default["default"].createElement("label", {
-      className: styles.verticalLabel,
-      "data-testid": testId,
-      htmlFor: props.htmlFor
-    }, props.label, descriptionIndicator, errorIndicator, props.icon && /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-      name: props.icon,
-      className: styles.normalIcon
-    }), loadingIndicator, props.onRemove && /* @__PURE__ */ React__default["default"].createElement(ui.IconButton, {
-      variant: "secondary",
-      size: "xs",
-      name: "times",
-      onClick: props.onRemove,
-      tooltip: "Remove"
-    }));
-  } else {
-    labelElement = /* @__PURE__ */ React__default["default"].createElement("label", {
-      className: styles.horizontalLabel,
-      "data-testid": testId,
-      htmlFor: props.htmlFor
-    }, errorIndicator, props.icon && /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-      name: props.icon,
-      className: styles.normalIcon
-    }), props.label, descriptionIndicator, loadingIndicator);
-  }
-  return labelElement;
-}
-const getStyles$g = (theme) => ({
-  horizontalLabel: css.css({
-    background: theme.isDark ? theme.colors.background.primary : theme.colors.background.secondary,
-    display: `flex`,
-    alignItems: "center",
-    padding: theme.spacing(0, 1),
-    fontWeight: theme.typography.fontWeightMedium,
-    fontSize: theme.typography.bodySmall.fontSize,
-    height: theme.spacing(theme.components.height.md),
-    lineHeight: theme.spacing(theme.components.height.md),
-    borderRadius: theme.shape.borderRadius(1),
-    border: `1px solid ${theme.components.input.borderColor}`,
-    position: "relative",
-    right: -1,
-    whiteSpace: "nowrap",
-    gap: theme.spacing(0.5)
-  }),
-  verticalLabel: css.css({
-    display: `flex`,
-    alignItems: "center",
-    fontWeight: theme.typography.fontWeightMedium,
-    fontSize: theme.typography.bodySmall.fontSize,
-    lineHeight: theme.typography.bodySmall.lineHeight,
-    whiteSpace: "nowrap",
-    marginBottom: theme.spacing(0.5),
-    gap: theme.spacing(1)
-  }),
-  errorIcon: css.css({
-    color: theme.colors.error.text
-  }),
-  normalIcon: css.css({
-    color: theme.colors.text.secondary
-  })
-});
-
-function getAdhocOptionSearcher(options) {
-  const haystack = options.map((o) => {
-    var _a;
-    return (_a = o.label) != null ? _a : String(o.value);
-  });
-  const fuzzySearch = getFuzzySearcher(haystack);
-  return (search) => fuzzySearch(search).map((i) => options[i]);
-}
-
-var __defProp$E = Object.defineProperty;
-var __getOwnPropSymbols$E = Object.getOwnPropertySymbols;
-var __hasOwnProp$E = Object.prototype.hasOwnProperty;
-var __propIsEnum$E = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$E = (obj, key, value) => key in obj ? __defProp$E(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$E = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$E.call(b, prop))
-      __defNormalProp$E(a, prop, b[prop]);
-  if (__getOwnPropSymbols$E)
-    for (var prop of __getOwnPropSymbols$E(b)) {
-      if (__propIsEnum$E.call(b, prop))
-        __defNormalProp$E(a, prop, b[prop]);
-    }
-  return a;
-};
-function keyLabelToOption(key, label) {
-  return key !== "" ? {
-    value: key,
-    label: label || key
-  } : null;
-}
-const filterNoOp = () => true;
-function AdHocFilterRenderer({ filter, model }) {
-  var _a, _b, _c, _d, _e;
-  const styles = ui.useStyles2(getStyles$f);
-  const [keys, setKeys] = React.useState([]);
-  const [values, setValues] = React.useState([]);
-  const [isKeysLoading, setIsKeysLoading] = React.useState(false);
-  const [isValuesLoading, setIsValuesLoading] = React.useState(false);
-  const [isKeysOpen, setIsKeysOpen] = React.useState(false);
-  const [isValuesOpen, setIsValuesOpen] = React.useState(false);
-  const [isOperatorOpen, setIsOperatorOpen] = React.useState(false);
-  const [valueInputValue, setValueInputValue] = React.useState("");
-  const [valueHasCustomValue, setValueHasCustomValue] = React.useState(false);
-  const [uncommittedValue, setUncommittedValue] = React.useState(
-    filter.values ? filter.values.map((value, index) => {
-      var _a2;
-      return keyLabelToOption(value, (_a2 = filter.valueLabels) == null ? void 0 : _a2[index]);
-    }) : []
-  );
-  const isMultiValue = isMultiValueOperator(filter.operator);
-  const keyValue = keyLabelToOption(filter.key, filter.keyLabel);
-  const valueValue = keyLabelToOption(filter.value, (_a = filter.valueLabels) == null ? void 0 : _a[0]);
-  const optionSearcher = React.useMemo(() => getAdhocOptionSearcher(values), [values]);
-  const onValueInputChange = (value, { action }) => {
-    if (action === "input-change") {
-      setValueInputValue(value);
-    }
-    return value;
-  };
-  const onOperatorChange = (v) => {
-    var _a2, _b2;
-    const existingOperator = filter.operator;
-    const newOperator = v.value;
-    const update = { operator: newOperator };
-    if (isMultiValueOperator(existingOperator) && !isMultiValueOperator(newOperator)) {
-      update.value = "";
-      update.valueLabels = [""];
-      update.values = void 0;
-      setUncommittedValue([]);
-    } else if (!isMultiValueOperator(existingOperator) && isMultiValueOperator(newOperator) && filter.value) {
-      update.values = [filter.value];
-      setUncommittedValue([
-        {
-          value: filter.value,
-          label: (_b2 = (_a2 = filter.valueLabels) == null ? void 0 : _a2[0]) != null ? _b2 : filter.value
-        }
-      ]);
-    }
-    model._updateFilter(filter, update);
-  };
-  const filteredValueOptions = React.useMemo(
-    () => handleOptionGroups(optionSearcher(valueInputValue)),
-    [optionSearcher, valueInputValue]
-  );
-  const multiValueProps = {
-    isMulti: true,
-    value: uncommittedValue,
-    components: {
-      Option: OptionWithCheckbox
-    },
-    hideSelectedOptions: false,
-    closeMenuOnSelect: false,
-    openMenuOnFocus: false,
-    onChange: (v) => {
-      setUncommittedValue(v);
-      if (v.some((value) => value.__isNew__)) {
-        setValueInputValue("");
-      }
-    },
-    onBlur: () => {
-      var _a2, _b2;
-      model._updateFilter(filter, {
-        value: (_b2 = (_a2 = uncommittedValue[0]) == null ? void 0 : _a2.value) != null ? _b2 : "",
-        values: uncommittedValue.map((option) => option.value),
-        valueLabels: uncommittedValue.map((option) => option.label)
-      });
-    }
-  };
-  const valueSelect = /* @__PURE__ */ React__default["default"].createElement(ui.Select, __spreadValues$E({
-    virtualized: true,
-    allowCustomValue: (_b = model.state.allowCustomValue) != null ? _b : true,
-    isValidNewOption: (inputValue) => inputValue.trim().length > 0,
-    allowCreateWhileLoading: true,
-    createOptionPosition: "first",
-    formatCreateLabel: (inputValue) => `Use custom value: ${inputValue}`,
-    disabled: model.state.readOnly,
-    className: css.cx(styles.value, isValuesOpen ? styles.widthWhenOpen : void 0),
-    width: "auto",
-    value: valueValue,
-    filterOption: filterNoOp,
-    placeholder: "Select value",
-    options: filteredValueOptions,
-    inputValue: valueInputValue,
-    onInputChange: onValueInputChange,
-    onChange: (v) => {
-      model._updateFilter(filter, {
-        value: v.value,
-        valueLabels: v.label ? [v.label] : [v.value]
-      });
-      if (valueHasCustomValue !== v.__isNew__) {
-        setValueHasCustomValue(v.__isNew__);
-      }
-    },
-    isOpen: isValuesOpen && !isValuesLoading,
-    isLoading: isValuesLoading,
-    openMenuOnFocus: true,
-    onOpenMenu: async () => {
-      var _a2;
-      setIsValuesLoading(true);
-      setIsValuesOpen(true);
-      const values2 = await model._getValuesFor(filter);
-      setIsValuesLoading(false);
-      setValues(values2);
-      if (valueHasCustomValue) {
-        setValueInputValue((_a2 = valueValue == null ? void 0 : valueValue.label) != null ? _a2 : "");
-      }
-    },
-    onCloseMenu: () => {
-      setIsValuesOpen(false);
-      setValueInputValue("");
-    }
-  }, isMultiValue && multiValueProps));
-  const keySelect = /* @__PURE__ */ React__default["default"].createElement(ui.Select, {
-    key: `${isValuesLoading ? "loading" : "loaded"}`,
-    disabled: model.state.readOnly,
-    className: css.cx(styles.key, isKeysOpen ? styles.widthWhenOpen : void 0),
-    width: "auto",
-    allowCustomValue: (_c = model.state.allowCustomValue) != null ? _c : true,
-    createOptionPosition: "first",
-    value: keyValue,
-    placeholder: "Select label",
-    options: handleOptionGroups(keys),
-    onChange: (v) => {
-      model._updateFilter(filter, {
-        key: v.value,
-        keyLabel: v.label,
-        value: "",
-        valueLabels: [""],
-        values: void 0
-      });
-      setUncommittedValue([]);
-    },
-    autoFocus: filter.key === "",
-    isOpen: isKeysOpen && !isKeysLoading,
-    isLoading: isKeysLoading,
-    onOpenMenu: async () => {
-      setIsKeysOpen(true);
-      setIsKeysLoading(true);
-      const keys2 = await model._getKeys(filter.key);
-      setIsKeysLoading(false);
-      setKeys(keys2);
-    },
-    onCloseMenu: () => {
-      setIsKeysOpen(false);
-    },
-    onBlur: () => {
-      if (filter.key === "") {
-        model._removeFilter(filter);
-      }
-    },
-    openMenuOnFocus: true
-  });
-  const operatorSelect = /* @__PURE__ */ React__default["default"].createElement(ui.Select, {
-    className: css.cx(styles.operator, {
-      [styles.widthWhenOpen]: isOperatorOpen
-    }),
-    value: filter.operator,
-    disabled: model.state.readOnly,
-    options: model._getOperators(),
-    onChange: onOperatorChange,
-    onOpenMenu: () => {
-      setIsOperatorOpen(true);
-    },
-    onCloseMenu: () => {
-      setIsOperatorOpen(false);
-    }
-  });
-  if (model.state.layout === "vertical") {
-    if (filter.key) {
-      const label = /* @__PURE__ */ React__default["default"].createElement(ControlsLabel, {
-        layout: "vertical",
-        label: (_d = filter.key) != null ? _d : "",
-        onRemove: () => model._removeFilter(filter)
-      });
-      return /* @__PURE__ */ React__default["default"].createElement(ui.Field, {
-        label,
-        "data-testid": `AdHocFilter-${filter.key}`,
-        className: styles.field
-      }, /* @__PURE__ */ React__default["default"].createElement("div", {
-        className: styles.wrapper
-      }, operatorSelect, valueSelect));
-    } else {
-      return /* @__PURE__ */ React__default["default"].createElement(ui.Field, {
-        label: "Select label",
-        "data-testid": `AdHocFilter-${filter.key}`,
-        className: styles.field
-      }, keySelect);
-    }
-  }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.wrapper,
-    "data-testid": `AdHocFilter-${filter.key}`
-  }, keySelect, operatorSelect, valueSelect, /* @__PURE__ */ React__default["default"].createElement(ui.Button, {
-    variant: "secondary",
-    "aria-label": "Remove filter",
-    title: "Remove filter",
-    className: styles.removeButton,
-    icon: "times",
-    "data-testid": `AdHocFilter-remove-${(_e = filter.key) != null ? _e : ""}`,
-    onClick: () => model._removeFilter(filter)
-  }));
-}
-const getStyles$f = (theme) => ({
-  field: css.css({
-    marginBottom: 0
-  }),
-  wrapper: css.css({
-    display: "flex",
-    "> *": {
-      "&:not(:first-child)": {
-        marginLeft: -1
-      },
-      "&:first-child": {
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0
-      },
-      "&:last-child": {
-        borderTopLeftRadius: 0,
-        borderBottomLeftRadius: 0
-      },
-      "&:not(:first-child):not(:last-child)": {
-        borderRadius: 0
-      },
-      position: "relative",
-      zIndex: 0,
-      "&:hover": {
-        zIndex: 1
-      },
-      "&:focus-within": {
-        zIndex: 2
-      }
-    }
-  }),
-  widthWhenOpen: css.css({
-    minWidth: theme.spacing(16)
-  }),
-  value: css.css({
-    flexBasis: "content",
-    flexShrink: 1,
-    minWidth: "90px"
-  }),
-  key: css.css({
-    flexBasis: "content",
-    minWidth: "90px",
-    flexShrink: 1
-  }),
-  operator: css.css({
-    flexShrink: 0,
-    flexBasis: "content"
-  }),
-  removeButton: css.css({
-    paddingLeft: theme.spacing(3 / 2),
-    paddingRight: theme.spacing(3 / 2),
-    borderLeft: "none",
-    width: theme.spacing(3),
-    marginRight: theme.spacing(1),
-    boxSizing: "border-box",
-    position: "relative",
-    left: "1px"
-  })
-});
-
-function AdHocFilterBuilder({ model, addFilterButtonText }) {
-  const { _wip } = model.useState();
-  if (!_wip) {
-    return /* @__PURE__ */ React__default["default"].createElement(ui.Button, {
-      variant: "secondary",
-      icon: "plus",
-      title: "Add filter",
-      "aria-label": "Add filter",
-      "data-testid": `AdHocFilter-add`,
-      onClick: () => model._addWip()
-    }, addFilterButtonText);
-  }
-  return /* @__PURE__ */ React__default["default"].createElement(AdHocFilterRenderer, {
-    filter: _wip,
-    model
-  });
-}
-
-class AdHocFiltersVariableUrlSyncHandler {
-  constructor(_variable) {
-    this._variable = _variable;
-  }
-  getKey() {
-    return `var-${this._variable.state.name}`;
-  }
-  getKeys() {
-    return [this.getKey()];
-  }
-  getUrlState() {
-    const filters = this._variable.state.filters;
-    if (filters.length === 0) {
-      return { [this.getKey()]: [""] };
-    }
-    const value = filters.filter(isFilterComplete).map((filter) => toArray(filter).map(escapeUrlPipeDelimiters).join("|"));
-    return { [this.getKey()]: value };
-  }
-  updateFromUrl(values) {
-    const urlValue = values[this.getKey()];
-    if (urlValue == null) {
-      return;
-    }
-    const filters = deserializeUrlToFilters(urlValue);
-    this._variable.setState({ filters });
-  }
-}
-function deserializeUrlToFilters(value) {
-  if (Array.isArray(value)) {
-    const values = value;
-    return values.map(toFilter).filter(isFilter);
-  }
-  const filter = toFilter(value);
-  return filter === null ? [] : [filter];
-}
-function toArray(filter) {
-  var _a;
-  const result = [toUrlCommaDelimitedString(filter.key, filter.keyLabel), filter.operator];
-  if (isMultiValueOperator(filter.operator)) {
-    filter.values.forEach((value, index) => {
-      var _a2;
-      result.push(toUrlCommaDelimitedString(value, (_a2 = filter.valueLabels) == null ? void 0 : _a2[index]));
-    });
-  } else {
-    result.push(toUrlCommaDelimitedString(filter.value, (_a = filter.valueLabels) == null ? void 0 : _a[0]));
-  }
-  return result;
-}
-function toFilter(urlValue) {
-  if (typeof urlValue !== "string" || urlValue.length === 0) {
-    return null;
-  }
-  const [key, keyLabel, operator, _operatorLabel, ...values] = urlValue.split("|").reduce((acc, v) => {
-    const [key2, label] = v.split(",");
-    acc.push(key2, label != null ? label : key2);
-    return acc;
-  }, []).map(unescapeUrlDelimiters);
-  return {
-    key,
-    keyLabel,
-    operator,
-    value: values[0],
-    values: isMultiValueOperator(operator) ? values.filter((_, index) => index % 2 === 0) : void 0,
-    valueLabels: values.filter((_, index) => index % 2 === 1),
-    condition: ""
-  };
-}
-function isFilter(filter) {
-  return filter !== null && typeof filter.key === "string" && typeof filter.value === "string";
-}
-
-var __defProp$D = Object.defineProperty;
-var __getOwnPropSymbols$D = Object.getOwnPropertySymbols;
-var __hasOwnProp$D = Object.prototype.hasOwnProperty;
-var __propIsEnum$D = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$D = (obj, key, value) => key in obj ? __defProp$D(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$D = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$D.call(b, prop))
-      __defNormalProp$D(a, prop, b[prop]);
-  if (__getOwnPropSymbols$D)
-    for (var prop of __getOwnPropSymbols$D(b)) {
-      if (__propIsEnum$D.call(b, prop))
-        __defNormalProp$D(a, prop, b[prop]);
-    }
-  return a;
-};
-var __objRest$3 = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp$D.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols$D)
-    for (var prop of __getOwnPropSymbols$D(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum$D.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
-const DropdownItem = React.forwardRef(
-  function DropdownItem2(_a, ref) {
-    var _b = _a, { children, active, addGroupBottomBorder, isMultiValueEdit, checked } = _b, rest = __objRest$3(_b, ["children", "active", "addGroupBottomBorder", "isMultiValueEdit", "checked"]);
-    const styles = ui.useStyles2(getStyles$e);
-    const id = React.useId();
-    return /* @__PURE__ */ React__default["default"].createElement("div", __spreadValues$D({
-      ref,
-      role: "option",
-      id,
-      "aria-selected": active,
-      className: css.cx(styles.option, active && styles.optionFocused, addGroupBottomBorder && styles.groupBottomBorder)
-    }, rest), /* @__PURE__ */ React__default["default"].createElement("div", {
-      className: styles.optionBody,
-      "data-testid": `data-testid ad hoc filter option value ${children}`
-    }, /* @__PURE__ */ React__default["default"].createElement("span", null, isMultiValueEdit ? /* @__PURE__ */ React__default["default"].createElement(ui.Checkbox, {
-      tabIndex: -1,
-      checked,
-      className: styles.checkbox
-    }) : null, children)));
-  }
-);
-const getStyles$e = (theme) => ({
-  option: css.css({
-    label: "grafana-select-option",
-    top: 0,
-    left: 0,
-    width: "100%",
-    position: "absolute",
-    padding: theme.spacing(1),
-    display: "flex",
-    alignItems: "center",
-    flexDirection: "row",
-    flexShrink: 0,
-    whiteSpace: "nowrap",
-    cursor: "pointer",
-    "&:hover": {
-      background: theme.colors.action.hover,
-      "@media (forced-colors: active), (prefers-contrast: more)": {
-        border: `1px solid ${theme.colors.primary.border}`
-      }
-    }
-  }),
-  optionFocused: css.css({
-    label: "grafana-select-option-focused",
-    background: theme.colors.action.focus,
-    "@media (forced-colors: active), (prefers-contrast: more)": {
-      border: `1px solid ${theme.colors.primary.border}`
-    }
-  }),
-  optionBody: css.css({
-    label: "grafana-select-option-body",
-    display: "flex",
-    fontWeight: theme.typography.fontWeightMedium,
-    flexDirection: "column",
-    flexGrow: 1
-  }),
-  groupBottomBorder: css.css({
-    borderBottom: `1px solid ${theme.colors.border.weak}`
-  }),
-  checkbox: css.css({
-    paddingRight: theme.spacing(0.5)
-  }),
-  multiValueApplyWrapper: css.css({
-    position: "fixed",
-    top: 0,
-    left: 0,
-    display: "flex",
-    backgroundColor: theme.colors.background.primary,
-    color: theme.colors.text.primary,
-    boxShadow: theme.shadows.z2,
-    overflowY: "auto",
-    zIndex: theme.zIndex.dropdown,
-    gap: theme.spacing(1.5),
-    padding: `${theme.spacing(1.5)} ${theme.spacing(1)}`
-  })
-});
-const LoadingOptionsPlaceholder = () => {
-  return /* @__PURE__ */ React__default["default"].createElement(DropdownItem, {
-    onClick: (e) => e.stopPropagation()
-  }, "Loading options...");
-};
-const NoOptionsPlaceholder = () => {
-  return /* @__PURE__ */ React__default["default"].createElement(DropdownItem, {
-    onClick: (e) => e.stopPropagation()
-  }, "No options found");
-};
-const OptionsErrorPlaceholder = ({ handleFetchOptions }) => {
-  return /* @__PURE__ */ React__default["default"].createElement(DropdownItem, {
-    onClick: handleFetchOptions
-  }, "An error has occurred fetching labels. Click to retry");
-};
-const MultiValueApplyButton = ({
-  onApply,
-  floatingElement,
-  maxOptionWidth,
-  menuHeight
-}) => {
-  const styles = ui.useStyles2(getStyles$e);
-  const floatingElementRect = floatingElement == null ? void 0 : floatingElement.getBoundingClientRect();
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.multiValueApplyWrapper,
-    style: {
-      width: `${maxOptionWidth}px`,
-      transform: `translate(${floatingElementRect == null ? void 0 : floatingElementRect.left}px,${floatingElementRect ? floatingElementRect.top + menuHeight : 0}px)`
-    }
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Button, {
-    onClick: onApply,
-    size: "sm",
-    tabIndex: -1
-  }, "Apply"));
-};
-
-const VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER = 8;
-const VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER = 6;
-const VIRTUAL_LIST_PADDING = 8;
-const VIRTUAL_LIST_OVERSCAN = 5;
-const VIRTUAL_LIST_ITEM_HEIGHT = 38;
-const VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION = 60;
-const ERROR_STATE_DROPDOWN_WIDTH = 366;
-function fuzzySearchOptions(options) {
-  const haystack = options.map((o) => {
-    var _a;
-    return (_a = o.label) != null ? _a : o.value;
-  });
-  const fuzzySearch = getFuzzySearcher(haystack);
-  return (search, filterInputType) => {
-    if (filterInputType === "operator" && search !== "") {
-      search = `"${search}"`;
-    }
-    return fuzzySearch(search).map((i) => options[i]);
-  };
-}
-const flattenOptionGroups = (options) => options.flatMap((option) => option.options ? [option, ...option.options] : [option]);
-const setupDropdownAccessibility = (options, listRef, disabledIndicesRef) => {
-  var _a, _b, _c, _d;
-  let maxOptionWidth = 182;
-  const listRefArr = [];
-  const disabledIndices = [];
-  for (let i = 0; i < options.length; i++) {
-    listRefArr.push(null);
-    if ((_a = options[i]) == null ? void 0 : _a.options) {
-      disabledIndices.push(i);
-    }
-    let label = (_c = (_b = options[i].label) != null ? _b : options[i].value) != null ? _c : "";
-    let multiplierToUse = VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER;
-    if (label.length * VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER < (((_d = options[i].description) == null ? void 0 : _d.length) || 0) * VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER) {
-      label = options[i].description;
-      multiplierToUse = VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER;
-    }
-    const widthEstimate = (options[i].isCustom ? label.length + 18 : label.length) * multiplierToUse + VIRTUAL_LIST_PADDING * 2;
-    if (widthEstimate > maxOptionWidth) {
-      maxOptionWidth = widthEstimate;
-    }
-  }
-  listRef.current = [...listRefArr];
-  disabledIndicesRef.current = [...disabledIndices];
-  return maxOptionWidth;
-};
-const nextInputTypeMap = {
-  key: "operator",
-  operator: "value",
-  value: "key"
-};
-const switchToNextInputType = (filterInputType, setInputType, handleChangeViewMode, element, shouldFocusOnPillWrapperOverride) => switchInputType(
-  nextInputTypeMap[filterInputType],
-  setInputType,
-  filterInputType === "value" ? handleChangeViewMode : void 0,
-  element,
-  shouldFocusOnPillWrapperOverride
-);
-const switchInputType = (filterInputType, setInputType, handleChangeViewMode, element, shouldFocusOnPillWrapperOverride) => {
-  setInputType(filterInputType);
-  handleChangeViewMode == null ? void 0 : handleChangeViewMode(void 0, shouldFocusOnPillWrapperOverride);
-  setTimeout(() => element == null ? void 0 : element.focus());
-};
-const generateFilterUpdatePayload = ({
-  filterInputType,
-  item,
-  filter,
-  setFilterMultiValues
-}) => {
-  var _a, _b, _c, _d, _e;
-  if (filterInputType === "key") {
-    return {
-      key: item.value,
-      keyLabel: item.label ? item.label : item.value
-    };
-  }
-  if (filterInputType === "value") {
-    return {
-      value: item.value,
-      valueLabels: [item.label ? item.label : item.value]
-    };
-  }
-  if (filterInputType === "operator") {
-    if (isMultiValueOperator(filter.operator) && !isMultiValueOperator(item.value)) {
-      setFilterMultiValues([]);
-      return {
-        operator: item.value,
-        valueLabels: [((_a = filter.valueLabels) == null ? void 0 : _a[0]) || ((_b = filter.values) == null ? void 0 : _b[0]) || filter.value],
-        values: void 0
-      };
-    }
-    if (isMultiValueOperator(item.value) && !isMultiValueOperator(filter.operator)) {
-      const valueLabels = [((_c = filter.valueLabels) == null ? void 0 : _c[0]) || ((_d = filter.values) == null ? void 0 : _d[0]) || filter.value];
-      const values = [filter.value];
-      if (values[0]) {
-        setFilterMultiValues([
-          {
-            value: values[0],
-            label: (_e = valueLabels == null ? void 0 : valueLabels[0]) != null ? _e : values[0]
-          }
-        ]);
-      }
-      return {
-        operator: item.value,
-        valueLabels,
-        values
-      };
-    }
-  }
-  return {
-    [filterInputType]: item.value
-  };
-};
-const INPUT_PLACEHOLDER = "Filter by label values";
-const generatePlaceholder = (filter, filterInputType, isMultiValueEdit, isAlwaysWip) => {
-  var _a;
-  if (filterInputType === "key") {
-    return INPUT_PLACEHOLDER;
-  }
-  if (filterInputType === "value") {
-    if (isMultiValueEdit) {
-      return "Edit values";
-    }
-    return ((_a = filter.valueLabels) == null ? void 0 : _a[0]) || "";
-  }
-  return filter[filterInputType] && !isAlwaysWip ? `${filter[filterInputType]}` : INPUT_PLACEHOLDER;
-};
-const populateInputValueOnInputTypeSwitch = ({
-  populateInputOnEdit,
-  item,
-  filterInputType,
-  setInputValue,
-  filter
-}) => {
-  if (populateInputOnEdit && !isMultiValueOperator(item.value || "") && nextInputTypeMap[filterInputType] === "value") {
-    setInputValue((filter == null ? void 0 : filter.value) || "");
-  } else {
-    setInputValue("");
-  }
-};
-
-const MAX_MENU_HEIGHT = 300;
-const useFloatingInteractions = ({
-  open,
-  onOpenChange,
-  activeIndex,
-  setActiveIndex,
-  outsidePressIdsToIgnore,
-  listRef,
-  disabledIndicesRef
-}) => {
-  const { refs, floatingStyles, context } = react.useFloating({
-    whileElementsMounted: react.autoUpdate,
-    open,
-    onOpenChange,
-    placement: "bottom-start",
-    middleware: [
-      react.offset(10),
-      react.flip({ padding: 10 }),
-      react.size({
-        apply({ availableHeight, availableWidth, elements }) {
-          elements.floating.style.maxHeight = `${Math.min(MAX_MENU_HEIGHT, availableHeight)}px`;
-          elements.floating.style.maxWidth = `${availableWidth}px`;
-        },
-        padding: 10
-      })
-    ],
-    strategy: "fixed"
-  });
-  const role = react.useRole(context, { role: "listbox" });
-  const dismiss = react.useDismiss(context, {
-    outsidePress: (event) => {
-      var _a;
-      if (event.currentTarget instanceof Element) {
-        const target = event.currentTarget;
-        let idToCompare = target.id;
-        if (target.nodeName === "path") {
-          idToCompare = ((_a = target.parentElement) == null ? void 0 : _a.id) || "";
-        }
-        if (outsidePressIdsToIgnore.includes(idToCompare)) {
-          return false;
-        }
-      }
-      return true;
-    }
-  });
-  const listNav = react.useListNavigation(context, {
-    listRef,
-    activeIndex,
-    onNavigate: setActiveIndex,
-    virtual: true,
-    loop: true,
-    disabledIndices: disabledIndicesRef.current
-  });
-  const { getReferenceProps, getFloatingProps, getItemProps } = react.useInteractions([role, dismiss, listNav]);
-  return {
-    refs,
-    floatingStyles,
-    context,
-    getReferenceProps,
-    getFloatingProps,
-    getItemProps
-  };
-};
-
-var __defProp$C = Object.defineProperty;
-var __defProps$q = Object.defineProperties;
-var __getOwnPropDescs$q = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$C = Object.getOwnPropertySymbols;
-var __hasOwnProp$C = Object.prototype.hasOwnProperty;
-var __propIsEnum$C = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$C = (obj, key, value) => key in obj ? __defProp$C(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$C = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$C.call(b, prop))
-      __defNormalProp$C(a, prop, b[prop]);
-  if (__getOwnPropSymbols$C)
-    for (var prop of __getOwnPropSymbols$C(b)) {
-      if (__propIsEnum$C.call(b, prop))
-        __defNormalProp$C(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$q = (a, b) => __defProps$q(a, __getOwnPropDescs$q(b));
-const MultiValuePill = ({
-  item,
-  handleRemoveMultiValue,
-  index,
-  handleEditMultiValuePill
-}) => {
-  var _a, _b;
-  const styles = ui.useStyles2(getStyles$d);
-  const editMultiValuePill = React.useCallback(
-    (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      handleEditMultiValuePill(item);
-    },
-    [handleEditMultiValuePill, item]
-  );
-  const editMultiValuePillWithKeyboard = React.useCallback(
-    (e) => {
-      if (e.key === "Enter") {
-        editMultiValuePill(e);
-      }
-    },
-    [editMultiValuePill]
-  );
-  const removePillHandler = React.useCallback(
-    (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      handleRemoveMultiValue(item);
-    },
-    [handleRemoveMultiValue, item]
-  );
-  const removePillHandlerWithKeyboard = React.useCallback(
-    (e) => {
-      if (e.key === "Enter") {
-        removePillHandler(e);
-      }
-    },
-    [removePillHandler]
-  );
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.basePill, styles.valuePill),
-    onClick: editMultiValuePill,
-    onKeyDown: editMultiValuePillWithKeyboard,
-    tabIndex: 0,
-    id: `${item.value}-${index}`
-  }, (_a = item.label) != null ? _a : item.value, /* @__PURE__ */ React__default["default"].createElement(ui.Button, {
-    onClick: removePillHandler,
-    onKeyDownCapture: removePillHandlerWithKeyboard,
-    fill: "text",
-    size: "sm",
-    variant: "secondary",
-    className: styles.removeButton,
-    tooltip: `Remove filter value - ${(_b = item.label) != null ? _b : item.value}`
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    name: "times",
-    size: "md",
-    id: `${item.value}-${index}-close-icon`
-  })));
-};
-const getStyles$d = (theme) => ({
-  basePill: css.css(__spreadProps$q(__spreadValues$C({
-    display: "flex",
-    alignItems: "center",
-    background: theme.colors.action.disabledBackground,
-    border: `1px solid ${theme.colors.border.weak}`,
-    padding: theme.spacing(0.125, 1, 0.125, 1),
-    color: theme.colors.text.primary,
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    minHeight: theme.spacing(2.75)
-  }, theme.typography.bodySmall), {
-    cursor: "pointer"
-  })),
-  valuePill: css.css({
-    background: theme.colors.action.selected,
-    padding: theme.spacing(0.125, 0, 0.125, 1)
-  }),
-  removeButton: css.css({
-    marginInline: theme.spacing(0.5),
-    height: "100%",
-    padding: 0,
-    cursor: "pointer",
-    "&:hover": {
-      color: theme.colors.text.primary
-    }
-  })
-});
-
-var __defProp$B = Object.defineProperty;
-var __defProps$p = Object.defineProperties;
-var __getOwnPropDescs$p = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$B = Object.getOwnPropertySymbols;
-var __hasOwnProp$B = Object.prototype.hasOwnProperty;
-var __propIsEnum$B = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$B = (obj, key, value) => key in obj ? __defProp$B(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$B = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$B.call(b, prop))
-      __defNormalProp$B(a, prop, b[prop]);
-  if (__getOwnPropSymbols$B)
-    for (var prop of __getOwnPropSymbols$B(b)) {
-      if (__propIsEnum$B.call(b, prop))
-        __defNormalProp$B(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$p = (a, b) => __defProps$p(a, __getOwnPropDescs$p(b));
-const AdHocCombobox = React.forwardRef(function AdHocCombobox2({ filter, model, isAlwaysWip, handleChangeViewMode, focusOnWipInputRef, populateInputOnEdit }, parentRef) {
-  var _a, _b, _c, _d;
-  const [open, setOpen] = React.useState(false);
-  const [options, setOptions] = React.useState([]);
-  const [optionsLoading, setOptionsLoading] = React.useState(false);
-  const [optionsError, setOptionsError] = React.useState(false);
-  const [inputValue, setInputValue] = React.useState("");
-  const [activeIndex, setActiveIndex] = React.useState(null);
-  const [filterInputType, setInputType] = React.useState(!isAlwaysWip ? "value" : "key");
-  const [preventFiltering, setPreventFiltering] = React.useState(!isAlwaysWip && filterInputType === "value");
-  const styles = ui.useStyles2(getStyles$c);
-  const [filterMultiValues, setFilterMultiValues] = React.useState([]);
-  const [_, setForceRefresh] = React.useState({});
-  const allowCustomValue = (_a = model.state.allowCustomValue) != null ? _a : true;
-  const multiValuePillWrapperRef = React.useRef(null);
-  const hasMultiValueOperator = isMultiValueOperator((filter == null ? void 0 : filter.operator) || "");
-  const isMultiValueEdit = hasMultiValueOperator && filterInputType === "value";
-  const operatorIdentifier = React.useId();
-  const listRef = React.useRef([]);
-  const disabledIndicesRef = React.useRef([]);
-  const filterInputTypeRef = React.useRef(!isAlwaysWip ? "value" : "key");
-  const optionsSearcher = React.useMemo(() => fuzzySearchOptions(options), [options]);
-  const isLastFilter = React.useMemo(() => {
-    if (isAlwaysWip) {
-      return false;
-    }
-    if (model.state.filters.at(-1) === filter) {
-      return true;
-    }
-    return false;
-  }, [filter, isAlwaysWip, model.state.filters]);
-  const handleResetWip = React.useCallback(() => {
-    if (isAlwaysWip) {
-      model._addWip();
-      setInputType("key");
-      setInputValue("");
-    }
-  }, [model, isAlwaysWip]);
-  const handleMultiValueFilterCommit = React.useCallback(
-    (model2, filter2, filterMultiValues2, preventFocus) => {
-      if (filterMultiValues2.length) {
-        const valueLabels = [];
-        const values = [];
-        filterMultiValues2.forEach((item) => {
-          var _a2;
-          valueLabels.push((_a2 = item.label) != null ? _a2 : item.value);
-          values.push(item.value);
-        });
-        model2._updateFilter(filter2, { valueLabels, values, value: values[0] });
-        setFilterMultiValues([]);
-      }
-      if (!preventFocus) {
-        setTimeout(() => {
-          var _a2;
-          return (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
-        });
-      }
-    },
-    []
-  );
-  const handleLocalMultiValueChange = React.useCallback((selectedItem) => {
-    setFilterMultiValues((items) => {
-      if (items.some((item) => item.value === selectedItem.value)) {
-        return items.filter((item) => item.value !== selectedItem.value);
-      }
-      return [...items, selectedItem];
-    });
-  }, []);
-  const onOpenChange = React.useCallback(
-    (nextOpen, _2, reason) => {
-      setOpen(nextOpen);
-      if (reason && ["outside-press", "escape-key"].includes(reason)) {
-        if (isMultiValueEdit) {
-          handleMultiValueFilterCommit(model, filter, filterMultiValues);
-        }
-        handleResetWip();
-        handleChangeViewMode == null ? void 0 : handleChangeViewMode();
-      }
-    },
-    [
-      filter,
-      filterMultiValues,
-      handleChangeViewMode,
-      handleMultiValueFilterCommit,
-      handleResetWip,
-      isMultiValueEdit,
-      model
-    ]
-  );
-  const outsidePressIdsToIgnore = React.useMemo(() => {
-    return [
-      operatorIdentifier,
-      ...filterMultiValues.reduce(
-        (acc, item, i) => [...acc, `${item.value}-${i}`, `${item.value}-${i}-close-icon`],
-        []
-      )
-    ];
-  }, [operatorIdentifier, filterMultiValues]);
-  const { refs, floatingStyles, context, getReferenceProps, getFloatingProps, getItemProps } = useFloatingInteractions({
-    open,
-    onOpenChange,
-    activeIndex,
-    setActiveIndex,
-    outsidePressIdsToIgnore,
-    listRef,
-    disabledIndicesRef
-  });
-  React.useImperativeHandle(parentRef, () => () => {
-    var _a2;
-    return (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
-  }, [refs.domReference]);
-  function onChange(event) {
-    const value = event.target.value;
-    setInputValue(value);
-    setActiveIndex(0);
-    if (preventFiltering) {
-      setPreventFiltering(false);
-    }
-  }
-  const handleRemoveMultiValue = React.useCallback(
-    (item) => {
-      setFilterMultiValues((selected) => selected.filter((option) => option.value !== item.value));
-      setTimeout(() => {
-        var _a2;
-        return (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
-      });
-    },
-    [refs.domReference]
-  );
-  const filteredDropDownItems = flattenOptionGroups(
-    handleOptionGroups(optionsSearcher(preventFiltering ? "" : inputValue, filterInputType))
-  );
-  if (allowCustomValue && filterInputType !== "operator" && inputValue) {
-    filteredDropDownItems.push({
-      value: inputValue.trim(),
-      label: inputValue.trim(),
-      isCustom: true
-    });
-  }
-  const maxOptionWidth = setupDropdownAccessibility(filteredDropDownItems, listRef, disabledIndicesRef);
-  const handleFetchOptions = React.useCallback(
-    async (inputType) => {
-      var _a2;
-      setOptionsError(false);
-      setOptionsLoading(true);
-      setOptions([]);
-      let options2 = [];
-      try {
-        if (inputType === "key") {
-          options2 = await model._getKeys(null);
-        } else if (inputType === "operator") {
-          options2 = model._getOperators();
-        } else if (inputType === "value") {
-          options2 = await model._getValuesFor(filter);
-        }
-        if (filterInputTypeRef.current !== inputType) {
-          return;
-        }
-        setOptions(options2);
-        if ((_a2 = options2[0]) == null ? void 0 : _a2.group) {
-          setActiveIndex(1);
-        } else {
-          setActiveIndex(0);
-        }
-      } catch (e) {
-        setOptionsError(true);
-      }
-      setOptionsLoading(false);
-    },
-    [filter, model]
-  );
-  const rowVirtualizer = reactVirtual.useVirtualizer({
-    count: filteredDropDownItems.length,
-    getScrollElement: () => refs.floating.current,
-    estimateSize: (index) => filteredDropDownItems[index].description ? VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION : VIRTUAL_LIST_ITEM_HEIGHT,
-    overscan: VIRTUAL_LIST_OVERSCAN
-  });
-  const handleBackspaceInput = React.useCallback(
-    (event, multiValueEdit) => {
-      if (event.key === "Backspace" && !inputValue) {
-        if (filterInputType === "value") {
-          if (multiValueEdit) {
-            if (filterMultiValues.length) {
-              setFilterMultiValues((items) => {
-                const updated = [...items];
-                updated.splice(-1, 1);
-                return updated;
-              });
-              return;
-            }
-          }
-          setInputType("operator");
-          return;
-        }
-        focusOnWipInputRef == null ? void 0 : focusOnWipInputRef();
-        model._handleComboboxBackspace(filter);
-        if (isAlwaysWip) {
-          handleResetWip();
-        }
-      }
-    },
-    [
-      inputValue,
-      filterInputType,
-      model,
-      filter,
-      isAlwaysWip,
-      filterMultiValues.length,
-      handleResetWip,
-      focusOnWipInputRef
-    ]
-  );
-  const handleTabInput = React.useCallback(
-    (event, multiValueEdit) => {
-      var _a2;
-      if (event.key === "Tab" && !event.shiftKey) {
-        if (multiValueEdit) {
-          event.preventDefault();
-          handleMultiValueFilterCommit(model, filter, filterMultiValues);
-          (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
-        }
-        handleChangeViewMode == null ? void 0 : handleChangeViewMode();
-        handleResetWip();
-      }
-    },
-    [
-      filter,
-      filterMultiValues,
-      handleChangeViewMode,
-      handleMultiValueFilterCommit,
-      handleResetWip,
-      model,
-      refs.domReference
-    ]
-  );
-  const handleShiftTabInput = React.useCallback(
-    (event, multiValueEdit) => {
-      if (event.key === "Tab" && event.shiftKey) {
-        if (multiValueEdit) {
-          event.preventDefault();
-          handleMultiValueFilterCommit(model, filter, filterMultiValues, true);
-        }
-        handleChangeViewMode == null ? void 0 : handleChangeViewMode();
-        handleResetWip();
-      }
-    },
-    [filter, filterMultiValues, handleChangeViewMode, handleMultiValueFilterCommit, handleResetWip, model]
-  );
-  const handleEnterInput = React.useCallback(
-    (event, multiValueEdit) => {
-      if (event.key === "Enter" && activeIndex != null) {
-        if (!filteredDropDownItems[activeIndex]) {
-          return;
-        }
-        const selectedItem = filteredDropDownItems[activeIndex];
-        if (multiValueEdit) {
-          handleLocalMultiValueChange(selectedItem);
-          setInputValue("");
-        } else {
-          model._updateFilter(
-            filter,
-            generateFilterUpdatePayload({
-              filterInputType,
-              item: selectedItem,
-              filter,
-              setFilterMultiValues
-            })
-          );
-          populateInputValueOnInputTypeSwitch({
-            populateInputOnEdit,
-            item: selectedItem,
-            filterInputType,
-            setInputValue,
-            filter
-          });
-          switchToNextInputType(
-            filterInputType,
-            setInputType,
-            handleChangeViewMode,
-            refs.domReference.current,
-            isLastFilter ? false : void 0
-          );
-          setActiveIndex(null);
-          if (isLastFilter) {
-            focusOnWipInputRef == null ? void 0 : focusOnWipInputRef();
-          }
-        }
-      }
-    },
-    [
-      activeIndex,
-      filteredDropDownItems,
-      handleLocalMultiValueChange,
-      model,
-      filter,
-      filterInputType,
-      populateInputOnEdit,
-      handleChangeViewMode,
-      refs.domReference,
-      isLastFilter,
-      focusOnWipInputRef
-    ]
-  );
-  const handleEditMultiValuePill = React.useCallback(
-    (value) => {
-      var _a2;
-      const valueLabel = value.label || value.value;
-      setFilterMultiValues((prev) => prev.filter((item) => item.value !== value.value));
-      setPreventFiltering(true);
-      setInputValue(valueLabel);
-      (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
-      setTimeout(() => {
-        var _a3;
-        (_a3 = refs.domReference.current) == null ? void 0 : _a3.select();
-      });
-    },
-    [refs.domReference]
-  );
-  React.useEffect(() => {
-    if (open) {
-      handleFetchOptions(filterInputType);
-    }
-  }, [open, filterInputType]);
-  React.useEffect(() => {
-    var _a2, _b2;
-    if (!isAlwaysWip) {
-      if (hasMultiValueOperator && ((_a2 = filter == null ? void 0 : filter.values) == null ? void 0 : _a2.length)) {
-        const multiValueOptions = filter.values.reduce(
-          (acc, value, i) => {
-            var _a3;
-            return [
-              ...acc,
-              {
-                label: ((_a3 = filter.valueLabels) == null ? void 0 : _a3[i]) || value,
-                value
-              }
-            ];
-          },
-          []
-        );
-        setFilterMultiValues(multiValueOptions);
-      }
-      if (!hasMultiValueOperator && populateInputOnEdit) {
-        setInputValue((filter == null ? void 0 : filter.value) || "");
-        setTimeout(() => {
-          var _a3;
-          (_a3 = refs.domReference.current) == null ? void 0 : _a3.select();
-        });
-      }
-      (_b2 = refs.domReference.current) == null ? void 0 : _b2.focus();
-    }
-  }, []);
-  React.useEffect(() => {
-    if (isMultiValueEdit && filterMultiValues) {
-      setTimeout(() => setForceRefresh({}));
-    }
-  }, [filterMultiValues, isMultiValueEdit]);
-  React.useLayoutEffect(() => {
-    if (filterInputTypeRef.current) {
-      filterInputTypeRef.current = filterInputType;
-    }
-  }, [filterInputType]);
-  React.useLayoutEffect(() => {
-    var _a2, _b2;
-    if (activeIndex !== null && rowVirtualizer.range && (activeIndex > ((_a2 = rowVirtualizer.range) == null ? void 0 : _a2.endIndex) || activeIndex < ((_b2 = rowVirtualizer.range) == null ? void 0 : _b2.startIndex))) {
-      rowVirtualizer.scrollToIndex(activeIndex);
-    }
-  }, [activeIndex, rowVirtualizer]);
-  const keyLabel = (_b = filter == null ? void 0 : filter.keyLabel) != null ? _b : filter == null ? void 0 : filter.key;
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.comboboxWrapper
-  }, filter ? /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.pillWrapper
-  }, (filter == null ? void 0 : filter.key) ? /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.basePill, styles.keyPill)
-  }, keyLabel) : null, (filter == null ? void 0 : filter.key) && (filter == null ? void 0 : filter.operator) && filterInputType !== "operator" ? /* @__PURE__ */ React__default["default"].createElement("div", {
-    id: operatorIdentifier,
-    className: css.cx(styles.basePill, styles.operatorPill, operatorIdentifier),
-    role: "button",
-    "aria-label": "Edit filter operator",
-    tabIndex: 0,
-    onClick: (event) => {
-      event.stopPropagation();
-      setInputValue("");
-      switchInputType("operator", setInputType, void 0, refs.domReference.current);
-    },
-    onKeyDown: (event) => {
-      handleShiftTabInput(event, hasMultiValueOperator);
-      if (event.key === "Enter") {
-        setInputValue("");
-        switchInputType("operator", setInputType, void 0, refs.domReference.current);
-      }
-    }
-  }, filter.operator) : null, /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref: multiValuePillWrapperRef
-  }), isMultiValueEdit ? filterMultiValues.map((item, i) => /* @__PURE__ */ React__default["default"].createElement(MultiValuePill, {
-    key: `${item.value}-${i}`,
-    item,
-    index: i,
-    handleRemoveMultiValue,
-    handleEditMultiValuePill
-  })) : null) : null, /* @__PURE__ */ React__default["default"].createElement("input", __spreadProps$p(__spreadValues$B({}, getReferenceProps({
-    ref: refs.setReference,
-    onChange,
-    value: inputValue,
-    placeholder: generatePlaceholder(filter, filterInputType, isMultiValueEdit, isAlwaysWip),
-    "aria-autocomplete": "list",
-    onKeyDown(event) {
-      if (!open) {
-        setOpen(true);
-        return;
-      }
-      if (filterInputType === "operator") {
-        handleShiftTabInput(event);
-      }
-      handleBackspaceInput(event, isMultiValueEdit);
-      handleTabInput(event, isMultiValueEdit);
-      handleEnterInput(event, isMultiValueEdit);
-    }
-  })), {
-    className: css.cx(styles.inputStyle, { [styles.loadingInputPadding]: !optionsLoading }),
-    onClick: (event) => {
-      event.stopPropagation();
-      setOpen(true);
-    },
-    onFocus: () => {
-      setOpen(true);
-    }
-  })), optionsLoading ? /* @__PURE__ */ React__default["default"].createElement(ui.Spinner, {
-    className: styles.loadingIndicator,
-    inline: true
-  }) : null, /* @__PURE__ */ React__default["default"].createElement(react.FloatingPortal, null, open && /* @__PURE__ */ React__default["default"].createElement(react.FloatingFocusManager, {
-    context,
-    initialFocus: -1,
-    visuallyHiddenDismiss: true,
-    modal: false
-  }, /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, /* @__PURE__ */ React__default["default"].createElement("div", {
-    style: __spreadProps$p(__spreadValues$B({}, floatingStyles), {
-      width: `${optionsError ? ERROR_STATE_DROPDOWN_WIDTH : maxOptionWidth}px`,
-      transform: isMultiValueEdit ? `translate(${((_c = multiValuePillWrapperRef.current) == null ? void 0 : _c.getBoundingClientRect().left) || 0}px, ${(((_d = refs.domReference.current) == null ? void 0 : _d.getBoundingClientRect().bottom) || 0) + 10}px )` : floatingStyles.transform
-    }),
-    ref: refs.setFloating,
-    className: styles.dropdownWrapper,
-    tabIndex: -1
-  }, /* @__PURE__ */ React__default["default"].createElement("div", __spreadProps$p(__spreadValues$B({
-    style: {
-      height: `${rowVirtualizer.getTotalSize() || VIRTUAL_LIST_ITEM_HEIGHT}px`
-    }
-  }, getFloatingProps()), {
-    tabIndex: -1
-  }), optionsLoading ? /* @__PURE__ */ React__default["default"].createElement(LoadingOptionsPlaceholder, null) : optionsError ? /* @__PURE__ */ React__default["default"].createElement(OptionsErrorPlaceholder, {
-    handleFetchOptions: () => handleFetchOptions(filterInputType)
-  }) : !filteredDropDownItems.length && (!allowCustomValue || filterInputType === "operator" || !inputValue) ? /* @__PURE__ */ React__default["default"].createElement(NoOptionsPlaceholder, null) : rowVirtualizer.getVirtualItems().map((virtualItem) => {
-    var _a2;
-    const item = filteredDropDownItems[virtualItem.index];
-    const index = virtualItem.index;
-    if (item.options) {
-      return /* @__PURE__ */ React__default["default"].createElement("div", {
-        key: `${item.label}+${index}`,
-        className: css.cx(styles.optionGroupLabel, styles.groupTopBorder),
-        style: {
-          height: `${virtualItem.size}px`,
-          transform: `translateY(${virtualItem.start}px)`
-        }
-      }, /* @__PURE__ */ React__default["default"].createElement(ui.Text, {
-        weight: "bold",
-        variant: "bodySmall",
-        color: "secondary"
-      }, item.label));
-    }
-    const nextItem = filteredDropDownItems[virtualItem.index + 1];
-    const shouldAddBottomBorder = nextItem && !nextItem.group && !nextItem.options && item.group;
-    return /* @__PURE__ */ React__default["default"].createElement(DropdownItem, __spreadProps$p(__spreadValues$B({}, getItemProps({
-      key: `${item.value}-${index}`,
-      ref(node) {
-        listRef.current[index] = node;
-      },
-      onClick(event) {
-        var _a3;
-        if (filterInputType !== "value") {
-          event.stopPropagation();
-        }
-        if (isMultiValueEdit) {
-          event.preventDefault();
-          event.stopPropagation();
-          handleLocalMultiValueChange(item);
-          setInputValue("");
-          (_a3 = refs.domReference.current) == null ? void 0 : _a3.focus();
-        } else {
-          model._updateFilter(
-            filter,
-            generateFilterUpdatePayload({
-              filterInputType,
-              item,
-              filter,
-              setFilterMultiValues
-            })
-          );
-          populateInputValueOnInputTypeSwitch({
-            populateInputOnEdit,
-            item,
-            filterInputType,
-            setInputValue,
-            filter
-          });
-          switchToNextInputType(
-            filterInputType,
-            setInputType,
-            handleChangeViewMode,
-            refs.domReference.current,
-            false
-          );
-        }
-      }
-    })), {
-      active: activeIndex === index,
-      addGroupBottomBorder: shouldAddBottomBorder,
-      style: {
-        height: `${virtualItem.size}px`,
-        transform: `translateY(${virtualItem.start}px)`
-      },
-      "aria-setsize": filteredDropDownItems.length,
-      "aria-posinset": virtualItem.index + 1,
-      isMultiValueEdit,
-      checked: filterMultiValues.some((val) => val.value === item.value)
-    }), /* @__PURE__ */ React__default["default"].createElement("span", null, item.isCustom ? "Use custom value: " : "", " ", (_a2 = item.label) != null ? _a2 : item.value), item.description ? /* @__PURE__ */ React__default["default"].createElement("div", {
-      className: styles.descriptionText
-    }, item.description) : null);
-  }))), isMultiValueEdit && !optionsLoading && !optionsError && filteredDropDownItems.length ? /* @__PURE__ */ React__default["default"].createElement(MultiValueApplyButton, {
-    onApply: () => {
-      handleMultiValueFilterCommit(model, filter, filterMultiValues);
-    },
-    floatingElement: refs.floating.current,
-    maxOptionWidth,
-    menuHeight: Math.min(rowVirtualizer.getTotalSize(), MAX_MENU_HEIGHT)
-  }) : null))));
-});
-const getStyles$c = (theme) => ({
-  comboboxWrapper: css.css({
-    display: "flex",
-    flexWrap: "wrap"
-  }),
-  pillWrapper: css.css({
-    display: "flex",
-    alignItems: "center",
-    flexWrap: "wrap"
-  }),
-  basePill: css.css(__spreadProps$p(__spreadValues$B({
-    display: "flex",
-    alignItems: "center",
-    background: theme.colors.action.disabledBackground,
-    border: `1px solid ${theme.colors.border.weak}`,
-    padding: theme.spacing(0.125, 1, 0.125, 1),
-    color: theme.colors.text.primary,
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    minHeight: theme.spacing(2.75)
-  }, theme.typography.bodySmall), {
-    cursor: "pointer"
-  })),
-  keyPill: css.css({
-    fontWeight: theme.typography.fontWeightBold,
-    cursor: "default"
-  }),
-  operatorPill: css.css({
-    "&:hover": {
-      background: theme.colors.action.hover
-    }
-  }),
-  dropdownWrapper: css.css({
-    backgroundColor: theme.colors.background.primary,
-    color: theme.colors.text.primary,
-    boxShadow: theme.shadows.z2,
-    overflowY: "auto",
-    zIndex: theme.zIndex.dropdown
-  }),
-  inputStyle: css.css({
-    paddingBlock: 0,
-    "&:focus": {
-      outline: "none"
-    }
-  }),
-  loadingIndicator: css.css({
-    color: theme.colors.text.secondary,
-    marginLeft: theme.spacing(0.5)
-  }),
-  loadingInputPadding: css.css({
-    paddingRight: theme.spacing(2.5)
-  }),
-  optionGroupLabel: css.css({
-    padding: theme.spacing(1),
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: "100%"
-  }),
-  groupTopBorder: css.css({
-    "&:not(:first-child)": {
-      borderTop: `1px solid ${theme.colors.border.weak}`
-    }
-  }),
-  descriptionText: css.css(__spreadProps$p(__spreadValues$B({}, theme.typography.bodySmall), {
-    color: theme.colors.text.secondary,
-    paddingTop: theme.spacing(0.5)
-  }))
-});
-
-var __defProp$A = Object.defineProperty;
-var __defProps$o = Object.defineProperties;
-var __getOwnPropDescs$o = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$A = Object.getOwnPropertySymbols;
-var __hasOwnProp$A = Object.prototype.hasOwnProperty;
-var __propIsEnum$A = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$A = (obj, key, value) => key in obj ? __defProp$A(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$A = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$A.call(b, prop))
-      __defNormalProp$A(a, prop, b[prop]);
-  if (__getOwnPropSymbols$A)
-    for (var prop of __getOwnPropSymbols$A(b)) {
-      if (__propIsEnum$A.call(b, prop))
-        __defNormalProp$A(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$o = (a, b) => __defProps$o(a, __getOwnPropDescs$o(b));
-function AdHocFilterPill({ filter, model, readOnly, focusOnWipInputRef }) {
-  var _a, _b, _c;
-  const styles = ui.useStyles2(getStyles$b);
-  const [viewMode, setViewMode] = React.useState(true);
-  const [shouldFocusOnPillWrapper, setShouldFocusOnPillWrapper] = React.useState(false);
-  const pillWrapperRef = React.useRef(null);
-  const [populateInputOnEdit, setPopulateInputOnEdit] = React.useState(false);
-  const keyLabel = (_a = filter.keyLabel) != null ? _a : filter.key;
-  const valueLabel = ((_b = filter.valueLabels) == null ? void 0 : _b.join(", ")) || ((_c = filter.values) == null ? void 0 : _c.join(", ")) || filter.value;
-  const handleChangeViewMode = React.useCallback(
-    (event, shouldFocusOnPillWrapperOverride) => {
-      event == null ? void 0 : event.stopPropagation();
-      if (readOnly) {
-        return;
-      }
-      setShouldFocusOnPillWrapper(shouldFocusOnPillWrapperOverride != null ? shouldFocusOnPillWrapperOverride : !viewMode);
-      setViewMode(!viewMode);
-    },
-    [readOnly, viewMode]
-  );
-  React.useEffect(() => {
-    var _a2;
-    if (shouldFocusOnPillWrapper) {
-      (_a2 = pillWrapperRef.current) == null ? void 0 : _a2.focus();
-      setShouldFocusOnPillWrapper(false);
-    }
-  }, [shouldFocusOnPillWrapper]);
-  React.useEffect(() => {
-    if (filter.forceEdit && viewMode) {
-      setViewMode(false);
-      model._updateFilter(filter, { forceEdit: void 0 });
-    }
-  }, [filter, model, viewMode]);
-  React.useEffect(() => {
-    if (viewMode) {
-      setPopulateInputOnEdit((prevValue) => prevValue ? false : prevValue);
-    }
-  }, [viewMode]);
-  if (viewMode) {
-    const pillText = /* @__PURE__ */ React__default["default"].createElement("span", {
-      className: styles.pillText
-    }, keyLabel, " ", filter.operator, " ", valueLabel);
-    return /* @__PURE__ */ React__default["default"].createElement("div", {
-      className: css.cx(styles.combinedFilterPill, { [styles.readOnlyCombinedFilter]: readOnly }),
-      onClick: (e) => {
-        e.stopPropagation();
-        setPopulateInputOnEdit(true);
-        handleChangeViewMode();
-      },
-      onKeyDown: (e) => {
-        if (e.key === "Enter") {
-          setPopulateInputOnEdit(true);
-          handleChangeViewMode();
-        }
-      },
-      role: "button",
-      "aria-label": `Edit filter with key ${keyLabel}`,
-      tabIndex: 0,
-      ref: pillWrapperRef
-    }, valueLabel.length < 20 ? pillText : /* @__PURE__ */ React__default["default"].createElement(ui.Tooltip, {
-      content: /* @__PURE__ */ React__default["default"].createElement("div", {
-        className: styles.tooltipText
-      }, valueLabel),
-      placement: "top"
-    }, pillText), !readOnly ? /* @__PURE__ */ React__default["default"].createElement(ui.IconButton, {
-      onClick: (e) => {
-        e.stopPropagation();
-        model._removeFilter(filter);
-        setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
-      },
-      onKeyDownCapture: (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          e.stopPropagation();
-          model._removeFilter(filter);
-          setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
-        }
-      },
-      name: "times",
-      size: "md",
-      className: styles.removeButton,
-      tooltip: `Remove filter with key ${keyLabel}`
-    }) : null);
-  }
-  return /* @__PURE__ */ React__default["default"].createElement(AdHocCombobox, {
-    filter,
-    model,
-    handleChangeViewMode,
-    focusOnWipInputRef,
-    populateInputOnEdit
-  });
-}
-const getStyles$b = (theme) => ({
-  combinedFilterPill: css.css(__spreadProps$o(__spreadValues$A({
-    display: "flex",
-    alignItems: "center",
-    background: theme.colors.action.selected,
-    borderRadius: theme.shape.radius.default,
-    border: `1px solid ${theme.colors.border.weak}`,
-    padding: theme.spacing(0.125, 0, 0.125, 1),
-    color: theme.colors.text.primary,
-    overflow: "hidden",
-    whiteSpace: "nowrap",
-    minHeight: theme.spacing(2.75)
-  }, theme.typography.bodySmall), {
-    fontWeight: theme.typography.fontWeightBold,
-    cursor: "pointer",
-    "&:hover": {
-      background: theme.colors.action.hover
-    }
-  })),
-  readOnlyCombinedFilter: css.css({
-    paddingRight: theme.spacing(1),
-    cursor: "text",
-    "&:hover": {
-      background: theme.colors.action.selected
-    }
-  }),
-  removeButton: css.css({
-    marginInline: theme.spacing(0.5),
-    cursor: "pointer",
-    "&:hover": {
-      color: theme.colors.text.primary
-    }
-  }),
-  pillText: css.css({
-    maxWidth: "200px",
-    width: "100%",
-    textOverflow: "ellipsis",
-    overflow: "hidden"
-  }),
-  tooltipText: css.css({
-    textAlign: "center"
-  })
-});
-
-const AdHocFiltersAlwaysWipCombobox = React.forwardRef(function AdHocFiltersAlwaysWipCombobox2({ model }, parentRef) {
-  const { _wip } = model.useState();
-  React.useLayoutEffect(() => {
-    if (!_wip) {
-      model._addWip();
-    }
-  }, [_wip]);
-  return /* @__PURE__ */ React__default["default"].createElement(AdHocCombobox, {
-    model,
-    filter: _wip,
-    isAlwaysWip: true,
-    ref: parentRef
-  });
-});
-
-const AdHocFiltersComboboxRenderer = React.memo(function AdHocFiltersComboboxRenderer2({ model }) {
-  const { filters, readOnly } = model.useState();
-  const styles = ui.useStyles2(getStyles$a);
-  const focusOnWipInputRef = React.useRef();
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.comboboxWrapper, { [styles.comboboxFocusOutline]: !readOnly }),
-    onClick: () => {
-      var _a;
-      (_a = focusOnWipInputRef.current) == null ? void 0 : _a.call(focusOnWipInputRef);
-    }
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    name: "filter",
-    className: styles.filterIcon,
-    size: "lg"
-  }), filters.map((filter, index) => /* @__PURE__ */ React__default["default"].createElement(AdHocFilterPill, {
-    key: `${index}-${filter.key}`,
-    filter,
-    model,
-    readOnly,
-    focusOnWipInputRef: focusOnWipInputRef.current
-  })), !readOnly ? /* @__PURE__ */ React__default["default"].createElement(AdHocFiltersAlwaysWipCombobox, {
-    model,
-    ref: focusOnWipInputRef
-  }) : null);
-});
-const getStyles$a = (theme) => ({
-  comboboxWrapper: css.css({
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
-    columnGap: theme.spacing(1),
-    rowGap: theme.spacing(0.5),
-    minHeight: theme.spacing(4),
-    backgroundColor: theme.components.input.background,
-    border: `1px solid ${theme.colors.border.strong}`,
-    borderRadius: theme.shape.radius.default,
-    paddingInline: theme.spacing(1),
-    paddingBlock: theme.spacing(0.5),
-    flexGrow: 1
-  }),
-  comboboxFocusOutline: css.css({
-    "&:focus-within": {
-      outline: "2px dotted transparent",
-      outlineOffset: "2px",
-      boxShadow: `0 0 0 2px ${theme.colors.background.canvas}, 0 0 0px 4px ${theme.colors.primary.main}`,
-      transitionTimingFunction: `cubic-bezier(0.19, 1, 0.22, 1)`,
-      transitionDuration: "0.2s",
-      transitionProperty: "outline, outline-offset, box-shadow",
-      zIndex: 2
-    }
-  }),
-  filterIcon: css.css({
-    color: theme.colors.text.secondary,
-    alignSelf: "center"
-  })
-});
-
-var __defProp$z = Object.defineProperty;
-var __defProps$n = Object.defineProperties;
-var __getOwnPropDescs$n = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$z = Object.getOwnPropertySymbols;
-var __hasOwnProp$z = Object.prototype.hasOwnProperty;
-var __propIsEnum$z = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$z = (obj, key, value) => key in obj ? __defProp$z(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$z = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$z.call(b, prop))
-      __defNormalProp$z(a, prop, b[prop]);
-  if (__getOwnPropSymbols$z)
-    for (var prop of __getOwnPropSymbols$z(b)) {
-      if (__propIsEnum$z.call(b, prop))
-        __defNormalProp$z(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$n = (a, b) => __defProps$n(a, __getOwnPropDescs$n(b));
-const OPERATORS = [
-  {
-    value: "=",
-    description: "Equals"
-  },
-  {
-    value: "!=",
-    description: "Not equal"
-  },
-  {
-    value: "=|",
-    description: "One of. Use to filter on multiple values.",
-    isMulti: true
-  },
-  {
-    value: "!=|",
-    description: "Not one of. Use to exclude multiple values.",
-    isMulti: true
-  },
-  {
-    value: "=~",
-    description: "Matches regex"
-  },
-  {
-    value: "!~",
-    description: "Does not match regex"
-  },
-  {
-    value: "<",
-    description: "Less than"
-  },
-  {
-    value: ">",
-    description: "Greater than"
-  }
-];
-class AdHocFiltersVariable extends SceneObjectBase {
-  constructor(state) {
-    var _a, _b;
-    super(__spreadValues$z({
-      type: "adhoc",
-      name: (_a = state.name) != null ? _a : "Filters",
-      filters: [],
-      datasource: null,
-      applyMode: "auto",
-      filterExpression: (_b = state.filterExpression) != null ? _b : renderExpression(state.expressionBuilder, state.filters)
-    }, state));
-    this._scopedVars = { __sceneObject: wrapInSafeSerializableSceneObject(this) };
-    this._dataSourceSrv = runtime.getDataSourceSrv();
-    this._urlSync = new AdHocFiltersVariableUrlSyncHandler(this);
-    if (this.state.applyMode === "auto") {
-      patchGetAdhocFilters(this);
-    }
-  }
-  setState(update) {
-    let filterExpressionChanged = false;
-    if (update.filters && update.filters !== this.state.filters && !update.filterExpression) {
-      update.filterExpression = renderExpression(this.state.expressionBuilder, update.filters);
-      filterExpressionChanged = update.filterExpression !== this.state.filterExpression;
-    }
-    super.setState(update);
-    if (filterExpressionChanged) {
-      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
-    }
-  }
-  updateFilters(filters, options) {
-    let filterExpressionChanged = false;
-    let filterExpression = void 0;
-    if (filters && filters !== this.state.filters) {
-      filterExpression = renderExpression(this.state.expressionBuilder, filters);
-      filterExpressionChanged = filterExpression !== this.state.filterExpression;
-    }
-    super.setState({
-      filters,
-      filterExpression
-    });
-    if (filterExpressionChanged && (options == null ? void 0 : options.skipPublish) !== true || (options == null ? void 0 : options.forcePublish)) {
-      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
-    }
-  }
-  getValue() {
-    return this.state.filterExpression;
-  }
-  _updateFilter(filter, update) {
-    const { filters, _wip } = this.state;
-    if (filter === _wip) {
-      if ("value" in update && update["value"] !== "") {
-        this.setState({ filters: [...filters, __spreadValues$z(__spreadValues$z({}, _wip), update)], _wip: void 0 });
-      } else {
-        this.setState({ _wip: __spreadValues$z(__spreadValues$z({}, filter), update) });
-      }
-      return;
-    }
-    const updatedFilters = this.state.filters.map((f) => {
-      return f === filter ? __spreadValues$z(__spreadValues$z({}, f), update) : f;
-    });
-    this.setState({ filters: updatedFilters });
-  }
-  _removeFilter(filter) {
-    if (filter === this.state._wip) {
-      this.setState({ _wip: void 0 });
-      return;
-    }
-    this.setState({ filters: this.state.filters.filter((f) => f !== filter) });
-  }
-  _removeLastFilter() {
-    const filterToRemove = this.state.filters.at(-1);
-    if (filterToRemove) {
-      this._removeFilter(filterToRemove);
-    }
-  }
-  _handleComboboxBackspace(filter) {
-    if (this.state.filters.length) {
-      let filterToForceIndex = this.state.filters.length - 1;
-      if (filter !== this.state._wip) {
-        filterToForceIndex = -1;
-      }
-      this.setState({
-        filters: this.state.filters.reduce((acc, f, index) => {
-          if (index === filterToForceIndex) {
-            return [
-              ...acc,
-              __spreadProps$n(__spreadValues$z({}, f), {
-                forceEdit: true
-              })
-            ];
-          }
-          if (f === filter) {
-            return acc;
-          }
-          return [...acc, f];
-        }, [])
-      });
-    }
-  }
-  async _getKeys(currentKey) {
-    var _a, _b, _c;
-    const override = await ((_b = (_a = this.state).getTagKeysProvider) == null ? void 0 : _b.call(_a, this, currentKey));
-    if (override && override.replace) {
-      return dataFromResponse(override.values).map(toSelectableValue);
-    }
-    if (this.state.defaultKeys) {
-      return this.state.defaultKeys.map(toSelectableValue);
-    }
-    const ds = await this._dataSourceSrv.get(this.state.datasource, this._scopedVars);
-    if (!ds || !ds.getTagKeys) {
-      return [];
-    }
-    const otherFilters = this.state.filters.filter((f) => f.key !== currentKey).concat((_c = this.state.baseFilters) != null ? _c : []);
-    const timeRange = sceneGraph.getTimeRange(this).state.value;
-    const queries = this.state.useQueriesAsFilterForOptions ? getQueriesForVariables(this) : void 0;
-    const response = await ds.getTagKeys(__spreadValues$z({
-      filters: otherFilters,
-      queries,
-      timeRange
-    }, getEnrichedFiltersRequest(this)));
-    if (responseHasError(response)) {
-      this.setState({ error: response.error.message });
-    }
-    let keys = dataFromResponse(response);
-    if (override) {
-      keys = keys.concat(dataFromResponse(override.values));
-    }
-    const tagKeyRegexFilter = this.state.tagKeyRegexFilter;
-    if (tagKeyRegexFilter) {
-      keys = keys.filter((f) => f.text.match(tagKeyRegexFilter));
-    }
-    return keys.map(toSelectableValue);
-  }
-  async _getValuesFor(filter) {
-    var _a, _b, _c;
-    const override = await ((_b = (_a = this.state).getTagValuesProvider) == null ? void 0 : _b.call(_a, this, filter));
-    if (override && override.replace) {
-      return dataFromResponse(override.values).map(toSelectableValue);
-    }
-    const ds = await this._dataSourceSrv.get(this.state.datasource, this._scopedVars);
-    if (!ds || !ds.getTagValues) {
-      return [];
-    }
-    const otherFilters = this.state.filters.filter((f) => f.key !== filter.key).concat((_c = this.state.baseFilters) != null ? _c : []);
-    const timeRange = sceneGraph.getTimeRange(this).state.value;
-    const queries = this.state.useQueriesAsFilterForOptions ? getQueriesForVariables(this) : void 0;
-    const response = await ds.getTagValues(__spreadValues$z({
-      key: filter.key,
-      filters: otherFilters,
-      timeRange,
-      queries
-    }, getEnrichedFiltersRequest(this)));
-    if (responseHasError(response)) {
-      this.setState({ error: response.error.message });
-    }
-    let values = dataFromResponse(response);
-    if (override) {
-      values = values.concat(dataFromResponse(override.values));
-    }
-    return values.map(toSelectableValue);
-  }
-  _addWip() {
-    this.setState({
-      _wip: { key: "", value: "", operator: "=", condition: "" }
-    });
-  }
-  _getOperators() {
-    const filteredOperators = this.state.supportsMultiValueOperators ? OPERATORS : OPERATORS.filter((operator) => !operator.isMulti);
-    return filteredOperators.map(({ value, description }) => ({
-      label: value,
-      value,
-      description
-    }));
-  }
-}
-AdHocFiltersVariable.Component = AdHocFiltersVariableRenderer;
-function renderExpression(builder, filters) {
-  return (builder != null ? builder : renderPrometheusLabelFilters)(filters != null ? filters : []);
-}
-function AdHocFiltersVariableRenderer({ model }) {
-  const { filters, readOnly, addFilterButtonText } = model.useState();
-  const styles = ui.useStyles2(getStyles$9);
-  if (model.state.layout === "combobox") {
-    return /* @__PURE__ */ React__default["default"].createElement(AdHocFiltersComboboxRenderer, {
-      model
-    });
-  }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.wrapper
-  }, filters.map((filter, index) => /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, {
-    key: index
-  }, /* @__PURE__ */ React__default["default"].createElement(AdHocFilterRenderer, {
-    filter,
-    model
-  }))), !readOnly && /* @__PURE__ */ React__default["default"].createElement(AdHocFilterBuilder, {
-    model,
-    key: "'builder",
-    addFilterButtonText
-  }));
-}
-const getStyles$9 = (theme) => ({
-  wrapper: css.css({
-    display: "flex",
-    flexWrap: "wrap",
-    alignItems: "flex-end",
-    columnGap: theme.spacing(2),
-    rowGap: theme.spacing(1)
-  })
-});
-function toSelectableValue(input) {
-  const { text, value } = input;
-  const result = {
-    label: text,
-    value: String(value != null ? value : text)
-  };
-  if ("group" in input) {
-    result.group = input.group;
-  }
-  return result;
-}
-function isFilterComplete(filter) {
-  return filter.key !== "" && filter.operator !== "" && filter.value !== "";
-}
-function isMultiValueOperator(operatorValue) {
-  const operator = OPERATORS.find((o) => o.value === operatorValue);
-  if (!operator) {
-    return false;
-  }
-  return Boolean(operator.isMulti);
-}
-
-class DataLayersMerger {
-  constructor() {
-    this._resultsMap = /* @__PURE__ */ new Map();
-    this._prevLayers = [];
-  }
-  getMergedStream(layers) {
-    if (areDifferentLayers(layers, this._prevLayers)) {
-      this._resultsMap = /* @__PURE__ */ new Map();
-      this._prevLayers = layers;
-    }
-    const resultStreams = layers.map((l) => l.getResultsStream());
-    const deactivationHandlers = [];
-    for (const layer of layers) {
-      deactivationHandlers.push(layer.activate());
-    }
-    return rxjs.merge(resultStreams).pipe(
-      rxjs.mergeAll(),
-      rxjs.filter((v) => {
-        return this._resultsMap.get(v.origin.state.key) !== v;
-      }),
-      rxjs.map((v) => {
-        this._resultsMap.set(v.origin.state.key, v);
-        return this._resultsMap.values();
-      }),
-      rxjs.finalize(() => {
-        deactivationHandlers.forEach((handler) => handler());
-      })
-    );
-  }
-}
-function areDifferentLayers(a, b) {
-  if (a.length !== b.length) {
-    return true;
-  }
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return true;
-    }
-  }
-  return false;
-}
-
-var __defProp$y = Object.defineProperty;
-var __defProps$m = Object.defineProperties;
-var __getOwnPropDescs$m = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$y = Object.getOwnPropertySymbols;
-var __hasOwnProp$y = Object.prototype.hasOwnProperty;
-var __propIsEnum$y = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$y = (obj, key, value) => key in obj ? __defProp$y(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$y = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$y.call(b, prop))
-      __defNormalProp$y(a, prop, b[prop]);
-  if (__getOwnPropSymbols$y)
-    for (var prop of __getOwnPropSymbols$y(b)) {
-      if (__propIsEnum$y.call(b, prop))
-        __defNormalProp$y(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$m = (a, b) => __defProps$m(a, __getOwnPropDescs$m(b));
-let counter$1 = 100;
-function getNextRequestId$1() {
-  return "SQR" + counter$1++;
-}
-class SceneQueryRunner extends SceneObjectBase {
-  constructor(initialState) {
-    super(initialState);
-    this._dataLayersMerger = new DataLayersMerger();
-    this._variableValueRecorder = new VariableValueRecorder();
-    this._results = new rxjs.ReplaySubject(1);
-    this._scopedVars = { __sceneObject: wrapInSafeSerializableSceneObject(this) };
-    this._variableDependency = new VariableDependencyConfig(this, {
-      statePaths: ["queries", "datasource"],
-      onVariableUpdateCompleted: this.onVariableUpdatesCompleted.bind(this),
-      onAnyVariableChanged: this.onAnyVariableChanged.bind(this)
-    });
-    this.onDataReceived = (data$1) => {
-      const preProcessedData = data.preProcessPanelData(data$1, this.state.data);
-      this._resultAnnotations = data$1.annotations;
-      const dataWithLayersApplied = this._combineDataLayers(preProcessedData);
-      let hasFetchedData = this.state._hasFetchedData;
-      if (!hasFetchedData && preProcessedData.state !== schema.LoadingState.Loading) {
-        hasFetchedData = true;
-      }
-      this.setState({ data: dataWithLayersApplied, _hasFetchedData: hasFetchedData });
-      this._results.next({ origin: this, data: dataWithLayersApplied });
-    };
-    this.addActivationHandler(() => this._onActivate());
-  }
-  getResultsStream() {
-    return this._results;
-  }
-  _onActivate() {
-    if (this.isQueryModeAuto()) {
-      const timeRange = sceneGraph.getTimeRange(this);
-      const providers = this.getClosestExtraQueryProviders();
-      for (const provider of providers) {
-        this._subs.add(
-          provider.subscribeToState((n, p) => {
-            if (provider.shouldRerun(p, n, this.state.queries)) {
-              this.runQueries();
-            }
-          })
-        );
-      }
-      this.subscribeToTimeRangeChanges(timeRange);
-      if (this.shouldRunQueriesOnActivate()) {
-        this.runQueries();
-      }
-    }
-    if (!this._dataLayersSub) {
-      this._handleDataLayers();
-    }
-    return () => this._onDeactivate();
-  }
-  _handleDataLayers() {
-    const dataLayers = sceneGraph.getDataLayers(this);
-    if (dataLayers.length === 0) {
-      return;
-    }
-    this._dataLayersSub = this._dataLayersMerger.getMergedStream(dataLayers).subscribe(this._onLayersReceived.bind(this));
-  }
-  _onLayersReceived(results) {
-    var _a, _b, _c, _d, _e;
-    const timeRange = sceneGraph.getTimeRange(this);
-    const { dataLayerFilter } = this.state;
-    let annotations = [];
-    let alertStates = [];
-    let alertState;
-    for (const result of results) {
-      for (let frame of result.data.series) {
-        if (((_a = frame.meta) == null ? void 0 : _a.dataTopic) === data.DataTopic.Annotations) {
-          annotations = annotations.concat(frame);
-        }
-        if (((_b = frame.meta) == null ? void 0 : _b.dataTopic) === data.DataTopic.AlertStates) {
-          alertStates = alertStates.concat(frame);
-        }
-      }
-    }
-    if (dataLayerFilter == null ? void 0 : dataLayerFilter.panelId) {
-      if (annotations.length > 0) {
-        annotations = filterAnnotations(annotations, dataLayerFilter);
-      }
-      if (alertStates.length > 0) {
-        for (const frame of alertStates) {
-          const frameView = new data.DataFrameView(frame);
-          for (const row of frameView) {
-            if (row.panelId === dataLayerFilter.panelId) {
-              alertState = row;
-              break;
-            }
-          }
-        }
-      }
-    }
-    if (allFramesEmpty(annotations) && allFramesEmpty(this._layerAnnotations) && lodash.isEqual(alertState, (_c = this.state.data) == null ? void 0 : _c.alertState)) {
-      return;
-    }
-    this._layerAnnotations = annotations;
-    const baseStateUpdate = this.state.data ? this.state.data : __spreadProps$m(__spreadValues$y({}, emptyPanelData), { timeRange: timeRange.state.value });
-    this.setState({
-      data: __spreadProps$m(__spreadValues$y({}, baseStateUpdate), {
-        annotations: [...(_d = this._resultAnnotations) != null ? _d : [], ...annotations],
-        alertState: alertState != null ? alertState : (_e = this.state.data) == null ? void 0 : _e.alertState
-      })
-    });
-  }
-  onVariableUpdatesCompleted() {
-    if (this.isQueryModeAuto()) {
-      this.runQueries();
-    }
-  }
-  onAnyVariableChanged(variable) {
-    if (this._adhocFiltersVar === variable || this._groupByVar === variable || !this.isQueryModeAuto()) {
-      return;
-    }
-    if (variable instanceof AdHocFiltersVariable && this._isRelevantAutoVariable(variable)) {
-      this.runQueries();
-    }
-    if (variable instanceof GroupByVariable && this._isRelevantAutoVariable(variable)) {
-      this.runQueries();
-    }
-  }
-  _isRelevantAutoVariable(variable) {
-    var _a, _b;
-    const datasource = (_a = this.state.datasource) != null ? _a : findFirstDatasource(this.state.queries);
-    return variable.state.applyMode === "auto" && (datasource == null ? void 0 : datasource.uid) === ((_b = variable.state.datasource) == null ? void 0 : _b.uid);
-  }
-  shouldRunQueriesOnActivate() {
-    if (this._variableValueRecorder.hasDependenciesChanged(this)) {
-      writeSceneLog(
-        "SceneQueryRunner",
-        "Variable dependency changed while inactive, shouldRunQueriesOnActivate returns true"
-      );
-      return true;
-    }
-    if (!this.state.data) {
-      return true;
-    }
-    if (this._isDataTimeRangeStale(this.state.data)) {
-      return true;
-    }
-    return false;
-  }
-  _isDataTimeRangeStale(data) {
-    const timeRange = sceneGraph.getTimeRange(this);
-    const stateTimeRange = timeRange.state.value;
-    const dataTimeRange = data.timeRange;
-    if (stateTimeRange.from.unix() === dataTimeRange.from.unix() && stateTimeRange.to.unix() === dataTimeRange.to.unix()) {
-      return false;
-    }
-    writeSceneLog("SceneQueryRunner", "Data time range is stale");
-    return true;
-  }
-  _onDeactivate() {
-    var _a;
-    if (this._querySub) {
-      this._querySub.unsubscribe();
-      this._querySub = void 0;
-    }
-    if (this._dataLayersSub) {
-      this._dataLayersSub.unsubscribe();
-      this._dataLayersSub = void 0;
-    }
-    (_a = this._timeSub) == null ? void 0 : _a.unsubscribe();
-    this._timeSub = void 0;
-    this._timeSubRange = void 0;
-    this._adhocFiltersVar = void 0;
-    this._groupByVar = void 0;
-    this._variableValueRecorder.recordCurrentDependencyValuesForSceneObject(this);
-  }
-  setContainerWidth(width) {
-    if (!this._containerWidth && width > 0) {
-      this._containerWidth = width;
-      if (this.state.maxDataPointsFromWidth && !this.state.maxDataPoints) {
-        setTimeout(() => {
-          if (this.isActive && !this.state._hasFetchedData) {
-            this.runQueries();
-          }
-        }, 0);
-      }
-    } else {
-      if (width > 0) {
-        this._containerWidth = width;
-      }
-    }
-  }
-  isDataReadyToDisplay() {
-    return Boolean(this.state._hasFetchedData);
-  }
-  subscribeToTimeRangeChanges(timeRange) {
-    if (this._timeSubRange === timeRange) {
-      return;
-    }
-    if (this._timeSub) {
-      this._timeSub.unsubscribe();
-    }
-    this._timeSubRange = timeRange;
-    this._timeSub = timeRange.subscribeToState(() => {
-      this.runWithTimeRange(timeRange);
-    });
-  }
-  runQueries() {
-    const timeRange = sceneGraph.getTimeRange(this);
-    if (this.isQueryModeAuto()) {
-      this.subscribeToTimeRangeChanges(timeRange);
-    }
-    this.runWithTimeRange(timeRange);
-  }
-  getMaxDataPoints() {
-    var _a;
-    if (this.state.maxDataPoints) {
-      return this.state.maxDataPoints;
-    }
-    return this.state.maxDataPointsFromWidth ? (_a = this._containerWidth) != null ? _a : 500 : 500;
-  }
-  cancelQuery() {
-    var _a;
-    (_a = this._querySub) == null ? void 0 : _a.unsubscribe();
-    if (this._dataLayersSub) {
-      this._dataLayersSub.unsubscribe();
-      this._dataLayersSub = void 0;
-    }
-    this.setState({
-      data: __spreadProps$m(__spreadValues$y({}, this.state.data), { state: schema.LoadingState.Done })
-    });
-  }
-  async runWithTimeRange(timeRange) {
-    var _a, _b, _c;
-    if (!this.state.maxDataPoints && this.state.maxDataPointsFromWidth && !this._containerWidth) {
-      return;
-    }
-    if (!this._dataLayersSub) {
-      this._handleDataLayers();
-    }
-    (_a = this._querySub) == null ? void 0 : _a.unsubscribe();
-    if (this._variableDependency.hasDependencyInLoadingState()) {
-      writeSceneLog("SceneQueryRunner", "Variable dependency is in loading state, skipping query execution");
-      this.setState({ data: __spreadProps$m(__spreadValues$y({}, (_b = this.state.data) != null ? _b : emptyPanelData), { state: schema.LoadingState.Loading }) });
-      return;
-    }
-    const { queries } = this.state;
-    if (!(queries == null ? void 0 : queries.length)) {
-      this._setNoDataState();
-      return;
-    }
-    try {
-      const datasource = (_c = this.state.datasource) != null ? _c : findFirstDatasource(queries);
-      const ds = await getDataSource(datasource, this._scopedVars);
-      this.findAndSubscribeToAdHocFilters(ds.uid);
-      const runRequest = runtime.getRunRequest();
-      const { primary, secondaries, processors } = this.prepareRequests(timeRange, ds);
-      writeSceneLog("SceneQueryRunner", "Starting runRequest", this.state.key);
-      let stream = runRequest(ds, primary);
-      if (secondaries.length > 0) {
-        const secondaryStreams = secondaries.map((r) => runRequest(ds, r));
-        const op = extraQueryProcessingOperator(processors);
-        stream = rxjs.forkJoin([stream, ...secondaryStreams]).pipe(op);
-      }
-      stream = stream.pipe(
-        registerQueryWithController({
-          type: "data",
-          request: primary,
-          origin: this,
-          cancel: () => this.cancelQuery()
-        })
-      );
-      this._querySub = stream.subscribe(this.onDataReceived);
-    } catch (err) {
-      console.error("PanelQueryRunner Error", err);
-      this.onDataReceived(__spreadProps$m(__spreadValues$y(__spreadValues$y({}, emptyPanelData), this.state.data), {
-        state: schema.LoadingState.Error,
-        errors: [runtime.toDataQueryError(err)]
-      }));
-    }
-  }
-  clone(withState) {
-    var _a;
-    const clone = super.clone(withState);
-    if (this._resultAnnotations) {
-      clone["_resultAnnotations"] = this._resultAnnotations.map((frame) => __spreadValues$y({}, frame));
-    }
-    if (this._layerAnnotations) {
-      clone["_layerAnnotations"] = this._layerAnnotations.map((frame) => __spreadValues$y({}, frame));
-    }
-    clone["_variableValueRecorder"] = this._variableValueRecorder.cloneAndRecordCurrentValuesForSceneObject(this);
-    clone["_containerWidth"] = this._containerWidth;
-    clone["_results"].next({ origin: this, data: (_a = this.state.data) != null ? _a : emptyPanelData });
-    return clone;
-  }
-  prepareRequests(timeRange, ds) {
-    var _a;
-    const { minInterval, queries } = this.state;
-    let request = __spreadValues$y({
-      app: "scenes",
-      requestId: getNextRequestId$1(),
-      timezone: timeRange.getTimeZone(),
-      range: timeRange.state.value,
-      interval: "1s",
-      intervalMs: 1e3,
-      targets: lodash.cloneDeep(queries),
-      maxDataPoints: this.getMaxDataPoints(),
-      scopedVars: this._scopedVars,
-      startTime: Date.now(),
-      liveStreaming: this.state.liveStreaming,
-      rangeRaw: {
-        from: timeRange.state.from,
-        to: timeRange.state.to
-      },
-      cacheTimeout: this.state.cacheTimeout,
-      queryCachingTTL: this.state.queryCachingTTL
-    }, getEnrichedDataRequest(this));
-    if (this._adhocFiltersVar) {
-      request.filters = this._adhocFiltersVar.state.filters.filter(isFilterComplete);
-    }
-    if (this._groupByVar) {
-      request.groupByKeys = this._groupByVar.state.value;
-    }
-    request.targets = request.targets.map((query) => {
-      var _a2;
-      if (!query.datasource || query.datasource.uid !== ds.uid && !((_a2 = ds.meta) == null ? void 0 : _a2.mixed) && runtime.isExpressionReference && !runtime.isExpressionReference(query.datasource)) {
-        query.datasource = ds.getRef();
-      }
-      return query;
-    });
-    const lowerIntervalLimit = minInterval ? interpolate(this, minInterval) : ds.interval;
-    const norm = data.rangeUtil.calculateInterval(timeRange.state.value, request.maxDataPoints, lowerIntervalLimit);
-    request.scopedVars = Object.assign({}, request.scopedVars, {
-      __interval: { text: norm.interval, value: norm.interval },
-      __interval_ms: { text: norm.intervalMs.toString(), value: norm.intervalMs }
-    });
-    request.interval = norm.interval;
-    request.intervalMs = norm.intervalMs;
-    const primaryTimeRange = timeRange.state.value;
-    let secondaryRequests = [];
-    let secondaryProcessors = /* @__PURE__ */ new Map();
-    for (const provider of (_a = this.getClosestExtraQueryProviders()) != null ? _a : []) {
-      for (const { req, processor } of provider.getExtraQueries(request)) {
-        const requestId = getNextRequestId$1();
-        secondaryRequests.push(__spreadProps$m(__spreadValues$y({}, req), { requestId }));
-        secondaryProcessors.set(requestId, processor != null ? processor : passthroughProcessor);
-      }
-    }
-    request.range = primaryTimeRange;
-    return { primary: request, secondaries: secondaryRequests, processors: secondaryProcessors };
-  }
-  _combineDataLayers(data) {
-    if (this._layerAnnotations && this._layerAnnotations.length > 0) {
-      data.annotations = (data.annotations || []).concat(this._layerAnnotations);
-    }
-    if (this.state.data && this.state.data.alertState) {
-      data.alertState = this.state.data.alertState;
-    }
-    return data;
-  }
-  _setNoDataState() {
-    if (this.state.data !== emptyPanelData) {
-      this.setState({ data: emptyPanelData });
-    }
-  }
-  getClosestExtraQueryProviders() {
-    const found = /* @__PURE__ */ new Map();
-    if (!this.parent) {
-      return [];
-    }
-    getClosest(this.parent, (s) => {
-      if (isExtraQueryProvider(s) && !found.has(s.constructor)) {
-        found.set(s.constructor, s);
-      }
-      s.forEachChild((child) => {
-        if (isExtraQueryProvider(child) && !found.has(child.constructor)) {
-          found.set(child.constructor, child);
-        }
-      });
-      return null;
-    });
-    return Array.from(found.values());
-  }
-  findAndSubscribeToAdHocFilters(interpolatedUid) {
-    const filtersVar = findActiveAdHocFilterVariableByUid(interpolatedUid);
-    if (this._adhocFiltersVar !== filtersVar) {
-      this._adhocFiltersVar = filtersVar;
-      this._updateExplicitVariableDependencies();
-    }
-    const groupByVar = findActiveGroupByVariablesByUid(interpolatedUid);
-    if (this._groupByVar !== groupByVar) {
-      this._groupByVar = groupByVar;
-      this._updateExplicitVariableDependencies();
-    }
-  }
-  _updateExplicitVariableDependencies() {
-    const explicitDependencies = [];
-    if (this._adhocFiltersVar) {
-      explicitDependencies.push(this._adhocFiltersVar.state.name);
-    }
-    if (this._groupByVar) {
-      explicitDependencies.push(this._groupByVar.state.name);
-    }
-    this._variableDependency.setVariableNames(explicitDependencies);
-  }
-  isQueryModeAuto() {
-    var _a;
-    return ((_a = this.state.runQueriesMode) != null ? _a : "auto") === "auto";
-  }
-}
-function findFirstDatasource(targets) {
-  var _a, _b;
-  return (_b = (_a = targets.find((t) => t.datasource !== null)) == null ? void 0 : _a.datasource) != null ? _b : void 0;
-}
-function allFramesEmpty(frames) {
-  if (!frames) {
-    return true;
-  }
-  for (let i = 0; i < frames.length; i++) {
-    if (frames[i].length > 0) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function isVariableValueEqual(a, b) {
-  if (a === b) {
-    return true;
-  }
-  return lodash.isEqual(a, b);
-}
-function safeStringifyValue(value) {
-  const getCircularReplacer = () => {
-    const seen = /* @__PURE__ */ new WeakSet();
-    return (_, value2) => {
-      if (typeof value2 === "object" && value2 !== null) {
-        if (seen.has(value2)) {
-          return;
-        }
-        seen.add(value2);
-      }
-      return value2;
-    };
-  };
-  try {
-    return JSON.stringify(value, getCircularReplacer());
-  } catch (error) {
-    console.error(error);
-  }
-  return "";
-}
-function renderPrometheusLabelFilters(filters) {
-  return filters.map((filter) => renderFilter(filter)).join(",");
-}
-function renderFilter(filter) {
-  var _a, _b;
-  let value = "";
-  let operator = filter.operator;
-  if (operator === "=|") {
-    operator = "=~";
-    value = (_a = filter.values) == null ? void 0 : _a.map(escapeLabelValueInRegexSelector).join("|");
-  } else if (operator === "!=|") {
-    operator = "!~";
-    value = (_b = filter.values) == null ? void 0 : _b.map(escapeLabelValueInRegexSelector).join("|");
-  } else if (operator === "=~" || operator === "!~") {
-    value = escapeLabelValueInRegexSelector(filter.value);
-  } else {
-    value = escapeLabelValueInExactSelector(filter.value);
-  }
-  return `${filter.key}${operator}"${value}"`;
-}
-function escapeLabelValueInExactSelector(labelValue) {
-  return labelValue.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/"/g, '\\"');
-}
-function escapeLabelValueInRegexSelector(labelValue) {
-  return escapeLabelValueInExactSelector(escapeLokiRegexp(labelValue));
-}
-const RE2_METACHARACTERS = /[*+?()|\\.\[\]{}^$]/g;
-function escapeLokiRegexp(value) {
-  return value.replace(RE2_METACHARACTERS, "\\$&");
-}
-function getQueriesForVariables(sourceObject) {
-  var _a;
-  const runners = sceneGraph.findAllObjects(
-    sourceObject.getRoot(),
-    (o) => o instanceof SceneQueryRunner
-  );
-  const interpolatedDsUuid = sceneGraph.interpolate(sourceObject, (_a = sourceObject.state.datasource) == null ? void 0 : _a.uid);
-  const applicableRunners = filterOutInactiveRunnerDuplicates(runners).filter((r) => {
-    var _a2;
-    const interpolatedQueryDsUuid = sceneGraph.interpolate(sourceObject, (_a2 = r.state.datasource) == null ? void 0 : _a2.uid);
-    return interpolatedQueryDsUuid === interpolatedDsUuid;
-  });
-  if (applicableRunners.length === 0) {
-    return [];
-  }
-  const result = [];
-  applicableRunners.forEach((r) => {
-    result.push(...r.state.queries);
-  });
-  return result;
-}
-function filterOutInactiveRunnerDuplicates(runners) {
-  const groupedItems = {};
-  for (const item of runners) {
-    if (item.state.key) {
-      if (!(item.state.key in groupedItems)) {
-        groupedItems[item.state.key] = [];
-      }
-      groupedItems[item.state.key].push(item);
-    }
-  }
-  return Object.values(groupedItems).flatMap((group) => {
-    const activeItems = group.filter((item) => item.isActive);
-    if (activeItems.length === 0 && group.length === 1) {
-      return group;
-    }
-    return activeItems;
-  });
-}
-function escapeUrlPipeDelimiters(value) {
-  if (value === null || value === void 0) {
-    return "";
-  }
-  return value = /\|/g[Symbol.replace](value, "__gfp__");
-}
-function escapeUrlCommaDelimiters(value) {
-  if (value === null || value === void 0) {
-    return "";
-  }
-  return /,/g[Symbol.replace](value, "__gfc__");
-}
-function unescapeUrlDelimiters(value) {
-  if (value === null || value === void 0) {
-    return "";
-  }
-  value = /__gfp__/g[Symbol.replace](value, "|");
-  value = /__gfc__/g[Symbol.replace](value, ",");
-  return value;
-}
-function toUrlCommaDelimitedString(key, label) {
-  if (!label || key === label) {
-    return escapeUrlCommaDelimiters(key);
-  }
-  return [key, label].map(escapeUrlCommaDelimiters).join(",");
-}
-function dataFromResponse(response) {
-  return Array.isArray(response) ? response : response.data;
-}
-function responseHasError(response) {
-  return !Array.isArray(response) && Boolean(response.error);
-}
-function handleOptionGroups(values) {
-  const result = [];
-  const groupedResults = /* @__PURE__ */ new Map();
-  for (const value of values) {
-    const groupLabel = value.group;
-    if (groupLabel) {
-      let group = groupedResults.get(groupLabel);
-      if (!group) {
-        group = [];
-        groupedResults.set(groupLabel, group);
-        result.push({ label: groupLabel, options: group });
-      }
-      group.push(value);
-    } else {
-      result.push(value);
-    }
-  }
-  return result;
-}
-function getFuzzySearcher(haystack, limit = 1e4) {
-  const ufuzzy = new uFuzzy__default["default"]();
-  const FIRST = Array.from({ length: Math.min(limit, haystack.length) }, (_, i) => i);
-  return (search) => {
-    if (search === "") {
-      return FIRST;
-    }
-    const [idxs, info, order] = ufuzzy.search(haystack, search);
-    if (idxs) {
-      if (info && order) {
-        const outIdxs = Array(Math.min(order.length, limit));
-        for (let i = 0; i < outIdxs.length; i++) {
-          outIdxs[i] = info.idx[order[i]];
-        }
-        return outIdxs;
-      }
-      return idxs.slice(0, limit);
-    }
-    return [];
-  };
-}
-
-var __defProp$x = Object.defineProperty;
-var __defProps$l = Object.defineProperties;
-var __getOwnPropDescs$l = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$x = Object.getOwnPropertySymbols;
-var __hasOwnProp$x = Object.prototype.hasOwnProperty;
-var __propIsEnum$x = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$x = (obj, key, value) => key in obj ? __defProp$x(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$x = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$x.call(b, prop))
-      __defNormalProp$x(a, prop, b[prop]);
-  if (__getOwnPropSymbols$x)
-    for (var prop of __getOwnPropSymbols$x(b)) {
-      if (__propIsEnum$x.call(b, prop))
-        __defNormalProp$x(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$l = (a, b) => __defProps$l(a, __getOwnPropDescs$l(b));
-class ConstantVariable extends SceneObjectBase {
-  constructor(initialState) {
-    super(__spreadProps$l(__spreadValues$x({
-      type: "constant",
-      value: "",
-      name: ""
-    }, initialState), {
-      skipUrlSync: true
-    }));
-  }
-  getValue() {
-    return this.state.value;
-  }
-}
-
-class VariableDependencyConfig {
-  constructor(_sceneObject, _options) {
-    this._sceneObject = _sceneObject;
-    this._options = _options;
-    this._dependencies = /* @__PURE__ */ new Set();
-    this._isWaitingForVariables = false;
-    this.scanCount = 0;
-    this._statePaths = _options.statePaths;
-    if (this._options.handleTimeMacros) {
-      this.handleTimeMacros();
-    }
-  }
-  hasDependencyOn(name) {
-    return this.getNames().has(name);
-  }
-  variableUpdateCompleted(variable, hasChanged) {
-    const deps = this.getNames();
-    let dependencyChanged = false;
-    if ((deps.has(variable.state.name) || deps.has(data.DataLinkBuiltInVars.includeVars)) && hasChanged) {
-      dependencyChanged = true;
-    }
-    writeSceneLog(
-      "VariableDependencyConfig",
-      "variableUpdateCompleted",
-      variable.state.name,
-      dependencyChanged,
-      this._isWaitingForVariables
-    );
-    if (this._options.onAnyVariableChanged) {
-      this._options.onAnyVariableChanged(variable);
-    }
-    if (this._options.onVariableUpdateCompleted && (this._isWaitingForVariables || dependencyChanged)) {
-      this._options.onVariableUpdateCompleted();
-    }
-    if (dependencyChanged) {
-      if (this._options.onReferencedVariableValueChanged) {
-        this._options.onReferencedVariableValueChanged(variable);
-      }
-      if (!this._options.onReferencedVariableValueChanged && !this._options.onVariableUpdateCompleted) {
-        this._sceneObject.forceRender();
-      }
-    }
-  }
-  hasDependencyInLoadingState() {
-    if (sceneGraph.hasVariableDependencyInLoadingState(this._sceneObject)) {
-      this._isWaitingForVariables = true;
-      return true;
-    }
-    this._isWaitingForVariables = false;
-    return false;
-  }
-  getNames() {
-    const prevState = this._state;
-    const newState = this._state = this._sceneObject.state;
-    if (!prevState) {
-      this.scanStateForDependencies(this._state);
-      return this._dependencies;
-    }
-    if (newState !== prevState) {
-      if (this._statePaths) {
-        for (const path of this._statePaths) {
-          if (path === "*" || newState[path] !== prevState[path]) {
-            this.scanStateForDependencies(newState);
-            break;
-          }
-        }
-      } else {
-        this.scanStateForDependencies(newState);
-      }
-    }
-    return this._dependencies;
-  }
-  setVariableNames(varNames) {
-    this._options.variableNames = varNames;
-    this.scanStateForDependencies(this._state);
-  }
-  setPaths(paths) {
-    this._statePaths = paths;
-  }
-  scanStateForDependencies(state) {
-    this._dependencies.clear();
-    this.scanCount += 1;
-    if (this._options.variableNames) {
-      for (const name of this._options.variableNames) {
-        this._dependencies.add(name);
-      }
-    }
-    if (this._statePaths) {
-      for (const path of this._statePaths) {
-        if (path === "*") {
-          this.extractVariablesFrom(state);
-          break;
-        } else {
-          const value = state[path];
-          if (value) {
-            this.extractVariablesFrom(value);
-          }
-        }
-      }
-    }
-  }
-  extractVariablesFrom(value) {
-    VARIABLE_REGEX.lastIndex = 0;
-    const stringToCheck = typeof value !== "string" ? safeStringifyValue(value) : value;
-    const matches = stringToCheck.matchAll(VARIABLE_REGEX);
-    if (!matches) {
-      return;
-    }
-    for (const match of matches) {
-      const [, var1, var2, , var3] = match;
-      const variableName = var1 || var2 || var3;
-      this._dependencies.add(variableName);
-    }
-  }
-  handleTimeMacros() {
-    this._sceneObject.addActivationHandler(() => {
-      const timeRange = sceneGraph.getTimeRange(this._sceneObject);
-      const sub = timeRange.subscribeToState((newState, oldState) => {
-        const deps = this.getNames();
-        const hasFromDep = deps.has("__from");
-        const hasToDep = deps.has("__to");
-        const hasTimeZone = deps.has("__timezone");
-        if (newState.value !== oldState.value) {
-          if (hasFromDep) {
-            const variable = new ConstantVariable({ name: "__from", value: newState.from });
-            this.variableUpdateCompleted(variable, true);
-          } else if (hasToDep) {
-            const variable = new ConstantVariable({ name: "__to", value: newState.to });
-            this.variableUpdateCompleted(variable, true);
-          }
-        }
-        if (newState.timeZone !== oldState.timeZone && hasTimeZone) {
-          const variable = new ConstantVariable({ name: "__timezone", value: newState.timeZone });
-          this.variableUpdateCompleted(variable, true);
-        }
-      });
-      return () => sub.unsubscribe();
-    });
-  }
-}
-
-const hasLegacyVariableSupport = (datasource) => {
-  return Boolean(datasource.metricFindQuery) && !Boolean(datasource.variables);
-};
-const hasStandardVariableSupport = (datasource) => {
-  if (!datasource.variables) {
-    return false;
-  }
-  if (datasource.variables.getType() !== data.VariableSupportType.Standard) {
-    return false;
-  }
-  const variableSupport = datasource.variables;
-  return "toDataQuery" in variableSupport && Boolean(variableSupport.toDataQuery);
-};
-const hasCustomVariableSupport = (datasource) => {
-  if (!datasource.variables) {
-    return false;
-  }
-  if (datasource.variables.getType() !== data.VariableSupportType.Custom) {
-    return false;
-  }
-  const variableSupport = datasource.variables;
-  return "query" in variableSupport && "editor" in variableSupport && Boolean(variableSupport.query) && Boolean(variableSupport.editor);
-};
-const hasDataSourceVariableSupport = (datasource) => {
-  if (!datasource.variables) {
-    return false;
-  }
-  return datasource.variables.getType() === data.VariableSupportType.Datasource;
-};
-
-var __defProp$w = Object.defineProperty;
-var __defProps$k = Object.defineProperties;
-var __getOwnPropDescs$k = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$w = Object.getOwnPropertySymbols;
-var __hasOwnProp$w = Object.prototype.hasOwnProperty;
-var __propIsEnum$w = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$w = (obj, key, value) => key in obj ? __defProp$w(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$w = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$w.call(b, prop))
-      __defNormalProp$w(a, prop, b[prop]);
-  if (__getOwnPropSymbols$w)
-    for (var prop of __getOwnPropSymbols$w(b)) {
-      if (__propIsEnum$w.call(b, prop))
-        __defNormalProp$w(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$k = (a, b) => __defProps$k(a, __getOwnPropDescs$k(b));
-class StandardQueryRunner {
-  constructor(datasource, _runRequest = runtime.getRunRequest()) {
-    this.datasource = datasource;
-    this._runRequest = _runRequest;
-  }
-  getTarget(variable) {
-    if (hasStandardVariableSupport(this.datasource)) {
-      return this.datasource.variables.toDataQuery(ensureVariableQueryModelIsADataQuery(variable));
-    }
-    throw new Error("Couldn't create a target with supplied arguments.");
-  }
-  runRequest(_, request) {
-    if (!hasStandardVariableSupport(this.datasource)) {
-      return getEmptyMetricFindValueObservable();
-    }
-    if (!this.datasource.variables.query) {
-      return this._runRequest(this.datasource, request);
-    }
-    return this._runRequest(this.datasource, request, this.datasource.variables.query.bind(this.datasource.variables));
-  }
-}
-class LegacyQueryRunner {
-  constructor(datasource) {
-    this.datasource = datasource;
-  }
-  getTarget(variable) {
-    if (hasLegacyVariableSupport(this.datasource)) {
-      return variable.state.query;
-    }
-    throw new Error("Couldn't create a target with supplied arguments.");
-  }
-  runRequest({ variable, searchFilter }, request) {
-    if (!hasLegacyVariableSupport(this.datasource)) {
-      return getEmptyMetricFindValueObservable();
-    }
-    return rxjs.from(
-      this.datasource.metricFindQuery(variable.state.query, __spreadProps$k(__spreadValues$w({}, request), {
-        variable: {
-          name: variable.state.name,
-          type: variable.state.type
-        },
-        searchFilter
-      }))
-    ).pipe(
-      rxjs.mergeMap((values) => {
-        if (!values || !values.length) {
-          return getEmptyMetricFindValueObservable();
-        }
-        const series = values;
-        return rxjs.of({ series, state: data.LoadingState.Done, timeRange: request.range });
-      })
-    );
-  }
-}
-class CustomQueryRunner {
-  constructor(datasource, _runRequest = runtime.getRunRequest()) {
-    this.datasource = datasource;
-    this._runRequest = _runRequest;
-  }
-  getTarget(variable) {
-    if (hasCustomVariableSupport(this.datasource)) {
-      return variable.state.query;
-    }
-    throw new Error("Couldn't create a target with supplied arguments.");
-  }
-  runRequest(_, request) {
-    if (!hasCustomVariableSupport(this.datasource)) {
-      return getEmptyMetricFindValueObservable();
-    }
-    if (!this.datasource.variables.query) {
-      return this._runRequest(this.datasource, request);
-    }
-    return this._runRequest(this.datasource, request, this.datasource.variables.query.bind(this.datasource.variables));
-  }
-}
-const variableDummyRefId = "variable-query";
-class DatasourceQueryRunner {
-  constructor(datasource, _runRequest = runtime.getRunRequest()) {
-    this.datasource = datasource;
-    this._runRequest = _runRequest;
-  }
-  getTarget(variable) {
-    var _a;
-    if (hasDataSourceVariableSupport(this.datasource)) {
-      if (typeof variable.state.query === "string") {
-        return variable.state.query;
-      }
-      return __spreadProps$k(__spreadValues$w({}, variable.state.query), { refId: (_a = variable.state.query.refId) != null ? _a : variableDummyRefId });
-    }
-    throw new Error("Couldn't create a target with supplied arguments.");
-  }
-  runRequest(_, request) {
-    if (!hasDataSourceVariableSupport(this.datasource)) {
-      return getEmptyMetricFindValueObservable();
-    }
-    return this._runRequest(this.datasource, request, this.datasource.query);
-  }
-}
-function getEmptyMetricFindValueObservable() {
-  return rxjs.of({ state: data.LoadingState.Done, series: [], timeRange: data.getDefaultTimeRange() });
-}
-function createQueryVariableRunnerFactory(datasource) {
-  if (hasStandardVariableSupport(datasource)) {
-    return new StandardQueryRunner(datasource, runtime.getRunRequest());
-  }
-  if (hasLegacyVariableSupport(datasource)) {
-    return new LegacyQueryRunner(datasource);
-  }
-  if (hasCustomVariableSupport(datasource)) {
-    return new CustomQueryRunner(datasource);
-  }
-  if (hasDataSourceVariableSupport(datasource)) {
-    return new DatasourceQueryRunner(datasource);
-  }
-  throw new Error(`Couldn't create a query runner for datasource ${datasource.type}`);
-}
-let createQueryVariableRunner = createQueryVariableRunnerFactory;
-function ensureVariableQueryModelIsADataQuery(variable) {
-  var _a;
-  const query = (_a = variable.state.query) != null ? _a : "";
-  if (typeof query === "string") {
-    return { query, refId: `variable-${variable.state.name}` };
-  }
-  if (query.refId == null) {
-    return __spreadProps$k(__spreadValues$w({}, query), { refId: `variable-${variable.state.name}` });
-  }
-  return variable.state.query;
-}
-
-function metricNamesToVariableValues(variableRegEx, sort, metricNames) {
-  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
-  let regex;
-  let options = [];
-  if (variableRegEx) {
-    regex = data.stringToJsRegex(variableRegEx);
-  }
-  for (let i = 0; i < metricNames.length; i++) {
-    const item = metricNames[i];
-    let text = (_b = (_a = item.text) != null ? _a : item.value) != null ? _b : "";
-    let value = (_d = (_c = item.value) != null ? _c : item.text) != null ? _d : "";
-    if (lodash.isNumber(value)) {
-      value = value.toString();
-    }
-    if (lodash.isNumber(text)) {
-      text = text.toString();
-    }
-    if (regex) {
-      const matches = getAllMatches(value, regex);
-      if (!matches.length) {
-        continue;
-      }
-      const valueGroup = matches.find((m) => m.groups && m.groups.value);
-      const textGroup = matches.find((m) => m.groups && m.groups.text);
-      const firstMatch = matches.find((m) => m.length > 1);
-      const manyMatches = matches.length > 1 && firstMatch;
-      if (valueGroup || textGroup) {
-        value = (_g = (_e = valueGroup == null ? void 0 : valueGroup.groups) == null ? void 0 : _e.value) != null ? _g : (_f = textGroup == null ? void 0 : textGroup.groups) == null ? void 0 : _f.text;
-        text = (_j = (_h = textGroup == null ? void 0 : textGroup.groups) == null ? void 0 : _h.text) != null ? _j : (_i = valueGroup == null ? void 0 : valueGroup.groups) == null ? void 0 : _i.value;
-      } else if (manyMatches) {
-        for (let j = 0; j < matches.length; j++) {
-          const match = matches[j];
-          options.push({ label: match[1], value: match[1] });
-        }
-        continue;
-      } else if (firstMatch) {
-        text = firstMatch[1];
-        value = firstMatch[1];
-      }
-    }
-    options.push({ label: text, value });
-  }
-  options = lodash.uniqBy(options, "value");
-  return sortVariableValues(options, sort);
-}
-const getAllMatches = (str, regex) => {
-  const results = [];
-  let matches = null;
-  regex.lastIndex = 0;
-  do {
-    matches = regex.exec(str);
-    if (matches) {
-      results.push(matches);
-    }
-  } while (regex.global && matches && matches[0] !== "" && matches[0] !== void 0);
-  return results;
-};
-const sortVariableValues = (options, sortOrder) => {
-  if (sortOrder === data.VariableSort.disabled) {
-    return options;
-  }
-  const sortByNumeric = (opt) => {
-    if (!opt.text) {
-      return -1;
-    }
-    const matches = opt.text.match(/.*?(\d+).*/);
-    if (!matches || matches.length < 2) {
-      return -1;
-    } else {
-      return parseInt(matches[1], 10);
-    }
-  };
-  const sortByNaturalSort = (options2) => {
-    return options2.sort((a, b) => {
-      if (!a.text) {
-        return -1;
-      }
-      if (!b.text) {
-        return 1;
-      }
-      return a.text.localeCompare(b.text, void 0, { numeric: true });
-    });
-  };
-  switch (sortOrder) {
-    case data.VariableSort.alphabeticalAsc:
-      options = lodash.sortBy(options, "label");
-      break;
-    case data.VariableSort.alphabeticalDesc:
-      options = lodash.sortBy(options, "label").reverse();
-      break;
-    case data.VariableSort.numericalAsc:
-      options = lodash.sortBy(options, sortByNumeric);
-      break;
-    case data.VariableSort.numericalDesc:
-      options = lodash.sortBy(options, sortByNumeric);
-      options = options.reverse();
-      break;
-    case data.VariableSort.alphabeticalCaseInsensitiveAsc:
-      options = lodash.sortBy(options, (opt) => {
-        return lodash.toLower(opt.label);
-      });
-      break;
-    case data.VariableSort.alphabeticalCaseInsensitiveDesc:
-      options = lodash.sortBy(options, (opt) => {
-        return lodash.toLower(opt.label);
-      });
-      options = options.reverse();
-      break;
-    case (data.VariableSort.naturalAsc || 7):
-      options = sortByNaturalSort(options);
-      break;
-    case (data.VariableSort.naturalDesc || 8):
-      options = sortByNaturalSort(options);
-      options = options.reverse();
-      break;
-  }
-  return options;
-};
-
-function toMetricFindValues() {
-  return (source) => source.pipe(
-    rxjs.map((panelData) => {
-      const frames = panelData.series;
-      if (!frames || !frames.length) {
-        return [];
-      }
-      if (areMetricFindValues(frames)) {
-        return frames;
-      }
-      if (frames[0].fields.length === 0) {
-        return [];
-      }
-      const processedDataFrames = data.getProcessedDataFrames(frames);
-      const metrics = [];
-      let valueIndex = -1;
-      let textIndex = -1;
-      let stringIndex = -1;
-      let expandableIndex = -1;
-      for (const frame of processedDataFrames) {
-        for (let index = 0; index < frame.fields.length; index++) {
-          const field = frame.fields[index];
-          const fieldName = data.getFieldDisplayName(field, frame, frames).toLowerCase();
-          if (field.type === data.FieldType.string && stringIndex === -1) {
-            stringIndex = index;
-          }
-          if (fieldName === "text" && field.type === data.FieldType.string && textIndex === -1) {
-            textIndex = index;
-          }
-          if (fieldName === "value" && field.type === data.FieldType.string && valueIndex === -1) {
-            valueIndex = index;
-          }
-          if (fieldName === "expandable" && (field.type === data.FieldType.boolean || field.type === data.FieldType.number) && expandableIndex === -1) {
-            expandableIndex = index;
-          }
-        }
-      }
-      if (stringIndex === -1) {
-        throw new Error("Couldn't find any field of type string in the results.");
-      }
-      for (const frame of frames) {
-        for (let index = 0; index < frame.length; index++) {
-          const expandable = expandableIndex !== -1 ? frame.fields[expandableIndex].values.get(index) : void 0;
-          const string = frame.fields[stringIndex].values.get(index);
-          const text = textIndex !== -1 ? frame.fields[textIndex].values.get(index) : "";
-          const value = valueIndex !== -1 ? frame.fields[valueIndex].values.get(index) : "";
-          if (valueIndex === -1 && textIndex === -1) {
-            metrics.push({ text: string, value: string, expandable });
-            continue;
-          }
-          if (valueIndex === -1 && textIndex !== -1) {
-            metrics.push({ text, value: text, expandable });
-            continue;
-          }
-          if (valueIndex !== -1 && textIndex === -1) {
-            metrics.push({ text: value, value, expandable });
-            continue;
-          }
-          metrics.push({ text, value, expandable });
-        }
-      }
-      return metrics;
-    })
-  );
-}
-function areMetricFindValues(data$1) {
-  if (!data$1) {
-    return false;
-  }
-  if (!data$1.length) {
-    return true;
-  }
-  const firstValue = data$1[0];
-  if (data.isDataFrame(firstValue)) {
-    return false;
-  }
-  for (const firstValueKey in firstValue) {
-    if (!firstValue.hasOwnProperty(firstValueKey)) {
-      continue;
-    }
-    if (firstValue[firstValueKey] !== null && typeof firstValue[firstValueKey] !== "string" && typeof firstValue[firstValueKey] !== "number") {
-      continue;
-    }
-    const key = firstValueKey.toLowerCase();
-    if (key === "text" || key === "value") {
-      return true;
-    }
-  }
-  return false;
-}
-
-var __defProp$v = Object.defineProperty;
-var __getOwnPropSymbols$v = Object.getOwnPropertySymbols;
-var __hasOwnProp$v = Object.prototype.hasOwnProperty;
-var __propIsEnum$v = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$v = (obj, key, value) => key in obj ? __defProp$v(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$v = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$v.call(b, prop))
-      __defNormalProp$v(a, prop, b[prop]);
-  if (__getOwnPropSymbols$v)
-    for (var prop of __getOwnPropSymbols$v(b)) {
-      if (__propIsEnum$v.call(b, prop))
-        __defNormalProp$v(a, prop, b[prop]);
-    }
-  return a;
-};
-class QueryVariable extends MultiValueVariable {
-  constructor(initialState) {
-    super(__spreadValues$v({
-      type: "query",
-      name: "",
-      value: "",
-      text: "",
-      options: [],
-      datasource: null,
-      regex: "",
-      query: "",
-      refresh: data.VariableRefresh.onDashboardLoad,
-      sort: data.VariableSort.disabled
-    }, initialState));
-    this._variableDependency = new VariableDependencyConfig(this, {
-      statePaths: ["regex", "query", "datasource"]
-    });
-    this.onSearchChange = (searchFilter) => {
-      if (!containsSearchFilter(this.state.query)) {
-        return;
-      }
-      this._updateOptionsBasedOnSearchFilter(searchFilter);
-    };
-    this._updateOptionsBasedOnSearchFilter = lodash.debounce(async (searchFilter) => {
-      const result = await rxjs.lastValueFrom(this.getValueOptions({ searchFilter }));
-      this.setState({ options: result, loading: false });
-    }, 400);
-  }
-  getValueOptions(args) {
-    if (!this.state.query) {
-      return rxjs.of([]);
-    }
-    this.setState({ loading: true, error: null });
-    return rxjs.from(
-      getDataSource(this.state.datasource, {
-        __sceneObject: wrapInSafeSerializableSceneObject(this)
-      })
-    ).pipe(
-      rxjs.mergeMap((ds) => {
-        const runner = createQueryVariableRunner(ds);
-        const target = runner.getTarget(this);
-        const request = this.getRequest(target, args.searchFilter);
-        return runner.runRequest({ variable: this, searchFilter: args.searchFilter }, request).pipe(
-          registerQueryWithController({
-            type: "variable",
-            request,
-            origin: this
-          }),
-          rxjs.filter((data$1) => data$1.state === data.LoadingState.Done || data$1.state === data.LoadingState.Error),
-          rxjs.take(1),
-          rxjs.mergeMap((data$1) => {
-            if (data$1.state === data.LoadingState.Error) {
-              return rxjs.throwError(() => data$1.error);
-            }
-            return rxjs.of(data$1);
-          }),
-          toMetricFindValues(),
-          rxjs.mergeMap((values) => {
-            let regex = "";
-            if (this.state.regex) {
-              regex = sceneGraph.interpolate(this, this.state.regex, void 0, "regex");
-            }
-            return rxjs.of(metricNamesToVariableValues(regex, this.state.sort, values));
-          }),
-          rxjs.catchError((error) => {
-            if (error.cancelled) {
-              return rxjs.of([]);
-            }
-            return rxjs.throwError(() => error);
-          })
-        );
-      })
-    );
-  }
-  getRequest(target, searchFilter) {
-    const scopedVars = {
-      __sceneObject: wrapInSafeSerializableSceneObject(this)
-    };
-    if (searchFilter) {
-      scopedVars.__searchFilter = { value: searchFilter, text: searchFilter };
-    }
-    const range = sceneGraph.getTimeRange(this).state.value;
-    const request = {
-      app: data.CoreApp.Dashboard,
-      requestId: uuid.v4(),
-      timezone: "",
-      range,
-      interval: "",
-      intervalMs: 0,
-      targets: [target],
-      scopedVars,
-      startTime: Date.now()
-    };
-    return request;
-  }
-}
-QueryVariable.Component = ({ model }) => {
-  return renderSelectForVariable(model);
-};
-function containsSearchFilter(query) {
-  const str = safeStringifyValue(query);
-  return str.indexOf(SEARCH_FILTER_VARIABLE) > -1;
-}
-
-function getVariables(sceneObject) {
-  var _a;
-  return (_a = getClosest(sceneObject, (s) => s.state.$variables)) != null ? _a : EmptyVariableSet;
-}
-function getData(sceneObject) {
-  var _a;
-  return (_a = getClosest(sceneObject, (s) => s.state.$data)) != null ? _a : EmptyDataNode;
-}
-function isSceneLayout(s) {
-  return "isDraggable" in s;
-}
-function getLayout(scene) {
-  const parent = getClosest(scene, (s) => isSceneLayout(s) ? s : void 0);
-  if (parent) {
-    return parent;
-  }
-  return null;
-}
-function interpolate(sceneObject, value, scopedVars, format, interpolations) {
-  if (value === "" || value == null) {
-    return "";
-  }
-  return sceneInterpolator(sceneObject, value, scopedVars, format, interpolations);
-}
-function hasVariableDependencyInLoadingState(sceneObject) {
-  if (!sceneObject.variableDependency) {
-    return false;
-  }
-  for (const name of sceneObject.variableDependency.getNames()) {
-    if (sceneObject instanceof QueryVariable && sceneObject.state.name === name) {
-      console.warn("Query variable is referencing itself");
-      continue;
-    }
-    const variable = lookupVariable(name, sceneObject);
-    if (!variable) {
-      continue;
-    }
-    const set = variable.parent;
-    if (set.isVariableLoadingOrWaitingToUpdate(variable)) {
-      return true;
-    }
-  }
-  return false;
-}
-function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) {
-  if (check(scene)) {
-    return scene;
-  }
-  let found = null;
-  scene.forEachChild((child) => {
-    if (child === alreadySearchedChild) {
-      return;
-    }
-    let maybe = findObjectInternal(child, check);
-    if (maybe) {
-      found = maybe;
-    }
-  });
-  if (found) {
-    return found;
-  }
-  if (shouldSearchUp && scene.parent) {
-    return findObjectInternal(scene.parent, check, scene, true);
-  }
-  return null;
-}
-function findByKey(sceneObject, key) {
-  const found = findObject(sceneObject, (sceneToCheck) => {
-    return sceneToCheck.state.key === key;
-  });
-  if (!found) {
-    throw new Error("Unable to find scene with key " + key);
-  }
-  return found;
-}
-function findByKeyAndType(sceneObject, key, targetType) {
-  const found = findObject(sceneObject, (sceneToCheck) => {
-    return sceneToCheck.state.key === key;
-  });
-  if (!found) {
-    throw new Error("Unable to find scene with key " + key);
-  }
-  if (!(found instanceof targetType)) {
-    throw new Error(`Found scene object with key ${key} does not match type ${targetType.name}`);
-  }
-  return found;
-}
-function findObject(scene, check) {
-  return findObjectInternal(scene, check, void 0, true);
-}
-function findAllObjects(scene, check) {
-  const found = [];
-  scene.forEachChild((child) => {
-    if (check(child)) {
-      found.push(child);
-    }
-    found.push(...findAllObjects(child, check));
-  });
-  return found;
-}
-function getDataLayers(sceneObject, localOnly = false) {
-  let currentLevel = sceneObject;
-  let collected = [];
-  while (currentLevel) {
-    const dataProvider = currentLevel.state.$data;
-    if (!dataProvider) {
-      currentLevel = currentLevel.parent;
-      continue;
-    }
-    if (isDataLayer(dataProvider)) {
-      collected = collected.concat(dataProvider);
-    } else {
-      if (dataProvider.state.$data && isDataLayer(dataProvider.state.$data)) {
-        collected = collected.concat(dataProvider.state.$data);
-      }
-    }
-    if (localOnly && collected.length > 0) {
-      break;
-    }
-    currentLevel = currentLevel.parent;
-  }
-  return collected;
-}
-function getAncestor(sceneObject, ancestorType) {
-  let parent = sceneObject;
-  while (parent) {
-    if (parent instanceof ancestorType) {
-      return parent;
-    }
-    parent = parent.parent;
-  }
-  if (!parent) {
-    throw new Error("Unable to find parent of type " + ancestorType.name);
-  }
-  return parent;
-}
-function findDescendents(scene, descendentType) {
-  function isDescendentType(scene2) {
-    return scene2 instanceof descendentType;
-  }
-  const targetScenes = findAllObjects(scene, isDescendentType);
-  return targetScenes.filter(isDescendentType);
-}
-function getQueryController(sceneObject) {
-  let parent = sceneObject;
-  while (parent) {
-    if (parent.state.$behaviors) {
-      for (const behavior of parent.state.$behaviors) {
-        if (isQueryController(behavior)) {
-          return behavior;
-        }
-      }
-    }
-    parent = parent.parent;
-  }
-  return void 0;
-}
-function getUrlSyncManager(sceneObject) {
-  let parent = sceneObject;
-  while (parent) {
-    if ("urlSyncManager" in parent.state) {
-      return parent.state.urlSyncManager;
-    }
-    parent = parent.parent;
-  }
-  return void 0;
-}
-
-const sceneGraph = {
-  getVariables,
-  getData,
-  getTimeRange,
-  getLayout,
-  getDataLayers,
-  interpolate,
-  lookupVariable,
-  hasVariableDependencyInLoadingState,
-  findByKey,
-  findByKeyAndType,
-  findObject,
-  findAllObjects,
-  getAncestor,
-  findDescendents,
-  getQueryController,
-  getUrlSyncManager
-};
-
-class UniqueUrlKeyMapper {
-  constructor() {
-    this.index = /* @__PURE__ */ new Map();
-  }
-  getUniqueKey(key, obj) {
-    const objectsWithKey = this.index.get(key);
-    if (!objectsWithKey) {
-      this.index.set(key, [obj]);
-      return key;
-    }
-    let address = objectsWithKey.findIndex((o) => o === obj);
-    if (address === -1) {
-      filterOutOrphanedObjects(objectsWithKey);
-      objectsWithKey.push(obj);
-      address = objectsWithKey.length - 1;
-    }
-    if (address > 0) {
-      return `${key}-${address + 1}`;
-    }
-    return key;
-  }
-  clear() {
-    this.index.clear();
-  }
-}
-function filterOutOrphanedObjects(sceneObjects) {
-  for (const obj of sceneObjects) {
-    if (isOrphanOrInActive(obj)) {
-      const index = sceneObjects.indexOf(obj);
-      sceneObjects.splice(index, 1);
-    }
-  }
-}
-function isOrphanOrInActive(obj) {
-  const root = obj.getRoot();
-  if (!sceneGraph.findObject(root, (child) => child === obj)) {
-    return true;
-  }
-  return false;
-}
-
-function getUrlState(root) {
-  const urlKeyMapper = new UniqueUrlKeyMapper();
-  const result = {};
-  const visitNode = (obj) => {
-    if (obj.urlSync) {
-      const newUrlState = obj.urlSync.getUrlState();
-      for (const [key, value] of Object.entries(newUrlState)) {
-        if (value != null) {
-          const uniqueKey = urlKeyMapper.getUniqueKey(key, obj);
-          result[uniqueKey] = value;
-        }
-      }
-    }
-    obj.forEachChild(visitNode);
-  };
-  visitNode(root);
-  return result;
-}
-function syncStateFromSearchParams(root, urlParams) {
-  const urlKeyMapper = new UniqueUrlKeyMapper();
-  syncStateFromUrl(root, urlParams, urlKeyMapper);
-}
-function syncStateFromUrl(root, urlParams, urlKeyMapper, onlyChildren) {
-  if (!onlyChildren) {
-    syncUrlStateToObject(root, urlParams, urlKeyMapper);
-  }
-  root.forEachChild((child) => {
-    syncUrlStateToObject(child, urlParams, urlKeyMapper);
-  });
-  root.forEachChild((child) => syncStateFromUrl(child, urlParams, urlKeyMapper, true));
-}
-function syncUrlStateToObject(sceneObject, urlParams, urlKeyMapper) {
-  if (sceneObject.urlSync) {
-    const urlState = {};
-    const currentState = sceneObject.urlSync.getUrlState();
-    for (const key of sceneObject.urlSync.getKeys()) {
-      const uniqueKey = urlKeyMapper.getUniqueKey(key, sceneObject);
-      const newValue = urlParams.getAll(uniqueKey);
-      const currentValue = currentState[key];
-      if (isUrlValueEqual(newValue, currentValue)) {
-        continue;
-      }
-      if (newValue.length > 0) {
-        if (Array.isArray(currentValue)) {
-          urlState[key] = newValue;
-        } else {
-          urlState[key] = newValue[0];
-        }
-      } else {
-        urlState[key] = null;
-      }
-    }
-    if (Object.keys(urlState).length > 0) {
-      sceneObject.urlSync.updateFromUrl(urlState);
-    }
-  }
-}
-function isUrlValueEqual(currentUrlValue, newUrlValue) {
-  if (currentUrlValue.length === 0 && newUrlValue == null) {
-    return true;
-  }
-  if (!Array.isArray(newUrlValue) && (currentUrlValue == null ? void 0 : currentUrlValue.length) === 1) {
-    return newUrlValue === currentUrlValue[0];
-  }
-  if ((newUrlValue == null ? void 0 : newUrlValue.length) === 0 && currentUrlValue === null) {
-    return true;
-  }
-  return lodash.isEqual(currentUrlValue, newUrlValue);
-}
-
-function isAdHocVariable(variable) {
-  return variable.state.type === "adhoc";
-}
-function isConstantVariable(variable) {
-  return variable.state.type === "constant";
-}
-function isCustomVariable(variable) {
-  return variable.state.type === "custom";
-}
-function isDataSourceVariable(variable) {
-  return variable.state.type === "datasource";
-}
-function isIntervalVariable(variable) {
-  return variable.state.type === "interval";
-}
-function isQueryVariable(variable) {
-  return variable.state.type === "query";
-}
-function isTextBoxVariable(variable) {
-  return variable.state.type === "textbox";
-}
-function isGroupByVariable(variable) {
-  return variable.state.type === "groupby";
-}
-
-class ActWhenVariableChanged extends SceneObjectBase {
-  constructor() {
-    super(...arguments);
-    this._runningEffect = null;
-    this._variableDependency = new VariableDependencyConfig(this, {
-      variableNames: [this.state.variableName],
-      onReferencedVariableValueChanged: this._onVariableChanged.bind(this)
-    });
-  }
-  _onVariableChanged(variable) {
-    const effect = this.state.onChange;
-    if (this._runningEffect) {
-      this._runningEffect();
-      this._runningEffect = null;
-    }
-    const cancellation = effect(variable, this);
-    if (cancellation) {
-      this._runningEffect = cancellation;
-    }
-  }
-}
-
-var __defProp$u = Object.defineProperty;
-var __defProps$j = Object.defineProperties;
-var __getOwnPropDescs$j = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$u = Object.getOwnPropertySymbols;
-var __hasOwnProp$u = Object.prototype.hasOwnProperty;
-var __propIsEnum$u = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$u = (obj, key, value) => key in obj ? __defProp$u(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$u = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$u.call(b, prop))
-      __defNormalProp$u(a, prop, b[prop]);
-  if (__getOwnPropSymbols$u)
-    for (var prop of __getOwnPropSymbols$u(b)) {
-      if (__propIsEnum$u.call(b, prop))
-        __defNormalProp$u(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$j = (a, b) => __defProps$j(a, __getOwnPropDescs$j(b));
-class CursorSync extends SceneObjectBase {
-  constructor(state) {
-    super(__spreadProps$j(__spreadValues$u({}, state), {
-      sync: state.sync || schema.DashboardCursorSync.Off
-    }));
-    this.getEventsBus = (panel) => {
-      if (!this.parent) {
-        throw new Error("EnableCursorSync cannot be used as a standalone scene object");
-      }
-      return new PanelContextEventBus(this.parent, panel);
-    };
-  }
-  getEventsScope() {
-    if (!this.parent) {
-      throw new Error("EnableCursorSync cannot be used as a standalone scene object");
-    }
-    return this.state.key;
-  }
-}
-class PanelContextEventBus {
-  constructor(_source, _eventsOrigin) {
-    this._source = _source;
-    this._eventsOrigin = _eventsOrigin;
-  }
-  publish(event) {
-    event.origin = this;
-    this._eventsOrigin.publishEvent(event, true);
-  }
-  getStream(eventType) {
-    return new rxjs.Observable((observer) => {
-      const handler = (event) => {
-        observer.next(event);
-      };
-      const sub = this._source.subscribeToEvent(eventType, handler);
-      return () => sub.unsubscribe();
-    });
-  }
-  subscribe(eventType, handler) {
-    return this.getStream(eventType).pipe().subscribe(handler);
-  }
-  removeAllListeners() {
-  }
-  newScopedBus(key, filter) {
-    throw new Error("For internal use only");
-  }
-}
-function getCursorSyncScope(sceneObject) {
-  return sceneGraph.findObject(sceneObject, (o) => o instanceof CursorSync);
-}
-
 function VizPanelSeriesLimit({ data, showAll, seriesLimit, onShowAllSeries }) {
-  const styles = ui.useStyles2(getStyles$8);
+  const styles = ui.useStyles2(getStyles$i);
   const seriesCount = data == null ? void 0 : data.series.length;
   if (seriesCount === void 0 || seriesCount < seriesLimit) {
     return null;
   }
   const buttonText = showAll ? "Restore limit" : `Show all ${seriesCount}`;
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.timeSeriesDisclaimer
-  }, !showAll && /* @__PURE__ */ React__default["default"].createElement("span", {
-    className: styles.warningMessage
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    title: `Showing only ${seriesLimit} series`,
-    name: "exclamation-triangle",
-    "aria-hidden": "true"
-  })), /* @__PURE__ */ React__default["default"].createElement(ui.Tooltip, {
-    content: "Rendering too many series in a single panel may impact performance and make data harder to read."
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Button, {
-    variant: "secondary",
-    size: "sm",
-    onClick: onShowAllSeries
-  }, buttonText)));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.timeSeriesDisclaimer }, !showAll && /* @__PURE__ */ React__default.default.createElement("span", { className: styles.warningMessage }, /* @__PURE__ */ React__default.default.createElement(
+    ui.Icon,
+    {
+      title: i18n.t(
+        "grafana-scenes.components.viz-panel-series-limit.warning-message",
+        `Showing only {{seriesLimit}} series`,
+        {
+          seriesLimit
+        }
+      ),
+      name: "exclamation-triangle",
+      "aria-hidden": "true"
+    }
+  )), /* @__PURE__ */ React__default.default.createElement(
+    ui.Tooltip,
+    {
+      content: i18n.t(
+        "grafana-scenes.components.viz-panel-series-limit.content-rendering-series-single-panel-impact-performance",
+        "Rendering too many series in a single panel may impact performance and make data harder to read."
+      )
+    },
+    /* @__PURE__ */ React__default.default.createElement(ui.Button, { variant: "secondary", size: "sm", onClick: onShowAllSeries }, buttonText)
+  ));
 }
-const getStyles$8 = (theme) => ({
+const getStyles$i = (theme) => ({
   timeSeriesDisclaimer: css.css({
     label: "time-series-disclaimer",
     display: "flex",
@@ -7059,25 +3873,71 @@ const getStyles$8 = (theme) => ({
   })
 });
 
-var __defProp$t = Object.defineProperty;
-var __defProps$i = Object.defineProperties;
-var __getOwnPropDescs$i = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$t = Object.getOwnPropertySymbols;
-var __hasOwnProp$t = Object.prototype.hasOwnProperty;
-var __propIsEnum$t = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$t = (obj, key, value) => key in obj ? __defProp$t(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$t = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$t.call(b, prop))
-      __defNormalProp$t(a, prop, b[prop]);
-  if (__getOwnPropSymbols$t)
-    for (var prop of __getOwnPropSymbols$t(b)) {
-      if (__propIsEnum$t.call(b, prop))
-        __defNormalProp$t(a, prop, b[prop]);
+function useUniqueId() {
+  var _a;
+  const idRefLazy = React.useRef(void 0);
+  (_a = idRefLazy.current) != null ? _a : idRefLazy.current = lodash.uniqueId();
+  return idRefLazy.current;
+}
+const LazyLoader = React__default.default.forwardRef(
+  ({ children, onLoad, onChange, className, ...rest }, ref) => {
+    const id = useUniqueId();
+    const { hideEmpty } = ui.useStyles2(getStyles$h);
+    const [loaded, setLoaded] = React.useState(false);
+    const [isInView, setIsInView] = React.useState(false);
+    const innerRef = React.useRef(null);
+    React.useImperativeHandle(ref, () => innerRef.current);
+    reactUse.useEffectOnce(() => {
+      LazyLoader.addCallback(id, (entry) => {
+        if (!loaded && entry.isIntersecting) {
+          setLoaded(true);
+          onLoad == null ? void 0 : onLoad();
+        }
+        setIsInView(entry.isIntersecting);
+        onChange == null ? void 0 : onChange(entry.isIntersecting);
+      });
+      const wrapperEl = innerRef.current;
+      if (wrapperEl) {
+        LazyLoader.observer.observe(wrapperEl);
+      }
+      return () => {
+        wrapperEl && LazyLoader.observer.unobserve(wrapperEl);
+        delete LazyLoader.callbacks[id];
+        if (Object.keys(LazyLoader.callbacks).length === 0) {
+          LazyLoader.observer.disconnect();
+        }
+      };
+    });
+    return /* @__PURE__ */ React__default.default.createElement("div", { id, ref: innerRef, className: `${hideEmpty} ${className}`, ...rest }, !loaded ? i18n.t("grafana-scenes.components.lazy-loader.placeholder", "\xA0") : /* @__PURE__ */ React__default.default.createElement(LazyLoaderInViewContext.Provider, { value: isInView }, children));
+  }
+);
+function getStyles$h() {
+  return {
+    hideEmpty: css.css({
+      "&:empty": {
+        display: "none"
+      }
+    })
+  };
+}
+LazyLoader.displayName = "LazyLoader";
+LazyLoader.callbacks = {};
+LazyLoader.addCallback = (id, c) => LazyLoader.callbacks[id] = c;
+LazyLoader.observer = new IntersectionObserver(
+  (entries) => {
+    for (const entry of entries) {
+      if (typeof LazyLoader.callbacks[entry.target.id] === "function") {
+        LazyLoader.callbacks[entry.target.id](entry);
+      }
     }
-  return a;
-};
-var __spreadProps$i = (a, b) => __defProps$i(a, __getOwnPropDescs$i(b));
+  },
+  { rootMargin: "100px" }
+);
+const LazyLoaderInViewContext = React__default.default.createContext(true);
+function useLazyLoaderIsInView() {
+  return React__default.default.useContext(LazyLoaderInViewContext);
+}
+
 function VizPanelRenderer({ model }) {
   var _a, _b, _c;
   const {
@@ -7103,15 +3963,33 @@ function VizPanelRenderer({ model }) {
   const appEvents = React.useMemo(() => runtime.getAppEvents(), []);
   const setPanelAttention = React.useCallback(() => {
     if (model.state.key) {
-      appEvents.publish(new data.SetPanelAttentionEvent({ panelId: model.state.key }));
+      appEvents.publish(new data.SetPanelAttentionEvent({ panelId: model.getPathId() }));
     }
-  }, [model.state.key, appEvents]);
+  }, [model, appEvents]);
   const debouncedMouseMove = React.useMemo(
     () => lodash.debounce(setPanelAttention, 100, { leading: true, trailing: false }),
     [setPanelAttention]
   );
+  const profiler = React.useMemo(() => model.getProfiler(), [model]);
+  const currentRenderStart = performance.now();
+  const endRenderCallbackRef = React__default.default.useRef(null);
+  React.useLayoutEffect(() => {
+    if (profiler) {
+      const callback = profiler.onSimpleRenderStart(currentRenderStart);
+      endRenderCallbackRef.current = callback || null;
+    }
+  });
+  React.useEffect(() => {
+    if (endRenderCallbackRef.current) {
+      const timestamp = performance.now();
+      const duration = timestamp - currentRenderStart;
+      endRenderCallbackRef.current(timestamp, duration);
+      endRenderCallbackRef.current = null;
+    }
+  });
   const plugin = model.getPlugin();
   const { dragClass, dragClassCancel } = getDragClasses(model);
+  const dragHooks = getDragHooks(model);
   const dataObject = sceneGraph.getData(model);
   const rawData = dataObject.useState();
   const dataWithSeriesLimit = useDataWithSeriesLimit(rawData.data, seriesLimit, seriesLimitShowAll);
@@ -7119,13 +3997,19 @@ function VizPanelRenderer({ model }) {
   const sceneTimeRange = sceneGraph.getTimeRange(model);
   const timeZone = sceneTimeRange.getTimeZone();
   const timeRange = model.getTimeRange(dataWithFieldConfig);
+  const isInView = useLazyLoaderIsInView();
+  React.useEffect(() => {
+    if (dataObject.isInViewChanged) {
+      dataObject.isInViewChanged(isInView);
+    }
+  }, [isInView, dataObject]);
   const titleInterpolated = model.interpolate(title, void 0, "text");
   const alertStateStyles = ui.useStyles2(getAlertStateStyles);
   if (!plugin) {
-    return /* @__PURE__ */ React__default["default"].createElement("div", null, "Loading plugin panel...");
+    return /* @__PURE__ */ React__default.default.createElement("div", null, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.viz-panel-renderer.loading-plugin-panel" }, "Loading plugin panel..."));
   }
   if (!plugin.panel) {
-    return /* @__PURE__ */ React__default["default"].createElement("div", null, "Panel plugin has no panel component");
+    return /* @__PURE__ */ React__default.default.createElement("div", null, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.viz-panel-renderer.panel-plugin-has-no-panel-component" }, "Panel plugin has no panel component"));
   }
   const PanelComponent = plugin.panel;
   if (dataObject && dataObject.setContainerWidth) {
@@ -7136,74 +4020,66 @@ function VizPanelRenderer({ model }) {
     if (Array.isArray(titleItems)) {
       titleItemsElement = titleItemsElement.concat(
         titleItems.map((titleItem) => {
-          return /* @__PURE__ */ React__default["default"].createElement(titleItem.Component, {
-            model: titleItem,
-            key: `${titleItem.state.key}`
-          });
+          return /* @__PURE__ */ React__default.default.createElement(titleItem.Component, { model: titleItem, key: `${titleItem.state.key}` });
         })
       );
     } else if (isSceneObject(titleItems)) {
-      titleItemsElement.push(/* @__PURE__ */ React__default["default"].createElement(titleItems.Component, {
-        model: titleItems
-      }));
+      titleItemsElement.push(/* @__PURE__ */ React__default.default.createElement(titleItems.Component, { model: titleItems }));
     } else {
       titleItemsElement.push(titleItems);
     }
   }
   if (seriesLimit) {
     titleItemsElement.push(
-      /* @__PURE__ */ React__default["default"].createElement(VizPanelSeriesLimit, {
-        key: "series-limit",
-        data: rawData.data,
-        seriesLimit,
-        showAll: seriesLimitShowAll,
-        onShowAllSeries: () => model.setState({ seriesLimitShowAll: !seriesLimitShowAll })
-      })
+      /* @__PURE__ */ React__default.default.createElement(
+        VizPanelSeriesLimit,
+        {
+          key: "series-limit",
+          data: rawData.data,
+          seriesLimit,
+          showAll: seriesLimitShowAll,
+          onShowAllSeries: () => model.setState({ seriesLimitShowAll: !seriesLimitShowAll })
+        }
+      )
     );
   }
   if (model.state.$timeRange) {
-    titleItemsElement.push(/* @__PURE__ */ React__default["default"].createElement(model.state.$timeRange.Component, {
-      model: model.state.$timeRange,
-      key: model.state.key
-    }));
+    titleItemsElement.push(/* @__PURE__ */ React__default.default.createElement(model.state.$timeRange.Component, { model: model.state.$timeRange, key: model.state.key }));
   }
   if (dataWithFieldConfig.alertState) {
     titleItemsElement.push(
-      /* @__PURE__ */ React__default["default"].createElement(ui.Tooltip, {
-        content: (_a = dataWithFieldConfig.alertState.state) != null ? _a : "unknown",
-        key: `alert-states-icon-${model.state.key}`
-      }, /* @__PURE__ */ React__default["default"].createElement(ui.PanelChrome.TitleItem, {
-        className: css.cx({
-          [alertStateStyles.ok]: dataWithFieldConfig.alertState.state === data.AlertState.OK,
-          [alertStateStyles.pending]: dataWithFieldConfig.alertState.state === data.AlertState.Pending,
-          [alertStateStyles.alerting]: dataWithFieldConfig.alertState.state === data.AlertState.Alerting
-        })
-      }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-        name: dataWithFieldConfig.alertState.state === "alerting" ? "heart-break" : "heart",
-        className: "panel-alert-icon",
-        size: "md"
-      })))
+      /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: (_a = dataWithFieldConfig.alertState.state) != null ? _a : "unknown", key: `alert-states-icon-${model.state.key}` }, /* @__PURE__ */ React__default.default.createElement(
+        ui.PanelChrome.TitleItem,
+        {
+          className: css.cx({
+            [alertStateStyles.ok]: dataWithFieldConfig.alertState.state === data.AlertState.OK,
+            [alertStateStyles.pending]: dataWithFieldConfig.alertState.state === data.AlertState.Pending,
+            [alertStateStyles.alerting]: dataWithFieldConfig.alertState.state === data.AlertState.Alerting
+          })
+        },
+        /* @__PURE__ */ React__default.default.createElement(
+          ui.Icon,
+          {
+            name: dataWithFieldConfig.alertState.state === "alerting" ? "heart-break" : "heart",
+            className: "panel-alert-icon",
+            size: "md"
+          }
+        )
+      ))
     );
   }
   let panelMenu;
   if (menu) {
-    panelMenu = /* @__PURE__ */ React__default["default"].createElement(menu.Component, {
-      model: menu
-    });
+    panelMenu = /* @__PURE__ */ React__default.default.createElement(menu.Component, { model: menu });
   }
   let actionsElement;
   if (headerActions) {
     if (Array.isArray(headerActions)) {
-      actionsElement = /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, headerActions.map((action) => {
-        return /* @__PURE__ */ React__default["default"].createElement(action.Component, {
-          model: action,
-          key: `${action.state.key}`
-        });
+      actionsElement = /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, headerActions.map((action) => {
+        return /* @__PURE__ */ React__default.default.createElement(action.Component, { model: action, key: `${action.state.key}` });
       }));
     } else if (isSceneObject(headerActions)) {
-      actionsElement = /* @__PURE__ */ React__default["default"].createElement(headerActions.Component, {
-        model: headerActions
-      });
+      actionsElement = /* @__PURE__ */ React__default.default.createElement(headerActions.Component, { model: headerActions });
     } else {
       actionsElement = headerActions;
     }
@@ -7213,121 +4089,127 @@ function VizPanelRenderer({ model }) {
   const context = model.getPanelContext();
   const panelId = model.getLegacyPanelId();
   let datasource = (_c = (_b = data$1.request) == null ? void 0 : _b.targets[0]) == null ? void 0 : _c.datasource;
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: relativeWrapper + " oodle-panel"
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref,
-    className: absoluteWrapper,
-    "data-viz-panel-key": model.state.key
-  }, width > 0 && height > 0 && /* @__PURE__ */ React__default["default"].createElement(ui.PanelChrome, {
-    title: titleInterpolated,
-    description: (description == null ? void 0 : description.trim()) ? model.getDescription : void 0,
-    loadingState: data$1.state,
-    statusMessage: getChromeStatusMessage(data$1, _pluginLoadError),
-    statusMessageOnClick: model.onStatusMessageClick,
-    width,
-    height,
-    selectionId: model.state.key,
-    displayMode,
-    showMenuAlways,
-    hoverHeader,
-    hoverHeaderOffset,
-    titleItems: titleItemsElement,
-    dragClass,
-    actions: actionsElement,
-    dragClassCancel,
-    padding: plugin.noPadding ? "none" : "md",
-    menu: panelMenu,
-    onCancelQuery: model.onCancelQuery,
-    onFocus: setPanelAttention,
-    onMouseEnter: setPanelAttention,
-    onMouseMove: debouncedMouseMove,
-    collapsible,
-    collapsed,
-    onToggleCollapse: model.onToggleCollapse
-  }, (innerWidth, innerHeight) => {
-    var _a2;
-    return /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, plugin.meta.id === "timeseries" && /* @__PURE__ */ React__default["default"].createElement(ui.Button, {
-      style: { top: ((_a2 = model.state.title) == null ? void 0 : _a2.length) > 0 ? "-32px" : "0px", right: "28px", position: "absolute", border: 0, padding: 0 },
-      variant: "secondary",
-      fill: "outline",
-      type: "button",
-      "data-testid": "send-query-button",
-      tooltip: "Oodle insight",
-      tooltipPlacement: "top",
-      hidden: (datasource == null ? void 0 : datasource.type) !== "prometheus",
-      onClick: () => {
-        var _a3, _b2;
-        const variables = __spreadValues$t({}, (_a3 = data$1 == null ? void 0 : data$1.request) == null ? void 0 : _a3.scopedVars);
-        variables.__interval = {
-          value: "$__interval"
-        };
-        variables.__interval_ms = {
-          value: "$__interval_ms"
-        };
-        let timeRange2 = (_b2 = data$1.request) == null ? void 0 : _b2.range;
-        let rangeDurationMs = timeRange2.to.valueOf() - timeRange2.from.valueOf();
-        runtime.getDataSourceSrv().get(datasource, variables).then((ds) => {
-          var _a4, _b3, _c2, _d, _e, _f;
-          if (ds.interpolateVariablesInQueries) {
-            let targets = ds.interpolateVariablesInQueries((_a4 = data$1.request) == null ? void 0 : _a4.targets, variables);
-            sendOodleInsightEvent(
-              (_b3 = data$1.request) == null ? void 0 : _b3.dashboardUID,
-              "Insights",
-              model.state.title,
-              (_c2 = data$1.request) == null ? void 0 : _c2.panelId,
-              targets,
-              timeRange2,
-              rangeDurationMs,
-              (_f = (_e = (_d = model.state) == null ? void 0 : _d.fieldConfig) == null ? void 0 : _e.defaults) == null ? void 0 : _f.unit
-            );
-          } else {
-            throw new Error("datasource does not support variable interpolation");
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: relativeWrapper + " oodle-panel" }, /* @__PURE__ */ React__default.default.createElement("div", { ref, className: absoluteWrapper, "data-viz-panel-key": model.state.key }, width > 0 && height > 0 && // @ts-expect-error showMenuAlways remove when updating to @grafana/ui@12 fixed in https://github.com/grafana/grafana/pull/103553
+  /* @__PURE__ */ React__default.default.createElement(
+    ui.PanelChrome,
+    {
+      title: titleInterpolated,
+      description: (description == null ? void 0 : description.trim()) ? model.getDescription : void 0,
+      loadingState: data$1.state,
+      statusMessage: getChromeStatusMessage(data$1, _pluginLoadError),
+      statusMessageOnClick: model.onStatusMessageClick,
+      width,
+      height,
+      selectionId: model.state.key,
+      displayMode,
+      titleItems: titleItemsElement,
+      dragClass,
+      actions: actionsElement,
+      dragClassCancel,
+      padding: plugin.noPadding ? "none" : "md",
+      menu: panelMenu,
+      onCancelQuery: model.onCancelQuery,
+      onFocus: setPanelAttention,
+      onMouseEnter: setPanelAttention,
+      onMouseMove: debouncedMouseMove,
+      onDragStart: (e) => {
+        var _a2;
+        (_a2 = dragHooks.onDragStart) == null ? void 0 : _a2.call(dragHooks, e, model);
+      },
+      showMenuAlways,
+      ...collapsible ? {
+        collapsible: Boolean(collapsible),
+        collapsed,
+        onToggleCollapse: model.onToggleCollapse
+      } : { hoverHeader, hoverHeaderOffset }
+    },
+    (innerWidth, innerHeight) => {
+      var _a2;
+      return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, plugin.meta.id === "timeseries" && /* @__PURE__ */ React__default.default.createElement(
+        ui.Button,
+        {
+          style: { top: ((_a2 = model.state.title) == null ? void 0 : _a2.length) > 0 ? "-32px" : "0px", right: "28px", position: "absolute", border: 0, padding: 0 },
+          variant: "secondary",
+          fill: "outline",
+          type: "button",
+          "data-testid": "send-query-button",
+          tooltipPlacement: "top",
+          hidden: (datasource == null ? void 0 : datasource.type) !== "prometheus",
+          onClick: () => {
+            var _a3, _b2;
+            const variables = { ...(_a3 = data$1 == null ? void 0 : data$1.request) == null ? void 0 : _a3.scopedVars };
+            variables.__interval = {
+              value: "$__interval"
+            };
+            variables.__interval_ms = {
+              value: "$__interval_ms"
+            };
+            let timeRange2 = (_b2 = data$1.request) == null ? void 0 : _b2.range;
+            let rangeDurationMs = timeRange2.to.valueOf() - timeRange2.from.valueOf();
+            runtime.getDataSourceSrv().get(datasource, variables).then((ds) => {
+              var _a4, _b3, _c2, _d, _e, _f;
+              if (ds.interpolateVariablesInQueries) {
+                let targets = ds.interpolateVariablesInQueries((_a4 = data$1.request) == null ? void 0 : _a4.targets, variables);
+                sendOodleInsightEvent(
+                  (_b3 = data$1.request) == null ? void 0 : _b3.dashboardUID,
+                  "Insights",
+                  model.state.title,
+                  (_c2 = data$1.request) == null ? void 0 : _c2.panelId,
+                  targets,
+                  timeRange2,
+                  rangeDurationMs,
+                  (_f = (_e = (_d = model.state) == null ? void 0 : _d.fieldConfig) == null ? void 0 : _e.defaults) == null ? void 0 : _f.unit
+                );
+              } else {
+                throw new Error("datasource does not support variable interpolation");
+              }
+            }).catch((_) => {
+              var _a4, _b3, _c2, _d, _e, _f;
+              sendOodleInsightEvent(
+                (_a4 = data$1.request) == null ? void 0 : _a4.dashboardUID,
+                "Insights",
+                model.state.title,
+                (_b3 = data$1.request) == null ? void 0 : _b3.panelId,
+                (_c2 = data$1.request) == null ? void 0 : _c2.targets,
+                timeRange2,
+                rangeDurationMs,
+                (_f = (_e = (_d = model.state) == null ? void 0 : _d.fieldConfig) == null ? void 0 : _e.defaults) == null ? void 0 : _f.unit
+              );
+            });
           }
-        }).catch((_) => {
-          var _a4, _b3, _c2, _d, _e, _f;
-          sendOodleInsightEvent(
-            (_a4 = data$1.request) == null ? void 0 : _a4.dashboardUID,
-            "Insights",
-            model.state.title,
-            (_b3 = data$1.request) == null ? void 0 : _b3.panelId,
-            (_c2 = data$1.request) == null ? void 0 : _c2.targets,
-            timeRange2,
-            rangeDurationMs,
-            (_f = (_e = (_d = model.state) == null ? void 0 : _d.fieldConfig) == null ? void 0 : _e.defaults) == null ? void 0 : _f.unit
-          );
-        });
-      }
-    }, /* @__PURE__ */ React__default["default"].createElement("img", {
-      src: "https://imagedelivery.net/oP5rEbdkySYwiZY4N9HGRw/d0e74e50-902c-4b3c-90af-cabc367bcb00/public",
-      alt: "Insight icon",
-      "data-testid": "insight-icon",
-      style: { height: "25px" }
-    })), /* @__PURE__ */ React__default["default"].createElement(ui.ErrorBoundaryAlert, {
-      dependencies: [plugin, data$1]
-    }, /* @__PURE__ */ React__default["default"].createElement(data.PluginContextProvider, {
-      meta: plugin.meta
-    }, /* @__PURE__ */ React__default["default"].createElement(ui.PanelContextProvider, {
-      value: context
-    }, isReadyToRender && /* @__PURE__ */ React__default["default"].createElement(PanelComponent, {
-      id: panelId,
-      data: data$1,
-      title,
-      timeRange,
-      timeZone,
-      options,
-      fieldConfig,
-      transparent: false,
-      width: innerWidth,
-      height: innerHeight,
-      renderCounter: _renderCounter,
-      replaceVariables: model.interpolate,
-      onOptionsChange: model.onOptionsChange,
-      onFieldConfigChange: model.onFieldConfigChange,
-      onChangeTimeRange: model.onTimeRangeChange,
-      eventBus: context.eventBus
-    })))));
-  })));
+        },
+        /* @__PURE__ */ React__default.default.createElement(
+          "img",
+          {
+            src: "https://imagedelivery.net/oP5rEbdkySYwiZY4N9HGRw/d0e74e50-902c-4b3c-90af-cabc367bcb00/public",
+            alt: "Insight icon",
+            "data-testid": "insight-icon",
+            style: { height: "25px" }
+          }
+        )
+      ), /* @__PURE__ */ React__default.default.createElement(ui.ErrorBoundaryAlert, { dependencies: [plugin, data$1] }, /* @__PURE__ */ React__default.default.createElement(data.PluginContextProvider, { meta: plugin.meta }, /* @__PURE__ */ React__default.default.createElement(ui.PanelContextProvider, { value: context }, isReadyToRender && /* @__PURE__ */ React__default.default.createElement(
+        PanelComponent,
+        {
+          id: panelId,
+          data: data$1,
+          title,
+          timeRange,
+          timeZone,
+          options,
+          fieldConfig,
+          transparent: displayMode === "transparent",
+          width: innerWidth,
+          height: innerHeight,
+          renderCounter: _renderCounter,
+          replaceVariables: model.interpolate,
+          onOptionsChange: model.onOptionsChange,
+          onFieldConfigChange: model.onFieldConfigChange,
+          onChangeTimeRange: model.onTimeRangeChange,
+          eventBus: context.eventBus
+        }
+      )))));
+    }
+  )));
 }
 const sendOodleInsightEvent = (dashboardUId, dashboardTitle, panelTitle, panelId, expressionData, dashboardTime, rangeDurationMs, unit) => {
   const eventData = {
@@ -7357,9 +4239,10 @@ function useDataWithSeriesLimit(data, seriesLimit, showAllSeries) {
     if (!(data == null ? void 0 : data.series) || !seriesLimit || showAllSeries) {
       return data;
     }
-    return __spreadProps$i(__spreadValues$t({}, data), {
+    return {
+      ...data,
       series: data.series.slice(0, seriesLimit)
-    });
+    };
   }, [data, seriesLimit, showAllSeries]);
 }
 function getDragClasses(panel) {
@@ -7371,13 +4254,21 @@ function getDragClasses(panel) {
   }
   return { dragClass: (_a = parentLayout.getDragClass) == null ? void 0 : _a.call(parentLayout), dragClassCancel: (_b = parentLayout == null ? void 0 : parentLayout.getDragClassCancel) == null ? void 0 : _b.call(parentLayout) };
 }
+function getDragHooks(panel) {
+  var _a, _b;
+  const parentLayout = sceneGraph.getLayout(panel);
+  return (_b = (_a = parentLayout == null ? void 0 : parentLayout.getDragHooks) == null ? void 0 : _a.call(parentLayout)) != null ? _b : {};
+}
 function itemDraggingDisabled(item, layout) {
-  let ancestor = item.parent;
-  while (ancestor && ancestor !== layout) {
-    if ("isDraggable" in ancestor.state && ancestor.state.isDraggable === false) {
+  let obj = item;
+  while (obj && obj !== layout) {
+    if ("isDraggable" in obj.state && obj.state.isDraggable === false) {
       return true;
     }
-    ancestor = ancestor.parent;
+    if ("repeatSourceKey" in obj.state && obj.state.repeatSourceKey) {
+      return true;
+    }
+    obj = obj.parent;
   }
   return false;
 }
@@ -7415,25 +4306,6 @@ const getAlertStateStyles = (theme) => {
   };
 };
 
-var __defProp$s = Object.defineProperty;
-var __defProps$h = Object.defineProperties;
-var __getOwnPropDescs$h = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$s = Object.getOwnPropertySymbols;
-var __hasOwnProp$s = Object.prototype.hasOwnProperty;
-var __propIsEnum$s = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$s = (obj, key, value) => key in obj ? __defProp$s(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$s = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$s.call(b, prop))
-      __defNormalProp$s(a, prop, b[prop]);
-  if (__getOwnPropSymbols$s)
-    for (var prop of __getOwnPropSymbols$s(b)) {
-      if (__propIsEnum$s.call(b, prop))
-        __defNormalProp$s(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$h = (a, b) => __defProps$h(a, __getOwnPropDescs$h(b));
 const displayOverrideRef = "hideSeriesFrom";
 const isHideSeriesOverride = data.isSystemOverrideWithRef(displayOverrideRef);
 function seriesVisibilityConfigFactory(label, mode, fieldConfig, data) {
@@ -7443,15 +4315,17 @@ function seriesVisibilityConfigFactory(label, mode, fieldConfig, data) {
   if (currentIndex < 0) {
     if (mode === ui.SeriesVisibilityChangeMode.ToggleSelection) {
       const override3 = createOverride$1([displayName, ...getNamesOfHiddenFields(overrides, data)]);
-      return __spreadProps$h(__spreadValues$s({}, fieldConfig), {
+      return {
+        ...fieldConfig,
         overrides: [...fieldConfig.overrides, override3]
-      });
+      };
     }
     const displayNames = getDisplayNames(data, displayName);
     const override2 = createOverride$1(displayNames);
-    return __spreadProps$h(__spreadValues$s({}, fieldConfig), {
+    return {
+      ...fieldConfig,
       overrides: [...fieldConfig.overrides, override2]
-    });
+    };
   }
   const overridesCopy = Array.from(overrides);
   const [current] = overridesCopy.splice(currentIndex, 1);
@@ -7462,24 +4336,28 @@ function seriesVisibilityConfigFactory(label, mode, fieldConfig, data) {
       existing = existing.filter((el) => nameOfHiddenFields.indexOf(el) < 0);
     }
     if (existing[0] === displayName && existing.length === 1) {
-      return __spreadProps$h(__spreadValues$s({}, fieldConfig), {
+      return {
+        ...fieldConfig,
         overrides: overridesCopy
-      });
+      };
     }
     const override2 = createOverride$1([displayName, ...nameOfHiddenFields]);
-    return __spreadProps$h(__spreadValues$s({}, fieldConfig), {
+    return {
+      ...fieldConfig,
       overrides: [...overridesCopy, override2]
-    });
+    };
   }
   const override = createExtendedOverride(current, displayName);
   if (allFieldsAreExcluded(override, data)) {
-    return __spreadProps$h(__spreadValues$s({}, fieldConfig), {
+    return {
+      ...fieldConfig,
       overrides: overridesCopy
-    });
+    };
   }
-  return __spreadProps$h(__spreadValues$s({}, fieldConfig), {
+  return {
+    ...fieldConfig,
     overrides: [...overridesCopy, override]
-  });
+  };
 }
 function createOverride$1(names, mode = data.ByNamesMatcherMode.exclude, property) {
   property = property != null ? property : {
@@ -7487,7 +4365,7 @@ function createOverride$1(names, mode = data.ByNamesMatcherMode.exclude, propert
     value: {
       viz: true,
       legend: false,
-      tooltip: false
+      tooltip: true
     }
   };
   return {
@@ -7502,13 +4380,14 @@ function createOverride$1(names, mode = data.ByNamesMatcherMode.exclude, propert
       }
     },
     properties: [
-      __spreadProps$h(__spreadValues$s({}, property), {
+      {
+        ...property,
         value: {
           viz: true,
           legend: false,
-          tooltip: false
+          tooltip: true
         }
-      })
+      }
     ]
   };
 }
@@ -7574,54 +4453,40 @@ const getNamesOfHiddenFields = (overrides, data$1) => {
   return names;
 };
 
-var __defProp$r = Object.defineProperty;
-var __defProps$g = Object.defineProperties;
-var __getOwnPropDescs$g = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$r = Object.getOwnPropertySymbols;
-var __hasOwnProp$r = Object.prototype.hasOwnProperty;
-var __propIsEnum$r = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$r = (obj, key, value) => key in obj ? __defProp$r(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$r = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$r.call(b, prop))
-      __defNormalProp$r(a, prop, b[prop]);
-  if (__getOwnPropSymbols$r)
-    for (var prop of __getOwnPropSymbols$r(b)) {
-      if (__propIsEnum$r.call(b, prop))
-        __defNormalProp$r(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$g = (a, b) => __defProps$g(a, __getOwnPropDescs$g(b));
 const changeSeriesColorConfigFactory = (label, color, fieldConfig) => {
   const { overrides } = fieldConfig;
   const currentIndex = fieldConfig.overrides.findIndex((override) => {
     return override.matcher.id === data.FieldMatcherID.byName && override.matcher.options === label;
   });
   if (currentIndex < 0) {
-    return __spreadProps$g(__spreadValues$r({}, fieldConfig), {
+    return {
+      ...fieldConfig,
       overrides: [...fieldConfig.overrides, createOverride(label, color)]
-    });
+    };
   }
   const overridesCopy = Array.from(overrides);
   const existing = overridesCopy[currentIndex];
   const propertyIndex = existing.properties.findIndex((p) => p.id === "color");
   if (propertyIndex < 0) {
-    overridesCopy[currentIndex] = __spreadProps$g(__spreadValues$r({}, existing), {
+    overridesCopy[currentIndex] = {
+      ...existing,
       properties: [...existing.properties, createProperty(color)]
-    });
-    return __spreadProps$g(__spreadValues$r({}, fieldConfig), {
+    };
+    return {
+      ...fieldConfig,
       overrides: overridesCopy
-    });
+    };
   }
   const propertiesCopy = Array.from(existing.properties);
   propertiesCopy[propertyIndex] = createProperty(color);
-  overridesCopy[currentIndex] = __spreadProps$g(__spreadValues$r({}, existing), {
+  overridesCopy[currentIndex] = {
+    ...existing,
     properties: propertiesCopy
-  });
-  return __spreadProps$g(__spreadValues$r({}, fieldConfig), {
+  };
+  return {
+    ...fieldConfig,
     overrides: overridesCopy
-  });
+  };
 };
 const createOverride = (label, color) => {
   return {
@@ -7642,35 +4507,781 @@ const createProperty = (color) => {
   };
 };
 
-var __defProp$q = Object.defineProperty;
-var __defProps$f = Object.defineProperties;
-var __getOwnPropDescs$f = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$q = Object.getOwnPropertySymbols;
-var __hasOwnProp$q = Object.prototype.hasOwnProperty;
-var __propIsEnum$q = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$q = (obj, key, value) => key in obj ? __defProp$q(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$q = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$q.call(b, prop))
-      __defNormalProp$q(a, prop, b[prop]);
-  if (__getOwnPropSymbols$q)
-    for (var prop of __getOwnPropSymbols$q(b)) {
-      if (__propIsEnum$q.call(b, prop))
-        __defNormalProp$q(a, prop, b[prop]);
+class CursorSync extends SceneObjectBase {
+  constructor(state) {
+    super({
+      ...state,
+      sync: state.sync || schema.DashboardCursorSync.Off
+    });
+    this.getEventsBus = (panel) => {
+      if (!this.parent) {
+        throw new Error("EnableCursorSync cannot be used as a standalone scene object");
+      }
+      return new PanelContextEventBus(this.parent, panel);
+    };
+  }
+  getEventsScope() {
+    if (!this.parent) {
+      throw new Error("EnableCursorSync cannot be used as a standalone scene object");
     }
-  return a;
+    return this.state.key;
+  }
+}
+class PanelContextEventBus {
+  constructor(_source, _eventsOrigin) {
+    this._source = _source;
+    this._eventsOrigin = _eventsOrigin;
+  }
+  publish(event) {
+    event.origin = this;
+    this._eventsOrigin.publishEvent(event, true);
+  }
+  getStream(eventType) {
+    return new rxjs.Observable((observer) => {
+      const handler = (event) => {
+        observer.next(event);
+      };
+      const sub = this._source.subscribeToEvent(eventType, handler);
+      return () => sub.unsubscribe();
+    });
+  }
+  subscribe(eventType, handler) {
+    return this.getStream(eventType).pipe().subscribe(handler);
+  }
+  removeAllListeners() {
+  }
+  newScopedBus(key, filter) {
+    throw new Error("For internal use only");
+  }
+}
+function getCursorSyncScope(sceneObject) {
+  return sceneGraph.findObject(sceneObject, (o) => o instanceof CursorSync);
+}
+
+const _LiveNowTimer = class _LiveNowTimer extends SceneObjectBase {
+  // ms
+  constructor({ enabled = false }) {
+    super({ enabled });
+    this.timerId = void 0;
+    this._activationHandler = () => {
+      if (this.state.enabled) {
+        this.enable();
+      }
+      return () => {
+        window.clearInterval(this.timerId);
+        this.timerId = void 0;
+      };
+    };
+    this.addActivationHandler(this._activationHandler);
+  }
+  enable() {
+    window.clearInterval(this.timerId);
+    this.timerId = void 0;
+    this.timerId = window.setInterval(() => {
+      const panels = sceneGraph.findAllObjects(this.getRoot(), (obj) => obj instanceof VizPanel);
+      for (const panel of panels) {
+        panel.forceRender();
+      }
+    }, _LiveNowTimer.REFRESH_RATE);
+    this.setState({ enabled: true });
+  }
+  disable() {
+    window.clearInterval(this.timerId);
+    this.timerId = void 0;
+    this.setState({ enabled: false });
+  }
+  get isEnabled() {
+    return this.state.enabled;
+  }
 };
-var __spreadProps$f = (a, b) => __defProps$f(a, __getOwnPropDescs$f(b));
+_LiveNowTimer.REFRESH_RATE = 100;
+let LiveNowTimer = _LiveNowTimer;
+
+class VizPanelRenderProfiler extends SceneObjectBase {
+  constructor(state = {}) {
+    super({
+      ...state
+    });
+    this._isTracking = false;
+    this._activeQueries = /* @__PURE__ */ new Map();
+    this.addActivationHandler(() => {
+      return this._onActivate();
+    });
+  }
+  _onActivate() {
+    var _a, _b;
+    let panel;
+    try {
+      panel = sceneGraph.getAncestor(this, VizPanel);
+    } catch (error) {
+      writeSceneLog("VizPanelRenderProfiler", "Failed to find VizPanel ancestor", error);
+      return;
+    }
+    if (!panel) {
+      writeSceneLog("VizPanelRenderProfiler", "Not attached to a VizPanel");
+      return;
+    }
+    if (!panel.state.key) {
+      writeSceneLog("VizPanelRenderProfiler", "Panel has no key, skipping tracking");
+      return;
+    }
+    this._panelKey = panel.state.key;
+    this._panelId = String(panel.getLegacyPanelId());
+    this._pluginId = panel.state.pluginId;
+    const plugin = panel.getPlugin();
+    this._pluginVersion = (_b = (_a = plugin == null ? void 0 : plugin.meta) == null ? void 0 : _a.info) == null ? void 0 : _b.version;
+    this._subs.add(
+      panel.subscribeToState((newState, prevState) => {
+        this._handlePanelStateChange(panel, newState, prevState);
+      })
+    );
+    return () => {
+      this._cleanup();
+    };
+  }
+  _handlePanelStateChange(panel, newState, prevState) {
+    if (newState.pluginId !== prevState.pluginId) {
+      this._onPluginChange(panel, newState.pluginId);
+    }
+  }
+  /**
+   * Track query execution with operation ID correlation
+   */
+  onQueryStarted(timestamp, entry, queryId) {
+    if (!this._panelKey) {
+      return null;
+    }
+    this._activeQueries.set(queryId, { entry, startTime: timestamp });
+    const operationId = generateOperationId("query");
+    getScenePerformanceTracker().notifyPanelOperationStart({
+      operationId,
+      panelId: this._panelId,
+      panelKey: this._panelKey,
+      pluginId: this._pluginId,
+      pluginVersion: this._pluginVersion,
+      operation: "query",
+      timestamp,
+      metadata: {
+        queryId,
+        queryType: entry.type
+      }
+    });
+    return (endTimestamp, error) => {
+      if (!this._panelKey) {
+        return;
+      }
+      const queryInfo = this._activeQueries.get(queryId);
+      if (!queryInfo) {
+        return;
+      }
+      const duration = endTimestamp - queryInfo.startTime;
+      this._activeQueries.delete(queryId);
+      getScenePerformanceTracker().notifyPanelOperationComplete({
+        operationId,
+        panelId: this._panelId,
+        panelKey: this._panelKey,
+        pluginId: this._pluginId,
+        pluginVersion: this._pluginVersion,
+        operation: "query",
+        timestamp: endTimestamp,
+        duration,
+        metadata: {
+          queryId,
+          queryType: entry.type
+        },
+        error: error ? (error == null ? void 0 : error.message) || String(error) || "Unknown error" : void 0
+      });
+    };
+  }
+  /**
+   * Track plugin loading with operation ID correlation
+   */
+  onPluginLoadStart(pluginId) {
+    if (!this._panelKey) {
+      let panel;
+      try {
+        panel = sceneGraph.getAncestor(this, VizPanel);
+      } catch (error) {
+        return null;
+      }
+      if (panel && !this._panelKey && panel.state.key) {
+        this._panelKey = panel.state.key;
+        this._panelId = String(panel.getLegacyPanelId());
+        this._pluginId = pluginId;
+      }
+    }
+    if (!this._panelKey) {
+      return null;
+    }
+    if (!this._isTracking) {
+      this._startTracking();
+    }
+    this._loadPluginStartTime = performance.now();
+    const operationId = generateOperationId("pluginLoad");
+    getScenePerformanceTracker().notifyPanelOperationStart({
+      operationId,
+      panelId: this._panelId,
+      panelKey: this._panelKey,
+      pluginId: this._pluginId,
+      operation: "plugin-load",
+      timestamp: this._loadPluginStartTime,
+      metadata: {
+        pluginId
+      }
+    });
+    return (plugin, fromCache = false) => {
+      if (!this._panelKey || !this._loadPluginStartTime) {
+        return;
+      }
+      const duration = performance.now() - this._loadPluginStartTime;
+      getScenePerformanceTracker().notifyPanelOperationComplete({
+        operationId,
+        panelId: this._panelId,
+        panelKey: this._panelKey,
+        pluginId: this._pluginId,
+        operation: "plugin-load",
+        timestamp: performance.now(),
+        duration,
+        metadata: {
+          pluginId: this._pluginId,
+          fromCache,
+          pluginLoadTime: duration
+        }
+      });
+      this._loadPluginStartTime = void 0;
+    };
+  }
+  /**
+   * Track field config processing with operation ID correlation
+   */
+  onFieldConfigStart(timestamp) {
+    if (!this._panelKey) {
+      return null;
+    }
+    this._applyFieldConfigStartTime = timestamp;
+    const operationId = generateOperationId("fieldConfig");
+    getScenePerformanceTracker().notifyPanelOperationStart({
+      operationId,
+      panelId: this._panelId,
+      panelKey: this._panelKey,
+      pluginId: this._pluginId,
+      operation: "fieldConfig",
+      timestamp: this._applyFieldConfigStartTime,
+      metadata: {}
+    });
+    return (endTimestamp, dataPointsCount, seriesCount) => {
+      if (!this._panelKey || !this._applyFieldConfigStartTime) {
+        return;
+      }
+      const duration = endTimestamp - this._applyFieldConfigStartTime;
+      getScenePerformanceTracker().notifyPanelOperationComplete({
+        operationId,
+        panelId: this._panelId,
+        panelKey: this._panelKey,
+        pluginId: this._pluginId,
+        operation: "fieldConfig",
+        timestamp: endTimestamp,
+        duration,
+        metadata: {}
+      });
+      this._applyFieldConfigStartTime = void 0;
+    };
+  }
+  /**
+   * Get panel info for logging - truncates long titles for readability
+   */
+  _getPanelInfo() {
+    let panel;
+    try {
+      panel = sceneGraph.getAncestor(this, VizPanel);
+    } catch (error) {
+    }
+    let panelTitle = (panel == null ? void 0 : panel.state.title) || this._panelKey || "No-key panel";
+    if (panelTitle.length > 30) {
+      panelTitle = panelTitle.substring(0, 27) + "...";
+    }
+    return `VizPanelRenderProfiler [${panelTitle}]`;
+  }
+  /**
+   * Track simple render timing with operation ID correlation
+   */
+  onSimpleRenderStart(timestamp) {
+    if (!this._panelKey) {
+      return void 0;
+    }
+    const operationId = generateOperationId("render");
+    getScenePerformanceTracker().notifyPanelOperationStart({
+      operationId,
+      panelId: this._panelId || "unknown",
+      panelKey: this._panelKey,
+      pluginId: this._pluginId || "unknown",
+      pluginVersion: this._pluginVersion,
+      operation: "render",
+      timestamp,
+      metadata: {}
+    });
+    return (endTimestamp, duration) => {
+      if (!this._panelKey) {
+        return;
+      }
+      getScenePerformanceTracker().notifyPanelOperationComplete({
+        operationId,
+        panelId: this._panelId || "unknown",
+        panelKey: this._panelKey,
+        pluginId: this._pluginId || "unknown",
+        pluginVersion: this._pluginVersion,
+        operation: "render",
+        duration,
+        timestamp: endTimestamp,
+        metadata: {}
+      });
+    };
+  }
+  /** Handle plugin changes */
+  _onPluginChange(panel, newPluginId) {
+    var _a, _b;
+    this._pluginId = newPluginId;
+    const plugin = panel.getPlugin();
+    this._pluginVersion = (_b = (_a = plugin == null ? void 0 : plugin.meta) == null ? void 0 : _a.info) == null ? void 0 : _b.version;
+    writeSceneLog(this._getPanelInfo(), `Plugin changed to ${newPluginId}`);
+  }
+  /** Start tracking this panel */
+  _startTracking() {
+    if (!this._panelKey || !this._pluginId || this._isTracking) {
+      return;
+    }
+    this._isTracking = true;
+  }
+  /** Cleanup when behavior is deactivated */
+  _cleanup() {
+    this._activeQueries.clear();
+    this._isTracking = false;
+    writeSceneLog(this._getPanelInfo(), "Cleaned up");
+  }
+  /**
+   * Track data transformation with operation ID correlation
+   */
+  onDataTransformStart(timestamp, transformationId, metrics) {
+    if (!this._panelKey) {
+      return null;
+    }
+    const operationId = generateOperationId("transform");
+    getScenePerformanceTracker().notifyPanelOperationStart({
+      operationId,
+      panelId: this._panelId,
+      panelKey: this._panelKey,
+      pluginId: this._pluginId,
+      operation: "transform",
+      timestamp,
+      metadata: {
+        transformationId,
+        transformationCount: metrics.transformationCount,
+        seriesTransformationCount: metrics.seriesTransformationCount,
+        annotationTransformationCount: metrics.annotationTransformationCount
+      }
+    });
+    return (endTimestamp, duration, success, result) => {
+      if (!this._panelKey) {
+        return;
+      }
+      getScenePerformanceTracker().notifyPanelOperationComplete({
+        operationId,
+        panelId: this._panelId,
+        panelKey: this._panelKey,
+        pluginId: this._pluginId,
+        operation: "transform",
+        timestamp: endTimestamp,
+        duration,
+        metadata: {
+          transformationId,
+          transformationCount: metrics.transformationCount,
+          seriesTransformationCount: metrics.seriesTransformationCount,
+          annotationTransformationCount: metrics.annotationTransformationCount,
+          success,
+          error: (result == null ? void 0 : result.error) || (!success ? "Transform operation failed" : void 0)
+        }
+      });
+    };
+  }
+}
+
+class DataLayersMerger {
+  constructor() {
+    this._resultsMap = /* @__PURE__ */ new Map();
+    this._prevLayers = [];
+  }
+  getMergedStream(layers) {
+    if (areDifferentLayers(layers, this._prevLayers)) {
+      this._resultsMap = /* @__PURE__ */ new Map();
+      this._prevLayers = layers;
+    }
+    const resultStreams = layers.map((l) => l.getResultsStream());
+    const deactivationHandlers = [];
+    for (const layer of layers) {
+      deactivationHandlers.push(layer.activate());
+    }
+    return rxjs.merge(resultStreams).pipe(
+      rxjs.mergeAll(),
+      rxjs.filter((v) => {
+        return this._resultsMap.get(v.origin.state.key) !== v;
+      }),
+      rxjs.map((v) => {
+        this._resultsMap.set(v.origin.state.key, v);
+        return this._resultsMap.values();
+      }),
+      rxjs.finalize(() => {
+        deactivationHandlers.forEach((handler) => handler());
+      })
+    );
+  }
+}
+function areDifferentLayers(a, b) {
+  if (a.length !== b.length) {
+    return true;
+  }
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+class SceneDataLayerSetBase extends SceneObjectBase {
+  constructor() {
+    super(...arguments);
+    /** Mark it as a data layer */
+    this.isDataLayer = true;
+    /**
+     * Subject to emit results to.
+     */
+    this._results = new rxjs.ReplaySubject(1);
+    this._dataLayersMerger = new DataLayersMerger();
+  }
+  subscribeToAllLayers(layers) {
+    if (layers.length > 0) {
+      this.querySub = this._dataLayersMerger.getMergedStream(layers).subscribe(this._onLayerUpdateReceived.bind(this));
+    } else {
+      this._results.next({ origin: this, data: emptyPanelData });
+      this.setStateHelper({ data: emptyPanelData });
+    }
+  }
+  _onLayerUpdateReceived(results) {
+    var _a;
+    let series = [];
+    for (const result of results) {
+      if ((_a = result.data) == null ? void 0 : _a.series) {
+        series = series.concat(result.data.series);
+      }
+    }
+    const combinedData = { ...emptyPanelData, series };
+    this._results.next({ origin: this, data: combinedData });
+    this.setStateHelper({ data: combinedData });
+  }
+  getResultsStream() {
+    return this._results;
+  }
+  cancelQuery() {
+    var _a;
+    (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
+  }
+  /**
+   * This helper function is to counter the contravariance of setState
+   */
+  setStateHelper(state) {
+    setBaseClassState(this, state);
+  }
+}
+class SceneDataLayerSet extends SceneDataLayerSetBase {
+  constructor(state) {
+    var _a, _b;
+    super({
+      name: (_a = state.name) != null ? _a : "Data layers",
+      layers: (_b = state.layers) != null ? _b : []
+    });
+    this.addActivationHandler(() => this._onActivate());
+  }
+  _onActivate() {
+    this._subs.add(
+      this.subscribeToState((newState, oldState) => {
+        var _a;
+        if (newState.layers !== oldState.layers) {
+          (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
+          this.subscribeToAllLayers(newState.layers);
+        }
+      })
+    );
+    this.subscribeToAllLayers(this.state.layers);
+    return () => {
+      var _a;
+      (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
+    };
+  }
+}
+SceneDataLayerSet.Component = ({ model }) => {
+  const { layers } = model.useState();
+  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, layers.map((layer) => /* @__PURE__ */ React__default.default.createElement(layer.Component, { model: layer, key: layer.state.key })));
+};
+
+class SceneDataTransformer extends SceneObjectBase {
+  constructor(state) {
+    super(state);
+    this._results = new rxjs.ReplaySubject(1);
+    /**
+     * Scan transformations for variable usage and re-process transforms when a variable values change
+     */
+    this._variableDependency = new VariableDependencyConfig(
+      this,
+      {
+        statePaths: ["transformations"],
+        onReferencedVariableValueChanged: () => this.reprocessTransformations()
+      }
+    );
+    this.addActivationHandler(() => this.activationHandler());
+  }
+  activationHandler() {
+    const sourceData = this.getSourceData();
+    this._subs.add(sourceData.subscribeToState((state) => this.transform(state.data)));
+    if (sourceData.state.data) {
+      this.transform(sourceData.state.data);
+    }
+    return () => {
+      if (this._transformSub) {
+        this._transformSub.unsubscribe();
+      }
+    };
+  }
+  getSourceData() {
+    if (this.state.$data) {
+      if (this.state.$data instanceof SceneDataLayerSet) {
+        throw new Error("SceneDataLayerSet can not be used as data provider for SceneDataTransformer.");
+      }
+      return this.state.$data;
+    }
+    if (!this.parent || !this.parent.parent) {
+      throw new Error("SceneDataTransformer must either have $data set on it or have a parent.parent with $data");
+    }
+    return sceneGraph.getData(this.parent.parent);
+  }
+  setContainerWidth(width) {
+    if (this.state.$data && this.state.$data.setContainerWidth) {
+      this.state.$data.setContainerWidth(width);
+    }
+  }
+  isDataReadyToDisplay() {
+    const dataObject = this.getSourceData();
+    if (dataObject.isDataReadyToDisplay) {
+      return dataObject.isDataReadyToDisplay();
+    }
+    return true;
+  }
+  reprocessTransformations() {
+    this.transform(this.getSourceData().state.data, true);
+  }
+  /**
+   * S3.1: Calculate transformation complexity metrics
+   */
+  _calculateTransformationMetrics(data$1, transformations) {
+    const transformationCount = transformations.length;
+    const seriesTransformationCount = transformations.filter((transformation) => {
+      if ("options" in transformation || "topic" in transformation) {
+        return transformation.topic == null || transformation.topic === data.DataTopic.Series;
+      }
+      return true;
+    }).length;
+    const annotationTransformationCount = transformations.filter((transformation) => {
+      if ("options" in transformation || "topic" in transformation) {
+        return transformation.topic === data.DataTopic.Annotations;
+      }
+      return false;
+    }).length;
+    return {
+      transformationCount,
+      seriesTransformationCount,
+      annotationTransformationCount
+    };
+  }
+  cancelQuery() {
+    var _a, _b;
+    (_b = (_a = this.getSourceData()).cancelQuery) == null ? void 0 : _b.call(_a);
+  }
+  getResultsStream() {
+    return this._results;
+  }
+  clone(withState) {
+    const clone = super.clone(withState);
+    if (this._prevDataFromSource) {
+      clone["_prevDataFromSource"] = this._prevDataFromSource;
+    }
+    return clone;
+  }
+  isInViewChanged(isInView) {
+    var _a, _b;
+    (_b = (_a = this.state.$data) == null ? void 0 : _a.isInViewChanged) == null ? void 0 : _b.call(_a, isInView);
+  }
+  bypassIsInViewChanged(bypassIsInView) {
+    var _a, _b;
+    (_b = (_a = this.state.$data) == null ? void 0 : _a.bypassIsInViewChanged) == null ? void 0 : _b.call(_a, bypassIsInView);
+  }
+  haveAlreadyTransformedData(data) {
+    if (!this._prevDataFromSource) {
+      return false;
+    }
+    if (data === this._prevDataFromSource) {
+      return true;
+    }
+    const { series, annotations } = this._prevDataFromSource;
+    if (data.series === series && data.annotations === annotations) {
+      if (this.state.data && data.state !== this.state.data.state) {
+        this.setState({ data: { ...this.state.data, state: data.state } });
+      }
+      return true;
+    }
+    return false;
+  }
+  transform(data$1, force = false) {
+    var _a;
+    const timestamp = performance.now();
+    const profiler = findPanelProfiler(this);
+    const transformStartTime = performance.now();
+    let transformationId;
+    let endTransformCallback = null;
+    if (this.state.transformations.length === 0 || !data$1) {
+      this._prevDataFromSource = data$1;
+      this.setState({ data: data$1 });
+      if (data$1) {
+        this._results.next({ origin: this, data: data$1 });
+      }
+      return;
+    }
+    if (!force && this.haveAlreadyTransformedData(data$1)) {
+      return;
+    }
+    if (profiler) {
+      const transformationTypes = this.state.transformations.map((t) => {
+        if ("id" in t) {
+          return t.id;
+        } else {
+          return "customTransformation";
+        }
+      }).join("+");
+      transformationId = transformationTypes || "no-transforms";
+      const metrics = this._calculateTransformationMetrics(data$1, this.state.transformations);
+      endTransformCallback = profiler.onDataTransformStart(timestamp, transformationId, metrics);
+    }
+    const interpolatedTransformations = this._interpolateVariablesInTransformationConfigs(data$1);
+    const seriesTransformations = this._filterAndPrepareTransformationsByTopic(
+      interpolatedTransformations,
+      (transformation) => {
+        if ("options" in transformation || "topic" in transformation) {
+          return transformation.topic == null || transformation.topic === data.DataTopic.Series;
+        }
+        return true;
+      }
+    );
+    const annotationsTransformations = this._filterAndPrepareTransformationsByTopic(
+      interpolatedTransformations,
+      (transformation) => {
+        if ("options" in transformation || "topic" in transformation) {
+          return transformation.topic === data.DataTopic.Annotations;
+        }
+        return false;
+      }
+    );
+    if (this._transformSub) {
+      this._transformSub.unsubscribe();
+    }
+    const ctx = {
+      interpolate: (value, scopedVars) => {
+        var _a2;
+        return sceneGraph.interpolate(this, value, { ...(_a2 = data$1.request) == null ? void 0 : _a2.scopedVars, ...scopedVars });
+      }
+    };
+    const seriesStream = data.transformDataFrame(seriesTransformations, data$1.series, ctx);
+    const annotationsStream = data.transformDataFrame(annotationsTransformations, (_a = data$1.annotations) != null ? _a : []);
+    let series = [];
+    let annotations = [];
+    this._transformSub = rxjs.forkJoin([seriesStream, annotationsStream]).pipe(
+      rxjs.map((results) => {
+        results.forEach((frames) => {
+          var _a2;
+          for (const frame of frames) {
+            if (((_a2 = frame.meta) == null ? void 0 : _a2.dataTopic) === data.DataTopic.Annotations) {
+              annotations.push(frame);
+            } else {
+              series.push(frame);
+            }
+          }
+        });
+        return { ...data$1, series, annotations };
+      }),
+      rxjs.catchError((err) => {
+        var _a2;
+        const timestamp2 = performance.now();
+        const duration = timestamp2 - transformStartTime;
+        if (endTransformCallback) {
+          endTransformCallback(timestamp2, duration, false, {
+            error: err.message || err
+          });
+        }
+        console.error("Error transforming data: ", err);
+        const sourceErr = ((_a2 = this.getSourceData().state.data) == null ? void 0 : _a2.errors) || [];
+        const transformationError = runtime.toDataQueryError(err);
+        transformationError.message = `Error transforming data: ${transformationError.message}`;
+        const result = {
+          ...data$1,
+          state: data.LoadingState.Error,
+          // Combine transformation error with upstream errors
+          errors: [...sourceErr, transformationError]
+        };
+        return rxjs.of(result);
+      })
+    ).subscribe((transformedData) => {
+      var _a2;
+      const timestamp2 = performance.now();
+      const duration = timestamp2 - transformStartTime;
+      if (endTransformCallback) {
+        endTransformCallback(timestamp2, duration, true, {
+          outputSeriesCount: transformedData.series.length,
+          outputAnnotationsCount: ((_a2 = transformedData.annotations) == null ? void 0 : _a2.length) || 0
+        });
+      }
+      this.setState({ data: transformedData });
+      this._results.next({ origin: this, data: transformedData });
+      this._prevDataFromSource = data$1;
+    });
+  }
+  _interpolateVariablesInTransformationConfigs(data) {
+    var _a;
+    const transformations = this.state.transformations;
+    if (this._variableDependency.getNames().size === 0) {
+      return transformations;
+    }
+    const onlyObjects = transformations.every((t) => typeof t === "object");
+    if (onlyObjects) {
+      return JSON.parse(sceneGraph.interpolate(this, JSON.stringify(transformations), (_a = data.request) == null ? void 0 : _a.scopedVars));
+    }
+    return transformations.map((t) => {
+      var _a2;
+      return typeof t === "object" ? JSON.parse(sceneGraph.interpolate(this, JSON.stringify(t), (_a2 = data.request) == null ? void 0 : _a2.scopedVars)) : t;
+    });
+  }
+  _filterAndPrepareTransformationsByTopic(interpolatedTransformations, transformationFilter) {
+    return interpolatedTransformations.filter(transformationFilter).map((transformation) => "operator" in transformation ? transformation.operator : transformation);
+  }
+}
+
 class VizPanel extends SceneObjectBase {
   constructor(state) {
     var _a;
-    super(__spreadValues$q({
+    super({
       options: {},
       fieldConfig: { defaults: {}, overrides: [] },
-      title: "Title",
+      title: i18n.t("grafana-scenes.components.viz-panel.title.title", "Title"),
       pluginId: "timeseries",
-      _renderCounter: 0
-    }, state));
+      _renderCounter: 0,
+      ...state
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["title", "options", "fieldConfig"]
     });
@@ -7776,6 +5387,9 @@ class VizPanel extends SceneObjectBase {
     this.onStatusMessageClick = () => {
       this.publishEvent(new UserActionEvent({ origin: this, interaction: "panel-status-message-clicked" }), true);
     };
+    /**
+     * Panel context functions
+     */
     this._onSeriesColorChange = (label, color) => {
       this.onFieldConfigChange(changeSeriesColorConfigFactory(label, color, this.state.fieldConfig));
     };
@@ -7790,9 +5404,10 @@ class VizPanel extends SceneObjectBase {
     };
     this._onInstanceStateChange = (state) => {
       if (this._panelContext) {
-        this._panelContext = __spreadProps$f(__spreadValues$q({}, this._panelContext), {
+        this._panelContext = {
+          ...this._panelContext,
           instanceState: state
-        });
+        };
       }
       this.setState({ _pluginInstanceState: state });
     };
@@ -7814,9 +5429,10 @@ class VizPanel extends SceneObjectBase {
         sortBy = sortKey;
       }
       this.onOptionsChange(
-        __spreadProps$f(__spreadValues$q({}, this.state.options), {
-          legend: __spreadProps$f(__spreadValues$q({}, legendOptions), { sortBy, sortDesc })
-        }),
+        {
+          ...this.state.options,
+          legend: { ...legendOptions, sortBy, sortDesc }
+        },
         true
       );
     };
@@ -7826,6 +5442,20 @@ class VizPanel extends SceneObjectBase {
     (_a = state.menu) == null ? void 0 : _a.addActivationHandler(() => {
       this.publishEvent(new UserActionEvent({ origin: this, interaction: "panel-menu-shown" }), true);
     });
+  }
+  /**
+   * Get the VizPanelRenderProfiler behavior if attached
+   */
+  getProfiler() {
+    if (!this.state.$behaviors) {
+      return void 0;
+    }
+    for (const behavior of this.state.$behaviors) {
+      if (behavior instanceof VizPanelRenderProfiler) {
+        return behavior;
+      }
+    }
+    return void 0;
   }
   _onActivate() {
     if (!this._plugin) {
@@ -7837,13 +5467,24 @@ class VizPanel extends SceneObjectBase {
     this.setState({ _renderCounter: ((_a = this.state._renderCounter) != null ? _a : 0) + 1 });
   }
   async _loadPlugin(pluginId, overwriteOptions, overwriteFieldConfig, isAfterPluginChange) {
+    const profiler = this.getProfiler();
     const plugin = loadPanelPluginSync(pluginId);
     if (plugin) {
+      const endPluginLoadCallback = profiler == null ? void 0 : profiler.onPluginLoadStart(pluginId);
+      endPluginLoadCallback == null ? void 0 : endPluginLoadCallback(plugin, true);
       this._pluginLoaded(plugin, overwriteOptions, overwriteFieldConfig, isAfterPluginChange);
     } else {
       const { importPanelPlugin } = runtime.getPluginImportUtils();
       try {
-        const result = await importPanelPlugin(pluginId);
+        const endPluginLoadCallback = profiler == null ? void 0 : profiler.onPluginLoadStart(pluginId);
+        const panelPromise = importPanelPlugin(pluginId);
+        const queryControler = sceneGraph.getQueryController(this);
+        if (queryControler && queryControler.state.enableProfiling) {
+          wrapPromiseInStateObservable(panelPromise).pipe(registerQueryWithController({ type: `VizPanel/loadPlugin/${pluginId}`, origin: this })).subscribe(() => {
+          });
+        }
+        const result = await panelPromise;
+        endPluginLoadCallback == null ? void 0 : endPluginLoadCallback(result, false);
         this._pluginLoaded(result, overwriteOptions, overwriteFieldConfig, isAfterPluginChange);
       } catch (err) {
         this._pluginLoaded(getPanelPluginNotFound(pluginId));
@@ -7854,13 +5495,26 @@ class VizPanel extends SceneObjectBase {
     }
   }
   getLegacyPanelId() {
-    const panelId = parseInt(this.state.key.replace("panel-", ""), 10);
+    var _a, _b;
+    const parts = (_b = (_a = this.state.key) == null ? void 0 : _a.split("/")) != null ? _b : [];
+    if (parts.length === 0) {
+      return 0;
+    }
+    const part = parts[parts.length - 1];
+    const panelId = parseInt(part.replace("panel-", ""), 10);
     if (isNaN(panelId)) {
       return 0;
     }
     return panelId;
   }
+  /**
+   * Unique id string that includes local variable values (for repeated panels)
+   */
+  getPathId() {
+    return buildPathIdFor(this);
+  }
   async _pluginLoaded(plugin, overwriteOptions, overwriteFieldConfig, isAfterPluginChange) {
+    var _a;
     const { options, fieldConfig, title, pluginVersion, _UNSAFE_customMigrationHandler } = this.state;
     const panel = {
       title,
@@ -7878,8 +5532,21 @@ class VizPanel extends SceneObjectBase {
     }
     const currentVersion = this._getPluginVersion(plugin);
     _UNSAFE_customMigrationHandler == null ? void 0 : _UNSAFE_customMigrationHandler(panel, plugin);
-    if (plugin.onPanelMigration && currentVersion !== pluginVersion && !isAfterPluginChange) {
+    const needsMigration = currentVersion !== pluginVersion || ((_a = plugin.shouldMigrate) == null ? void 0 : _a.call(plugin, panel));
+    if (plugin.onPanelMigration && needsMigration && !isAfterPluginChange) {
       panel.options = await plugin.onPanelMigration(panel);
+    }
+    let $data = this.state.$data;
+    if (panel.transformations && $data) {
+      if ($data instanceof SceneDataTransformer) {
+        $data.setState({ transformations: panel.transformations });
+      } else if ($data instanceof SceneQueryRunner) {
+        $data.clearParent();
+        $data = new SceneDataTransformer({
+          transformations: panel.transformations,
+          $data
+        });
+      }
     }
     const withDefaults = data.getPanelOptionsWithDefaults({
       plugin,
@@ -7889,6 +5556,7 @@ class VizPanel extends SceneObjectBase {
     });
     this._plugin = plugin;
     this.setState({
+      $data,
       options: withDefaults.options,
       fieldConfig: withDefaults.fieldConfig,
       pluginVersion: currentVersion,
@@ -7931,15 +5599,21 @@ class VizPanel extends SceneObjectBase {
   clearFieldConfigCache() {
     this._dataWithFieldConfig = void 0;
   }
+  /**
+   * Called from the react render path to apply the field config to the data provided by the data provider
+   */
   applyFieldConfig(rawData) {
     var _a, _b, _c, _d;
+    const timestamp = performance.now();
     const plugin = this._plugin;
+    const profiler = this.getProfiler();
     if (!plugin || plugin.meta.skipDataQuery || !rawData) {
       return emptyPanelData;
     }
     if (this._prevData === rawData && this._dataWithFieldConfig) {
       return this._dataWithFieldConfig;
     }
+    const endFieldConfigCallback = profiler == null ? void 0 : profiler.onFieldConfigStart(timestamp);
     const pluginDataSupport = plugin.dataSupport || { alertStates: false, annotations: false };
     const fieldConfigRegistry = plugin.fieldConfigRegistry;
     const prevFrames = (_b = (_a = this._dataWithFieldConfig) == null ? void 0 : _a.series) != null ? _b : [];
@@ -7954,10 +5628,11 @@ class VizPanel extends SceneObjectBase {
     if (!data.compareArrayValues(newFrames, prevFrames, data.compareDataFrameStructures)) {
       this._structureRev++;
     }
-    this._dataWithFieldConfig = __spreadProps$f(__spreadValues$q({}, rawData), {
+    this._dataWithFieldConfig = {
+      ...rawData,
       structureRev: this._structureRev,
       series: newFrames
-    });
+    };
     if (this._dataWithFieldConfig.annotations) {
       this._dataWithFieldConfig.annotations = data.applyFieldOverrides({
         data: this._dataWithFieldConfig.annotations,
@@ -7978,7 +5653,13 @@ class VizPanel extends SceneObjectBase {
       this._dataWithFieldConfig.annotations = void 0;
     }
     this._prevData = rawData;
+    if (profiler) {
+      endFieldConfigCallback == null ? void 0 : endFieldConfigCallback(performance.now());
+    }
     return this._dataWithFieldConfig;
+  }
+  clone(withState) {
+    return super.clone({ _pluginInstanceState: void 0, _pluginLoadError: void 0, ...withState });
   }
   buildPanelContext() {
     const sync = getCursorSyncScope(this);
@@ -8031,50 +5712,5035 @@ function getPanelPluginNotFound(id) {
   return plugin;
 }
 
-const _LiveNowTimer = class extends SceneObjectBase {
-  constructor({ enabled = false }) {
-    super({ enabled });
-    this.timerId = void 0;
-    this._activationHandler = () => {
-      if (this.state.enabled) {
-        this.enable();
+function findPanelProfiler(sceneObject) {
+  try {
+    const panel = sceneGraph.getAncestor(sceneObject, VizPanel);
+    if (panel) {
+      const behaviors = panel.state.$behaviors || [];
+      return behaviors.find((b) => b instanceof VizPanelRenderProfiler);
+    }
+  } catch (error) {
+  }
+  return void 0;
+}
+
+let originalGetAdhocFilters = void 0;
+const allActiveFilterSets = /* @__PURE__ */ new Set();
+function patchGetAdhocFilters(filterVar) {
+  filterVar.addActivationHandler(() => {
+    allActiveFilterSets.add(filterVar);
+    return () => allActiveFilterSets.delete(filterVar);
+  });
+  if (originalGetAdhocFilters) {
+    return;
+  }
+  const templateSrv = runtime.getTemplateSrv();
+  if (!(templateSrv == null ? void 0 : templateSrv.getAdhocFilters)) {
+    console.log("Failed to patch getAdhocFilters");
+    return;
+  }
+  originalGetAdhocFilters = templateSrv.getAdhocFilters;
+  templateSrv.getAdhocFilters = function getAdhocFiltersScenePatch(dsName) {
+    var _a;
+    if (allActiveFilterSets.size === 0) {
+      return originalGetAdhocFilters.call(templateSrv, dsName);
+    }
+    const ds = runtime.getDataSourceSrv().getInstanceSettings(dsName);
+    if (!ds) {
+      return [];
+    }
+    for (const filter of allActiveFilterSets.values()) {
+      if (((_a = filter.state.datasource) == null ? void 0 : _a.uid) === ds.uid) {
+        return filter.state.filters;
       }
-      return () => {
-        window.clearInterval(this.timerId);
-        this.timerId = void 0;
-      };
+    }
+    return [];
+  }.bind(templateSrv);
+}
+function findActiveAdHocFilterVariableByUid(dsUid) {
+  var _a;
+  for (const filter of allActiveFilterSets.values()) {
+    if (interpolate(filter, (_a = filter.state.datasource) == null ? void 0 : _a.uid) === dsUid) {
+      return filter;
+    }
+  }
+  return void 0;
+}
+
+function LoadingIndicator(props) {
+  return /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: i18n.t("grafana-scenes.utils.loading-indicator.content-cancel-query", "Cancel query") }, /* @__PURE__ */ React__default.default.createElement(
+    ui.Icon,
+    {
+      className: "spin-clockwise",
+      name: "sync",
+      size: "xs",
+      role: "button",
+      onMouseDown: (e) => {
+        props.onCancel(e);
+      }
+    }
+  ));
+}
+
+function ControlsLabel(props) {
+  const styles = ui.useStyles2(getStyles$g);
+  const theme = ui.useTheme2();
+  const isVertical = props.layout === "vertical";
+  const loadingIndicator = Boolean(props.isLoading) ? /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      style: { marginLeft: theme.spacing(1), marginTop: "-1px" },
+      "aria-label": e2eSelectors.selectors.components.LoadingIndicator.icon
+    },
+    /* @__PURE__ */ React__default.default.createElement(
+      LoadingIndicator,
+      {
+        onCancel: (e) => {
+          var _a;
+          e.preventDefault();
+          e.stopPropagation();
+          (_a = props.onCancel) == null ? void 0 : _a.call(props);
+        }
+      }
+    )
+  ) : null;
+  let errorIndicator = null;
+  if (props.error) {
+    errorIndicator = /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: props.error, placement: "bottom" }, /* @__PURE__ */ React__default.default.createElement(ui.Icon, { className: styles.errorIcon, name: "exclamation-triangle" }));
+  }
+  let descriptionIndicator = null;
+  if (props.description) {
+    descriptionIndicator = /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: props.description, placement: isVertical ? "top" : "bottom" }, /* @__PURE__ */ React__default.default.createElement(ui.Icon, { className: styles.normalIcon, name: "info-circle" }));
+  }
+  const testId = typeof props.label === "string" ? e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemLabels(props.label) : "";
+  let labelElement;
+  if (isVertical) {
+    labelElement = /* @__PURE__ */ React__default.default.createElement("label", { className: css.cx(styles.verticalLabel, props.className), "data-testid": testId, htmlFor: props.htmlFor }, props.prefix, props.label, descriptionIndicator, errorIndicator, props.icon && /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: props.icon, className: styles.normalIcon }), loadingIndicator, props.onRemove && /* @__PURE__ */ React__default.default.createElement(
+      ui.IconButton,
+      {
+        variant: "secondary",
+        size: "xs",
+        name: "times",
+        onClick: props.onRemove,
+        tooltip: i18n.t("grafana-scenes.utils.controls-label.tooltip-remove", "Remove")
+      }
+    ), props.suffix);
+  } else {
+    labelElement = /* @__PURE__ */ React__default.default.createElement("label", { className: css.cx(styles.horizontalLabel, props.className), "data-testid": testId, htmlFor: props.htmlFor }, props.prefix, errorIndicator, props.icon && /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: props.icon, className: styles.normalIcon }), props.label, descriptionIndicator, loadingIndicator, props.suffix);
+  }
+  return labelElement;
+}
+const getStyles$g = (theme) => ({
+  horizontalLabel: css.css({
+    background: theme.isDark ? theme.colors.background.primary : theme.colors.background.secondary,
+    display: `flex`,
+    alignItems: "center",
+    padding: theme.spacing(0, 1),
+    fontWeight: theme.typography.fontWeightMedium,
+    fontSize: theme.typography.bodySmall.fontSize,
+    height: theme.spacing(theme.components.height.md),
+    lineHeight: theme.spacing(theme.components.height.md),
+    borderRadius: `${theme.shape.radius.default} 0 0 ${theme.shape.radius.default}`,
+    border: `1px solid ${theme.components.input.borderColor}`,
+    position: "relative",
+    // To make the border line up with the input border
+    right: -1,
+    whiteSpace: "nowrap",
+    gap: theme.spacing(0.5)
+  }),
+  verticalLabel: css.css({
+    display: `flex`,
+    alignItems: "center",
+    fontWeight: theme.typography.fontWeightMedium,
+    fontSize: theme.typography.bodySmall.fontSize,
+    lineHeight: theme.typography.bodySmall.lineHeight,
+    whiteSpace: "nowrap",
+    marginBottom: theme.spacing(0.5),
+    gap: theme.spacing(1)
+  }),
+  errorIcon: css.css({
+    color: theme.colors.error.text
+  }),
+  normalIcon: css.css({
+    color: theme.colors.text.secondary
+  })
+});
+
+function getAdhocOptionSearcher(options) {
+  const haystack = options.map((o) => {
+    var _a;
+    return (_a = o.label) != null ? _a : String(o.value);
+  });
+  return (search) => fuzzyFind(options, haystack, search);
+}
+
+function keyLabelToOption(key, label) {
+  return key !== "" ? {
+    value: key,
+    label: label || key
+  } : null;
+}
+const filterNoOp = () => true;
+function AdHocFilterRenderer({ filter, model }) {
+  var _a, _b, _c, _d, _e;
+  const styles = ui.useStyles2(getStyles$f);
+  const [keys, setKeys] = React.useState([]);
+  const [values, setValues] = React.useState([]);
+  const [isKeysLoading, setIsKeysLoading] = React.useState(false);
+  const [isValuesLoading, setIsValuesLoading] = React.useState(false);
+  const [isKeysOpen, setIsKeysOpen] = React.useState(false);
+  const [isValuesOpen, setIsValuesOpen] = React.useState(false);
+  const [isOperatorOpen, setIsOperatorOpen] = React.useState(false);
+  const [valueInputValue, setValueInputValue] = React.useState("");
+  const [valueHasCustomValue, setValueHasCustomValue] = React.useState(false);
+  const [uncommittedValue, setUncommittedValue] = React.useState(
+    filter.values ? filter.values.map((value, index) => {
+      var _a2;
+      return keyLabelToOption(value, (_a2 = filter.valueLabels) == null ? void 0 : _a2[index]);
+    }) : []
+  );
+  const isMultiValue = isMultiValueOperator(filter.operator);
+  const keyValue = keyLabelToOption(filter.key, filter.keyLabel);
+  const valueValue = keyLabelToOption(filter.value, (_a = filter.valueLabels) == null ? void 0 : _a[0]);
+  const optionSearcher = React.useMemo(() => getAdhocOptionSearcher(values), [values]);
+  const onAddCustomValue = model.state.onAddCustomValue;
+  const onValueInputChange = (value, { action }) => {
+    if (action === "input-change") {
+      setValueInputValue(value);
+    }
+    return value;
+  };
+  const onOperatorChange = (v) => {
+    var _a2, _b2;
+    const existingOperator = filter.operator;
+    const newOperator = v.value;
+    const update = { operator: newOperator };
+    if (isMultiValueOperator(existingOperator) && !isMultiValueOperator(newOperator)) {
+      update.value = "";
+      update.valueLabels = [""];
+      update.values = void 0;
+      setUncommittedValue([]);
+    } else if (!isMultiValueOperator(existingOperator) && isMultiValueOperator(newOperator) && filter.value) {
+      update.values = [filter.value];
+      setUncommittedValue([
+        {
+          value: filter.value,
+          label: (_b2 = (_a2 = filter.valueLabels) == null ? void 0 : _a2[0]) != null ? _b2 : filter.value
+        }
+      ]);
+    }
+    model._updateFilter(filter, update);
+  };
+  const filteredValueOptions = React.useMemo(
+    () => handleOptionGroups(optionSearcher(valueInputValue)),
+    [optionSearcher, valueInputValue]
+  );
+  const multiValueProps = {
+    isMulti: true,
+    value: uncommittedValue,
+    components: {
+      Option: OptionWithCheckbox
+    },
+    hideSelectedOptions: false,
+    closeMenuOnSelect: false,
+    openMenuOnFocus: false,
+    onChange: (v) => {
+      setUncommittedValue(v);
+      if (v.some((value) => value.__isNew__)) {
+        setValueInputValue("");
+      }
+    },
+    onBlur: () => {
+      var _a2, _b2;
+      model._updateFilter(filter, {
+        value: (_b2 = (_a2 = uncommittedValue[0]) == null ? void 0 : _a2.value) != null ? _b2 : "",
+        // TODO remove expect-error when we're on the latest version of @grafana/data
+        values: uncommittedValue.map((option) => option.value),
+        valueLabels: uncommittedValue.map((option) => option.label)
+      });
+    }
+  };
+  const valueSelect = /* @__PURE__ */ React__default.default.createElement(
+    ui.Select,
+    {
+      virtualized: true,
+      allowCustomValue: (_b = model.state.allowCustomValue) != null ? _b : true,
+      createOptionPosition: "first",
+      isValidNewOption: (inputValue) => inputValue.trim().length > 0,
+      allowCreateWhileLoading: true,
+      formatCreateLabel: (inputValue) => `Use custom value: ${inputValue}`,
+      disabled: model.state.readOnly,
+      className: css.cx(styles.value, isValuesOpen ? styles.widthWhenOpen : void 0),
+      width: "auto",
+      value: valueValue,
+      filterOption: filterNoOp,
+      placeholder: i18n.t(
+        "grafana-scenes.variables.ad-hoc-filter-renderer.value-select.placeholder-select-value",
+        "Select value"
+      ),
+      options: filteredValueOptions,
+      inputValue: valueInputValue,
+      onInputChange: onValueInputChange,
+      onChange: (v) => {
+        if (onAddCustomValue && v.__isNew__) {
+          model._updateFilter(filter, onAddCustomValue(v, filter));
+        } else {
+          model._updateFilter(filter, {
+            value: v.value,
+            valueLabels: v.label ? [v.label] : [v.value]
+          });
+        }
+        if (valueHasCustomValue !== v.__isNew__) {
+          setValueHasCustomValue(v.__isNew__);
+        }
+      },
+      isOpen: isValuesOpen && !isValuesLoading,
+      isLoading: isValuesLoading,
+      openMenuOnFocus: true,
+      onOpenMenu: async () => {
+        var _a2;
+        setIsValuesLoading(true);
+        setIsValuesOpen(true);
+        const values2 = await model._getValuesFor(filter);
+        setIsValuesLoading(false);
+        setValues(values2);
+        if (valueHasCustomValue) {
+          setValueInputValue((_a2 = valueValue == null ? void 0 : valueValue.label) != null ? _a2 : "");
+        }
+      },
+      onCloseMenu: () => {
+        setIsValuesOpen(false);
+        setValueInputValue("");
+      },
+      ...isMultiValue && multiValueProps
+    }
+  );
+  const keySelect = /* @__PURE__ */ React__default.default.createElement(
+    ui.Select,
+    {
+      key: `${isValuesLoading ? "loading" : "loaded"}`,
+      disabled: model.state.readOnly,
+      className: css.cx(styles.key, isKeysOpen ? styles.widthWhenOpen : void 0),
+      width: "auto",
+      allowCustomValue: (_c = model.state.allowCustomValue) != null ? _c : true,
+      createOptionPosition: "first",
+      value: keyValue,
+      placeholder: i18n.t(
+        "grafana-scenes.variables.ad-hoc-filter-renderer.key-select.placeholder-select-label",
+        "Select label"
+      ),
+      options: handleOptionGroups(keys),
+      onChange: (v) => {
+        model._updateFilter(filter, {
+          key: v.value,
+          keyLabel: v.label,
+          // clear value if key has changed
+          value: "",
+          valueLabels: [""],
+          values: void 0
+        });
+        setUncommittedValue([]);
+      },
+      autoFocus: filter.key === "",
+      isOpen: isKeysOpen && !isKeysLoading,
+      isLoading: isKeysLoading,
+      onOpenMenu: async () => {
+        setIsKeysOpen(true);
+        setIsKeysLoading(true);
+        const keys2 = await model._getKeys(filter.key);
+        setIsKeysLoading(false);
+        setKeys(keys2);
+      },
+      onCloseMenu: () => {
+        setIsKeysOpen(false);
+      },
+      onBlur: () => {
+        if (filter.key === "") {
+          model._removeFilter(filter);
+        }
+      },
+      openMenuOnFocus: true
+    }
+  );
+  const operatorSelect = /* @__PURE__ */ React__default.default.createElement(
+    ui.Select,
+    {
+      className: css.cx(styles.operator, {
+        [styles.widthWhenOpen]: isOperatorOpen
+      }),
+      value: filter.operator,
+      disabled: model.state.readOnly,
+      options: model._getOperators(),
+      onChange: onOperatorChange,
+      onOpenMenu: () => {
+        setIsOperatorOpen(true);
+      },
+      onCloseMenu: () => {
+        setIsOperatorOpen(false);
+      }
+    }
+  );
+  if (model.state.layout === "vertical") {
+    if (filter.key) {
+      const label = /* @__PURE__ */ React__default.default.createElement(ControlsLabel, { layout: "vertical", label: (_d = filter.key) != null ? _d : "", onRemove: () => model._removeFilter(filter) });
+      return /* @__PURE__ */ React__default.default.createElement(ui.Field, { label, "data-testid": `AdHocFilter-${filter.key}`, className: styles.field }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.wrapper }, operatorSelect, valueSelect));
+    } else {
+      return /* @__PURE__ */ React__default.default.createElement(
+        ui.Field,
+        {
+          label: i18n.t("grafana-scenes.variables.ad-hoc-filter-renderer.label-select-label", "Select label"),
+          "data-testid": `AdHocFilter-${filter.key}`,
+          className: styles.field
+        },
+        keySelect
+      );
+    }
+  }
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.wrapper, "data-testid": `AdHocFilter-${filter.key}` }, keySelect, operatorSelect, valueSelect, /* @__PURE__ */ React__default.default.createElement(
+    ui.Button,
+    {
+      variant: "secondary",
+      "aria-label": i18n.t("grafana-scenes.variables.ad-hoc-filter-renderer.aria-label-remove-filter", "Remove filter"),
+      title: i18n.t("grafana-scenes.variables.ad-hoc-filter-renderer.title-remove-filter", "Remove filter"),
+      className: styles.removeButton,
+      icon: "times",
+      "data-testid": `AdHocFilter-remove-${(_e = filter.key) != null ? _e : ""}`,
+      onClick: () => model._removeFilter(filter)
+    }
+  ));
+}
+const getStyles$f = (theme) => ({
+  field: css.css({
+    marginBottom: 0
+  }),
+  wrapper: css.css({
+    display: "flex",
+    "&:first-child": {
+      "> :first-child": {
+        borderBottomLeftRadius: 0,
+        borderTopLeftRadius: 0
+      }
+    },
+    "> *": {
+      "&:not(:first-child)": {
+        // Negative margin hides the double-border on adjacent selects
+        marginLeft: -1
+      },
+      "&:first-child": {
+        borderTopRightRadius: 0,
+        borderBottomRightRadius: 0
+      },
+      "&:last-child": {
+        borderTopLeftRadius: 0,
+        borderBottomLeftRadius: 0
+      },
+      "&:not(:first-child):not(:last-child)": {
+        borderRadius: 0
+      },
+      // Fix focus state zIndex issues
+      position: "relative",
+      zIndex: 0,
+      // Adjacent borders are overlapping, so raise children up when hovering etc
+      // so all that child's borders are visible.
+      "&:hover": {
+        zIndex: 1
+      },
+      "&:focus-within": {
+        zIndex: 2
+      }
+    }
+  }),
+  widthWhenOpen: css.css({
+    minWidth: theme.spacing(16)
+  }),
+  value: css.css({
+    flexBasis: "content",
+    flexShrink: 1,
+    minWidth: "90px"
+  }),
+  key: css.css({
+    flexBasis: "content",
+    minWidth: "90px",
+    flexShrink: 1
+  }),
+  operator: css.css({
+    flexShrink: 0,
+    flexBasis: "content"
+  }),
+  removeButton: css.css({
+    paddingLeft: theme.spacing(3 / 2),
+    paddingRight: theme.spacing(3 / 2),
+    borderLeft: "none",
+    width: theme.spacing(3),
+    marginRight: theme.spacing(1),
+    boxSizing: "border-box",
+    // To not have button background and last select border intersect
+    position: "relative",
+    left: "1px"
+  })
+});
+
+function AdHocFilterBuilder({ model, addFilterButtonText }) {
+  const { _wip } = model.useState();
+  const styles = ui.useStyles2(getStyles$e);
+  if (!_wip) {
+    return /* @__PURE__ */ React__default.default.createElement(
+      ui.Button,
+      {
+        variant: "secondary",
+        icon: "plus",
+        title: i18n.t("grafana-scenes.variables.ad-hoc-filter-builder.title-add-filter", "Add filter"),
+        "aria-label": i18n.t("grafana-scenes.variables.ad-hoc-filter-builder.aria-label-add-filter", "Add filter"),
+        "data-testid": `AdHocFilter-add`,
+        onClick: () => model._addWip(),
+        className: styles.addButton
+      },
+      addFilterButtonText
+    );
+  }
+  return /* @__PURE__ */ React__default.default.createElement(AdHocFilterRenderer, { filter: _wip, model });
+}
+const getStyles$e = (theme) => ({
+  addButton: css.css({
+    "&:first-child": {
+      borderBottomLeftRadius: 0,
+      borderTopLeftRadius: 0
+    }
+  })
+});
+
+class AdHocFiltersVariableUrlSyncHandler {
+  constructor(_variable) {
+    this._variable = _variable;
+  }
+  getKey() {
+    return `var-${this._variable.state.name}`;
+  }
+  getKeys() {
+    return [this.getKey()];
+  }
+  getUrlState() {
+    const filters = this._variable.state.filters;
+    const originFilters = this._variable.state.originFilters;
+    let value = [];
+    if (filters.length === 0 && (originFilters == null ? void 0 : originFilters.length) === 0) {
+      return { [this.getKey()]: [""] };
+    }
+    if (filters.length) {
+      value.push(
+        ...filters.filter(isFilterComplete).filter((filter) => !filter.hidden).map((filter) => toArray(filter).map(escapeOriginFilterUrlDelimiters).join("|"))
+      );
+    }
+    if (originFilters == null ? void 0 : originFilters.length) {
+      value.push(
+        ...originFilters == null ? void 0 : originFilters.filter(isFilterComplete).filter((filter) => !filter.hidden && filter.origin && filter.restorable).map(
+          (filter) => toArray(filter).map(escapeOriginFilterUrlDelimiters).join("|").concat(`#${filter.origin}#restorable`)
+        )
+      );
+    }
+    return {
+      [this.getKey()]: value.length ? value : [""]
     };
-    this.addActivationHandler(this._activationHandler);
   }
-  enable() {
-    window.clearInterval(this.timerId);
-    this.timerId = void 0;
-    this.timerId = window.setInterval(() => {
-      const panels = sceneGraph.findAllObjects(this.getRoot(), (obj) => obj instanceof VizPanel);
-      for (const panel of panels) {
-        panel.forceRender();
+  updateFromUrl(values) {
+    const urlValue = values[this.getKey()];
+    if (urlValue == null) {
+      return;
+    }
+    const filters = deserializeUrlToFilters(urlValue);
+    const originFilters = updateOriginFilters([...this._variable.state.originFilters || []], filters);
+    this._variable.setState({
+      filters: filters.filter((f) => !f.origin),
+      originFilters
+    });
+  }
+}
+function updateOriginFilters(prevOriginFilters, filters) {
+  const updatedOriginFilters = [...prevOriginFilters];
+  for (let i = 0; i < filters.length; i++) {
+    const foundOriginFilterIndex = prevOriginFilters.findIndex((f) => f.key === filters[i].key);
+    if (foundOriginFilterIndex > -1 && filters[i].origin === prevOriginFilters[foundOriginFilterIndex].origin) {
+      if (isMatchAllFilter(filters[i])) {
+        filters[i].matchAllFilter = true;
       }
-    }, _LiveNowTimer.REFRESH_RATE);
-    this.setState({ enabled: true });
+      updatedOriginFilters[foundOriginFilterIndex] = filters[i];
+    } else if (filters[i].origin === "dashboard") {
+      delete filters[i].origin;
+      delete filters[i].restorable;
+    } else if (foundOriginFilterIndex === -1 && filters[i].origin === "scope" && filters[i].restorable) {
+      updatedOriginFilters.push(filters[i]);
+    }
   }
-  disable() {
-    window.clearInterval(this.timerId);
-    this.timerId = void 0;
-    this.setState({ enabled: false });
+  return updatedOriginFilters;
+}
+function deserializeUrlToFilters(value) {
+  if (Array.isArray(value)) {
+    const values = value;
+    return values.map(toFilter).filter(isFilter);
   }
-  get isEnabled() {
-    return this.state.enabled;
+  const filter = toFilter(value);
+  return filter === null ? [] : [filter];
+}
+function toArray(filter) {
+  var _a;
+  const result = [toUrlCommaDelimitedString(filter.key, filter.keyLabel), filter.operator];
+  if (isMultiValueOperator(filter.operator)) {
+    filter.values.forEach((value, index) => {
+      var _a2;
+      result.push(toUrlCommaDelimitedString(value, (_a2 = filter.valueLabels) == null ? void 0 : _a2[index]));
+    });
+  } else {
+    result.push(toUrlCommaDelimitedString(filter.value, (_a = filter.valueLabels) == null ? void 0 : _a[0]));
+  }
+  return result;
+}
+function toFilter(urlValue) {
+  if (typeof urlValue !== "string" || urlValue.length === 0) {
+    return null;
+  }
+  const [filter, origin, restorable] = urlValue.split("#");
+  const [key, keyLabel, operator, _operatorLabel, ...values] = filter.split("|").reduce((acc, v) => {
+    const [key2, label] = v.split(",");
+    acc.push(key2, label != null ? label : key2);
+    return acc;
+  }, []).map(unescapeUrlDelimiters);
+  return {
+    key,
+    keyLabel,
+    operator,
+    value: values[0],
+    values: isMultiValueOperator(operator) ? values.filter((_, index) => index % 2 === 0) : void 0,
+    valueLabels: values.filter((_, index) => index % 2 === 1),
+    condition: "",
+    ...isFilterOrigin(origin) && { origin },
+    ...!!restorable && { restorable: true }
+  };
+}
+function isFilterOrigin(value) {
+  return value === "scope" || value === "dashboard";
+}
+function isFilter(filter) {
+  return filter !== null && typeof filter.key === "string" && typeof filter.value === "string";
+}
+
+const DropdownItem = React.forwardRef(
+  function DropdownItem2({ children, active, addGroupBottomBorder, isMultiValueEdit, checked, ...rest }, ref) {
+    const styles = ui.useStyles2(getStyles$d);
+    const id = React.useId();
+    return /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        ref,
+        role: "option",
+        id,
+        "aria-selected": active,
+        className: css.cx(styles.option, active && styles.optionFocused, addGroupBottomBorder && styles.groupBottomBorder),
+        ...rest
+      },
+      /* @__PURE__ */ React__default.default.createElement("div", { className: styles.optionBody, "data-testid": `data-testid ad hoc filter option value ${children}` }, /* @__PURE__ */ React__default.default.createElement("span", null, isMultiValueEdit ? /* @__PURE__ */ React__default.default.createElement(ui.Checkbox, { tabIndex: -1, checked, className: styles.checkbox }) : null, children))
+    );
+  }
+);
+const getStyles$d = (theme) => ({
+  option: css.css({
+    label: "grafana-select-option",
+    top: 0,
+    left: 0,
+    width: "100%",
+    position: "absolute",
+    padding: theme.spacing(1),
+    display: "flex",
+    alignItems: "center",
+    flexDirection: "row",
+    flexShrink: 0,
+    whiteSpace: "nowrap",
+    cursor: "pointer",
+    "&:hover": {
+      background: theme.colors.action.hover,
+      "@media (forced-colors: active), (prefers-contrast: more)": {
+        border: `1px solid ${theme.colors.primary.border}`
+      }
+    }
+  }),
+  optionFocused: css.css({
+    label: "grafana-select-option-focused",
+    background: theme.colors.action.focus,
+    "@media (forced-colors: active), (prefers-contrast: more)": {
+      border: `1px solid ${theme.colors.primary.border}`
+    }
+  }),
+  optionBody: css.css({
+    label: "grafana-select-option-body",
+    display: "flex",
+    fontWeight: theme.typography.fontWeightMedium,
+    flexDirection: "column",
+    flexGrow: 1
+  }),
+  groupBottomBorder: css.css({
+    borderBottom: `1px solid ${theme.colors.border.weak}`
+  }),
+  checkbox: css.css({
+    paddingRight: theme.spacing(0.5)
+  }),
+  multiValueApplyWrapper: css.css({
+    position: "fixed",
+    top: 0,
+    left: 0,
+    display: "flex",
+    backgroundColor: theme.colors.background.primary,
+    color: theme.colors.text.primary,
+    boxShadow: theme.shadows.z2,
+    overflowY: "auto",
+    zIndex: theme.zIndex.dropdown,
+    gap: theme.spacing(1.5),
+    padding: `${theme.spacing(1.5)} ${theme.spacing(1)}`
+  })
+});
+const LoadingOptionsPlaceholder = () => {
+  return /* @__PURE__ */ React__default.default.createElement(DropdownItem, { onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.variables.loading-options-placeholder.loading-options" }, "Loading options..."));
+};
+const NoOptionsPlaceholder = () => {
+  return /* @__PURE__ */ React__default.default.createElement(DropdownItem, { onClick: (e) => e.stopPropagation() }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.variables.no-options-placeholder.no-options-found" }, "No options found"));
+};
+const OptionsErrorPlaceholder = ({ handleFetchOptions }) => {
+  return /* @__PURE__ */ React__default.default.createElement(DropdownItem, { onClick: handleFetchOptions }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.variables.options-error-placeholder.error-occurred-fetching-labels-click-retry" }, "An error has occurred fetching labels. Click to retry"));
+};
+const MultiValueApplyButton = ({
+  onApply,
+  floatingElement,
+  maxOptionWidth,
+  menuHeight
+}) => {
+  const styles = ui.useStyles2(getStyles$d);
+  const floatingElementRect = floatingElement == null ? void 0 : floatingElement.getBoundingClientRect();
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      className: styles.multiValueApplyWrapper,
+      style: {
+        width: `${maxOptionWidth}px`,
+        transform: `translate(${floatingElementRect == null ? void 0 : floatingElementRect.left}px,${floatingElementRect ? floatingElementRect.top + menuHeight : 0}px)`
+      }
+    },
+    /* @__PURE__ */ React__default.default.createElement(ui.Button, { onClick: onApply, size: "sm", tabIndex: -1 }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.variables.multi-value-apply-button.apply" }, "Apply"))
+  );
+};
+
+const VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER = 8;
+const VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER = 6;
+const VIRTUAL_LIST_PADDING = 8;
+const VIRTUAL_LIST_OVERSCAN = 5;
+const VIRTUAL_LIST_ITEM_HEIGHT = 38;
+const VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION = 60;
+const ERROR_STATE_DROPDOWN_WIDTH = 366;
+const flattenOptionGroups = (options) => options.flatMap((option) => option.options ? [option, ...option.options] : [option]);
+const setupDropdownAccessibility = (options, listRef, disabledIndicesRef) => {
+  var _a, _b, _c, _d;
+  let maxOptionWidth = 182;
+  const listRefArr = [];
+  const disabledIndices = [];
+  for (let i = 0; i < options.length; i++) {
+    listRefArr.push(null);
+    if ((_a = options[i]) == null ? void 0 : _a.options) {
+      disabledIndices.push(i);
+    }
+    let label = (_c = (_b = options[i].label) != null ? _b : options[i].value) != null ? _c : "";
+    let multiplierToUse = VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER;
+    if (label.length * VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER < (((_d = options[i].description) == null ? void 0 : _d.length) || 0) * VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER) {
+      label = options[i].description;
+      multiplierToUse = VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER;
+    }
+    const widthEstimate = (options[i].isCustom ? label.length + 18 : label.length) * multiplierToUse + VIRTUAL_LIST_PADDING * 2;
+    if (widthEstimate > maxOptionWidth) {
+      maxOptionWidth = widthEstimate;
+    }
+  }
+  listRef.current = [...listRefArr];
+  disabledIndicesRef.current = [...disabledIndices];
+  return maxOptionWidth;
+};
+const nextInputTypeMap = {
+  key: "operator",
+  operator: "value",
+  value: "key"
+};
+const switchToNextInputType = (filterInputType, setInputType, handleChangeViewMode, element, shouldFocusOnPillWrapperOverride) => switchInputType(
+  nextInputTypeMap[filterInputType],
+  setInputType,
+  filterInputType === "value" ? handleChangeViewMode : void 0,
+  element,
+  shouldFocusOnPillWrapperOverride
+);
+const switchInputType = (filterInputType, setInputType, handleChangeViewMode, element, shouldFocusOnPillWrapperOverride) => {
+  setInputType(filterInputType);
+  handleChangeViewMode == null ? void 0 : handleChangeViewMode(void 0, shouldFocusOnPillWrapperOverride);
+  setTimeout(() => element == null ? void 0 : element.focus());
+};
+const generateFilterUpdatePayload = ({
+  filterInputType,
+  item,
+  filter,
+  setFilterMultiValues,
+  onAddCustomValue
+}) => {
+  var _a, _b, _c, _d, _e;
+  if (filterInputType === "key") {
+    return {
+      key: item.value,
+      keyLabel: item.label ? item.label : item.value,
+      meta: item == null ? void 0 : item.meta
+    };
+  }
+  if (filterInputType === "value") {
+    if (item.isCustom && onAddCustomValue) {
+      return onAddCustomValue(item, filter);
+    }
+    return {
+      value: item.value,
+      valueLabels: [item.label ? item.label : item.value]
+    };
+  }
+  if (filterInputType === "operator") {
+    if (isMultiValueOperator(filter.operator) && !isMultiValueOperator(item.value)) {
+      setFilterMultiValues([]);
+      return {
+        operator: item.value,
+        valueLabels: [((_a = filter.valueLabels) == null ? void 0 : _a[0]) || ((_b = filter.values) == null ? void 0 : _b[0]) || filter.value],
+        values: void 0
+      };
+    }
+    if (isMultiValueOperator(item.value) && !isMultiValueOperator(filter.operator)) {
+      const valueLabels = [((_c = filter.valueLabels) == null ? void 0 : _c[0]) || ((_d = filter.values) == null ? void 0 : _d[0]) || filter.value];
+      const values = [filter.value];
+      if (values[0]) {
+        setFilterMultiValues([
+          {
+            value: values[0],
+            label: (_e = valueLabels == null ? void 0 : valueLabels[0]) != null ? _e : values[0]
+          }
+        ]);
+      }
+      return {
+        operator: item.value,
+        valueLabels,
+        values
+      };
+    }
+  }
+  return {
+    [filterInputType]: item.value
+  };
+};
+const INPUT_PLACEHOLDER_DEFAULT = "Filter by label values";
+const generatePlaceholder = (filter, filterInputType, isMultiValueEdit, isAlwaysWip, inputPlaceholder) => {
+  var _a;
+  if (filterInputType === "key") {
+    return inputPlaceholder || INPUT_PLACEHOLDER_DEFAULT;
+  }
+  if (filterInputType === "value") {
+    if (isMultiValueEdit) {
+      return "Edit values";
+    }
+    return ((_a = filter.valueLabels) == null ? void 0 : _a[0]) || "";
+  }
+  return filter[filterInputType] && !isAlwaysWip ? `${filter[filterInputType]}` : inputPlaceholder || INPUT_PLACEHOLDER_DEFAULT;
+};
+const populateInputValueOnInputTypeSwitch = ({
+  populateInputOnEdit,
+  item,
+  filterInputType,
+  setInputValue,
+  filter
+}) => {
+  var _a, _b, _c;
+  if (populateInputOnEdit && !isMultiValueOperator(item.value || "") && nextInputTypeMap[filterInputType] === "value") {
+    setInputValue((_c = (_b = (_a = filter == null ? void 0 : filter.valueLabels) == null ? void 0 : _a[0]) != null ? _b : filter == null ? void 0 : filter.value) != null ? _c : "");
+  } else {
+    setInputValue("");
   }
 };
-let LiveNowTimer = _LiveNowTimer;
-LiveNowTimer.REFRESH_RATE = 100;
 
-var index$1 = /*#__PURE__*/Object.freeze({
+const MAX_MENU_HEIGHT = 300;
+const useFloatingInteractions = ({
+  open,
+  onOpenChange,
+  activeIndex,
+  setActiveIndex,
+  outsidePressIdsToIgnore,
+  listRef,
+  disabledIndicesRef
+}) => {
+  const { refs, floatingStyles, context } = react.useFloating({
+    whileElementsMounted: react.autoUpdate,
+    open,
+    onOpenChange,
+    placement: "bottom-start",
+    middleware: [
+      react.offset(10),
+      react.flip({ padding: 10 }),
+      react.size({
+        apply({ availableHeight, availableWidth, elements }) {
+          elements.floating.style.maxHeight = `${Math.min(MAX_MENU_HEIGHT, availableHeight)}px`;
+          elements.floating.style.maxWidth = `${availableWidth}px`;
+        },
+        padding: 10
+      })
+    ],
+    strategy: "fixed"
+  });
+  const role = react.useRole(context, { role: "listbox" });
+  const dismiss = react.useDismiss(context, {
+    // if outside click lands on operator pill, then ignore outside click
+    outsidePress: (event) => {
+      var _a;
+      if (event.currentTarget instanceof Element) {
+        const target = event.currentTarget;
+        let idToCompare = target.id;
+        if (target.nodeName === "path") {
+          idToCompare = ((_a = target.parentElement) == null ? void 0 : _a.id) || "";
+        }
+        if (outsidePressIdsToIgnore.includes(idToCompare)) {
+          return false;
+        }
+      }
+      return true;
+    }
+  });
+  const listNav = react.useListNavigation(context, {
+    listRef,
+    activeIndex,
+    onNavigate: setActiveIndex,
+    virtual: true,
+    loop: true,
+    disabledIndices: disabledIndicesRef.current
+  });
+  const { getReferenceProps, getFloatingProps, getItemProps } = react.useInteractions([role, dismiss, listNav]);
+  return {
+    refs,
+    floatingStyles,
+    context,
+    getReferenceProps,
+    getFloatingProps,
+    getItemProps
+  };
+};
+
+const MultiValuePill = ({
+  item,
+  handleRemoveMultiValue,
+  index,
+  handleEditMultiValuePill
+}) => {
+  var _a, _b;
+  const styles = ui.useStyles2(getStyles$c);
+  const editMultiValuePill = React.useCallback(
+    (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      handleEditMultiValuePill(item);
+    },
+    [handleEditMultiValuePill, item]
+  );
+  const editMultiValuePillWithKeyboard = React.useCallback(
+    (e) => {
+      if (e.key === "Enter") {
+        editMultiValuePill(e);
+      }
+    },
+    [editMultiValuePill]
+  );
+  const removePillHandler = React.useCallback(
+    (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      handleRemoveMultiValue(item);
+    },
+    [handleRemoveMultiValue, item]
+  );
+  const removePillHandlerWithKeyboard = React.useCallback(
+    (e) => {
+      if (e.key === "Enter") {
+        removePillHandler(e);
+      }
+    },
+    [removePillHandler]
+  );
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      className: css.cx(styles.basePill, styles.valuePill),
+      onClick: editMultiValuePill,
+      onKeyDown: editMultiValuePillWithKeyboard,
+      tabIndex: 0,
+      id: `${item.value}-${index}`
+    },
+    (_a = item.label) != null ? _a : item.value,
+    /* @__PURE__ */ React__default.default.createElement(
+      ui.Button,
+      {
+        onClick: removePillHandler,
+        onKeyDownCapture: removePillHandlerWithKeyboard,
+        fill: "text",
+        size: "sm",
+        variant: "secondary",
+        className: styles.removeButton,
+        tooltip: i18n.t(
+          "grafana-scenes.components.adhoc-filters-combobox.remove-filter-value",
+          "Remove filter value - {{itemLabel}}",
+          {
+            itemLabel: (_b = item.label) != null ? _b : item.value
+          }
+        )
+      },
+      /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "times", size: "md", id: `${item.value}-${index}-close-icon` })
+    )
+  );
+};
+const getStyles$c = (theme) => ({
+  basePill: css.css({
+    display: "flex",
+    alignItems: "center",
+    background: theme.colors.action.disabledBackground,
+    border: `1px solid ${theme.colors.border.weak}`,
+    padding: theme.spacing(0.125, 1, 0.125, 1),
+    color: theme.colors.text.primary,
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    minHeight: theme.spacing(2.75),
+    ...theme.typography.bodySmall,
+    cursor: "pointer"
+  }),
+  valuePill: css.css({
+    background: theme.colors.action.selected,
+    padding: theme.spacing(0.125, 0, 0.125, 1)
+  }),
+  removeButton: css.css({
+    marginInline: theme.spacing(0.5),
+    height: "100%",
+    padding: 0,
+    cursor: "pointer",
+    "&:hover": {
+      color: theme.colors.text.primary
+    }
+  })
+});
+
+const AdHocCombobox = React.forwardRef(function AdHocCombobox2({
+  filter,
+  controller,
+  isAlwaysWip,
+  handleChangeViewMode,
+  focusOnWipInputRef,
+  populateInputOnEdit
+}, parentRef) {
+  var _a, _b, _c;
+  const [open, setOpen] = React.useState(false);
+  const [options, setOptions] = React.useState([]);
+  const [optionsLoading, setOptionsLoading] = React.useState(false);
+  const [optionsError, setOptionsError] = React.useState(false);
+  const [inputValue, setInputValue] = React.useState("");
+  const [activeIndex, setActiveIndex] = React.useState(null);
+  const [filterInputType, setInputType] = React.useState(!isAlwaysWip ? "value" : "key");
+  const [preventFiltering, setPreventFiltering] = React.useState(!isAlwaysWip && filterInputType === "value");
+  const styles = ui.useStyles2(getStyles$b);
+  const [filterMultiValues, setFilterMultiValues] = React.useState([]);
+  const [_, setForceRefresh] = React.useState({});
+  const { allowCustomValue = true, onAddCustomValue, filters, inputPlaceholder } = controller.useState();
+  const multiValuePillWrapperRef = React.useRef(null);
+  const hasMultiValueOperator = isMultiValueOperator((filter == null ? void 0 : filter.operator) || "");
+  const isMultiValueEdit = hasMultiValueOperator && filterInputType === "value";
+  const operatorIdentifier = React.useId();
+  const listRef = React.useRef([]);
+  const disabledIndicesRef = React.useRef([]);
+  const filterInputTypeRef = React.useRef(!isAlwaysWip ? "value" : "key");
+  const optionsSearcher = React.useMemo(() => getAdhocOptionSearcher(options), [options]);
+  const isLastFilter = React.useMemo(() => {
+    if (isAlwaysWip) {
+      return false;
+    }
+    if (filters.at(-1) === filter) {
+      return true;
+    }
+    return false;
+  }, [filter, isAlwaysWip, filters]);
+  const handleResetWip = React.useCallback(() => {
+    if (isAlwaysWip) {
+      controller.addWip();
+      setInputType("key");
+      setInputValue("");
+    }
+  }, [controller, isAlwaysWip]);
+  const handleMultiValueFilterCommit = React.useCallback(
+    (controller2, filter2, filterMultiValues2, preventFocus) => {
+      var _a2;
+      if (!filterMultiValues2.length && filter2.origin) {
+        controller2.updateToMatchAll(filter2);
+      }
+      if (filterMultiValues2.length) {
+        const valueLabels = [];
+        const values = [];
+        filterMultiValues2.forEach((item) => {
+          var _a3;
+          valueLabels.push((_a3 = item.label) != null ? _a3 : item.value);
+          values.push(item.value);
+        });
+        let shouldUpdate = true;
+        if (Array.isArray(filter2.values) && filter2.values.length === values.length) {
+          shouldUpdate = !filter2.values.every((v, i) => v === values[i]);
+        }
+        if (shouldUpdate) {
+          (_a2 = controller2.startProfile) == null ? void 0 : _a2.call(controller2, FILTER_CHANGED_INTERACTION);
+        }
+        controller2.updateFilter(filter2, { valueLabels, values, value: values[0] });
+        setFilterMultiValues([]);
+      }
+      if (!preventFocus) {
+        setTimeout(() => {
+          var _a3;
+          return (_a3 = refs.domReference.current) == null ? void 0 : _a3.focus();
+        });
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
+  const handleLocalMultiValueChange = React.useCallback((selectedItem) => {
+    setFilterMultiValues((items) => {
+      if (items.some((item) => item.value === selectedItem.value)) {
+        return items.filter((item) => item.value !== selectedItem.value);
+      }
+      return [...items, selectedItem];
+    });
+  }, []);
+  const onOpenChange = React.useCallback(
+    (nextOpen, _2, reason) => {
+      setOpen(nextOpen);
+      if (reason && ["outside-press", "escape-key"].includes(reason)) {
+        if (isMultiValueEdit) {
+          handleMultiValueFilterCommit(controller, filter, filterMultiValues);
+        } else {
+          if (filter && filter.origin && inputValue === "") {
+            controller.updateToMatchAll(filter);
+          }
+        }
+        handleResetWip();
+        handleChangeViewMode == null ? void 0 : handleChangeViewMode();
+      }
+    },
+    [
+      filter,
+      filterMultiValues,
+      handleChangeViewMode,
+      handleMultiValueFilterCommit,
+      handleResetWip,
+      inputValue,
+      isMultiValueEdit,
+      controller
+    ]
+  );
+  const outsidePressIdsToIgnore = React.useMemo(() => {
+    return [
+      operatorIdentifier,
+      ...filterMultiValues.reduce(
+        (acc, item, i) => [...acc, `${item.value}-${i}`, `${item.value}-${i}-close-icon`],
+        []
+      )
+    ];
+  }, [operatorIdentifier, filterMultiValues]);
+  const { refs, floatingStyles, context, getReferenceProps, getFloatingProps, getItemProps } = useFloatingInteractions({
+    open,
+    onOpenChange,
+    activeIndex,
+    setActiveIndex,
+    outsidePressIdsToIgnore,
+    listRef,
+    disabledIndicesRef
+  });
+  React.useImperativeHandle(parentRef, () => () => {
+    var _a2;
+    return (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
+  }, [refs.domReference]);
+  function onChange(event) {
+    const value = event.target.value;
+    setInputValue(value);
+    setActiveIndex(0);
+    if (preventFiltering) {
+      setPreventFiltering(false);
+    }
+  }
+  const handleRemoveMultiValue = React.useCallback(
+    (item) => {
+      setFilterMultiValues((selected) => selected.filter((option) => option.value !== item.value));
+      setTimeout(() => {
+        var _a2;
+        return (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
+      });
+    },
+    [refs.domReference]
+  );
+  const filteredDropDownItems = flattenOptionGroups(
+    handleOptionGroups(optionsSearcher(preventFiltering ? "" : inputValue))
+  );
+  if (allowCustomValue && filterInputType !== "operator" && inputValue) {
+    const operatorDefinition = OPERATORS.find((op) => (filter == null ? void 0 : filter.operator) === op.value);
+    const customOptionValue = {
+      value: inputValue.trim(),
+      label: inputValue.trim(),
+      isCustom: true
+    };
+    if (operatorDefinition == null ? void 0 : operatorDefinition.isRegex) {
+      filteredDropDownItems.unshift(customOptionValue);
+    } else {
+      filteredDropDownItems.push(customOptionValue);
+    }
+  }
+  const maxOptionWidth = setupDropdownAccessibility(filteredDropDownItems, listRef, disabledIndicesRef);
+  const handleFetchOptions = React.useCallback(
+    async (inputType) => {
+      var _a2, _b2, _c2, _d;
+      const interactionName = inputType === "key" ? ADHOC_KEYS_DROPDOWN_INTERACTION : ADHOC_VALUES_DROPDOWN_INTERACTION;
+      if (inputType !== "operator") {
+        (_a2 = controller.startInteraction) == null ? void 0 : _a2.call(controller, interactionName);
+      }
+      setOptionsError(false);
+      setOptionsLoading(true);
+      setOptions([]);
+      let options2 = [];
+      try {
+        if (inputType === "key") {
+          options2 = await controller.getKeys(null);
+        } else if (inputType === "operator") {
+          options2 = controller.getOperators();
+        } else if (inputType === "value") {
+          options2 = await controller.getValuesFor(filter);
+        }
+        if (filterInputTypeRef.current !== inputType) {
+          (_b2 = controller.stopInteraction) == null ? void 0 : _b2.call(controller);
+          return;
+        }
+        setOptions(options2);
+        if ((_c2 = options2[0]) == null ? void 0 : _c2.group) {
+          setActiveIndex(1);
+        } else {
+          setActiveIndex(0);
+        }
+      } catch (e) {
+        setOptionsError(true);
+      }
+      setOptionsLoading(false);
+      (_d = controller.stopInteraction) == null ? void 0 : _d.call(controller);
+    },
+    [filter, controller]
+  );
+  const rowVirtualizer = reactVirtual.useVirtualizer({
+    count: filteredDropDownItems.length,
+    getScrollElement: () => refs.floating.current,
+    estimateSize: (index) => filteredDropDownItems[index].description ? VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION : VIRTUAL_LIST_ITEM_HEIGHT,
+    overscan: VIRTUAL_LIST_OVERSCAN
+  });
+  const handleBackspaceInput = React.useCallback(
+    (event, multiValueEdit) => {
+      var _a2;
+      if (event.key === "Backspace" && !inputValue) {
+        if (filterInputType === "value") {
+          if (multiValueEdit) {
+            if (filterMultiValues.length) {
+              setFilterMultiValues((items) => {
+                const updated = [...items];
+                updated.splice(-1, 1);
+                return updated;
+              });
+              return;
+            }
+          }
+          if (filter == null ? void 0 : filter.origin) {
+            return;
+          }
+          setInputType("operator");
+          return;
+        }
+        focusOnWipInputRef == null ? void 0 : focusOnWipInputRef();
+        if (isFilterComplete(filter)) {
+          (_a2 = controller.startProfile) == null ? void 0 : _a2.call(controller, FILTER_REMOVED_INTERACTION);
+        }
+        controller.handleComboboxBackspace(filter);
+        if (isAlwaysWip) {
+          handleResetWip();
+        }
+      }
+    },
+    [
+      inputValue,
+      filterInputType,
+      controller,
+      filter,
+      isAlwaysWip,
+      filterMultiValues.length,
+      handleResetWip,
+      focusOnWipInputRef
+    ]
+  );
+  const handleTabInput = React.useCallback(
+    (event, multiValueEdit) => {
+      var _a2;
+      if (event.key === "Tab" && !event.shiftKey) {
+        if (multiValueEdit) {
+          event.preventDefault();
+          handleMultiValueFilterCommit(controller, filter, filterMultiValues);
+          (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
+        }
+        handleChangeViewMode == null ? void 0 : handleChangeViewMode();
+        handleResetWip();
+      }
+    },
+    [
+      filter,
+      filterMultiValues,
+      handleChangeViewMode,
+      handleMultiValueFilterCommit,
+      handleResetWip,
+      controller,
+      refs.domReference
+    ]
+  );
+  const handleShiftTabInput = React.useCallback(
+    (event, multiValueEdit) => {
+      if (event.key === "Tab" && event.shiftKey) {
+        if (multiValueEdit) {
+          event.preventDefault();
+          handleMultiValueFilterCommit(controller, filter, filterMultiValues, true);
+        }
+        handleChangeViewMode == null ? void 0 : handleChangeViewMode();
+        handleResetWip();
+      }
+    },
+    [filter, filterMultiValues, handleChangeViewMode, handleMultiValueFilterCommit, handleResetWip, controller]
+  );
+  const handleEnterInput = React.useCallback(
+    (event, multiValueEdit) => {
+      var _a2;
+      if (event.key === "Enter" && activeIndex != null) {
+        if (!filteredDropDownItems[activeIndex]) {
+          return;
+        }
+        const selectedItem = filteredDropDownItems[activeIndex];
+        if (multiValueEdit) {
+          handleLocalMultiValueChange(selectedItem);
+          setInputValue("");
+        } else {
+          const payload = generateFilterUpdatePayload({
+            filterInputType,
+            item: selectedItem,
+            filter,
+            setFilterMultiValues,
+            onAddCustomValue
+          });
+          if (filterInputType === "value" && payload.value !== (filter == null ? void 0 : filter.value)) {
+            (_a2 = controller.startProfile) == null ? void 0 : _a2.call(controller, FILTER_CHANGED_INTERACTION);
+          }
+          controller.updateFilter(filter, payload);
+          populateInputValueOnInputTypeSwitch({
+            populateInputOnEdit,
+            item: selectedItem,
+            filterInputType,
+            setInputValue,
+            filter
+          });
+          switchToNextInputType(
+            filterInputType,
+            setInputType,
+            handleChangeViewMode,
+            refs.domReference.current,
+            // preventing focus on filter pill only when last filter for better backspace experience
+            isLastFilter ? false : void 0
+          );
+          setActiveIndex(null);
+          if (isLastFilter) {
+            focusOnWipInputRef == null ? void 0 : focusOnWipInputRef();
+          }
+        }
+      }
+    },
+    [
+      activeIndex,
+      filteredDropDownItems,
+      handleLocalMultiValueChange,
+      controller,
+      filter,
+      filterInputType,
+      populateInputOnEdit,
+      handleChangeViewMode,
+      refs.domReference,
+      isLastFilter,
+      focusOnWipInputRef,
+      onAddCustomValue
+    ]
+  );
+  const handleEditMultiValuePill = React.useCallback(
+    (value) => {
+      var _a2;
+      const valueLabel = value.label || value.value;
+      setFilterMultiValues((prev) => prev.filter((item) => item.value !== value.value));
+      setPreventFiltering(true);
+      setInputValue(valueLabel);
+      (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
+      setTimeout(() => {
+        var _a3;
+        (_a3 = refs.domReference.current) == null ? void 0 : _a3.select();
+      });
+    },
+    [refs.domReference]
+  );
+  React.useEffect(() => {
+    if (open) {
+      handleFetchOptions(filterInputType);
+    }
+  }, [open, filterInputType]);
+  React.useEffect(() => {
+    var _a2, _b2, _c2, _d;
+    if (!isAlwaysWip) {
+      if (hasMultiValueOperator && ((_a2 = filter == null ? void 0 : filter.values) == null ? void 0 : _a2.length)) {
+        const multiValueOptions = filter.values.reduce(
+          (acc, value, i) => {
+            var _a3;
+            return [
+              ...acc,
+              {
+                label: ((_a3 = filter.valueLabels) == null ? void 0 : _a3[i]) || value,
+                value
+              }
+            ];
+          },
+          []
+        );
+        setFilterMultiValues(multiValueOptions);
+      }
+      if (!hasMultiValueOperator && populateInputOnEdit) {
+        setInputValue((_c2 = (_b2 = filter == null ? void 0 : filter.valueLabels) == null ? void 0 : _b2[0]) != null ? _c2 : (filter == null ? void 0 : filter.value) || "");
+        setTimeout(() => {
+          var _a3;
+          (_a3 = refs.domReference.current) == null ? void 0 : _a3.select();
+        });
+      }
+      (_d = refs.domReference.current) == null ? void 0 : _d.focus();
+    }
+  }, []);
+  React.useEffect(() => {
+    if (isMultiValueEdit && filterMultiValues) {
+      setTimeout(() => setForceRefresh({}));
+    }
+  }, [filterMultiValues, isMultiValueEdit]);
+  React.useLayoutEffect(() => {
+    if (filterInputTypeRef.current) {
+      filterInputTypeRef.current = filterInputType;
+    }
+  }, [filterInputType]);
+  React.useLayoutEffect(() => {
+    var _a2, _b2;
+    if (activeIndex !== null && rowVirtualizer.range && (activeIndex > ((_a2 = rowVirtualizer.range) == null ? void 0 : _a2.endIndex) || activeIndex < ((_b2 = rowVirtualizer.range) == null ? void 0 : _b2.startIndex))) {
+      rowVirtualizer.scrollToIndex(activeIndex);
+    }
+  }, [activeIndex, rowVirtualizer]);
+  const keyLabel = (_a = filter == null ? void 0 : filter.keyLabel) != null ? _a : filter == null ? void 0 : filter.key;
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.comboboxWrapper }, filter ? /* @__PURE__ */ React__default.default.createElement("div", { className: styles.pillWrapper }, (filter == null ? void 0 : filter.key) ? /* @__PURE__ */ React__default.default.createElement("div", { className: css.cx(styles.basePill, styles.keyPill) }, keyLabel) : null, (filter == null ? void 0 : filter.key) && (filter == null ? void 0 : filter.operator) && filterInputType !== "operator" ? /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      id: operatorIdentifier,
+      className: css.cx(
+        styles.basePill,
+        !filter.origin && styles.operatorPill,
+        filter.origin && styles.keyPill,
+        operatorIdentifier
+      ),
+      "aria-label": i18n.t(
+        "grafana-scenes.variables.ad-hoc-combobox.aria-label-edit-filter-operator",
+        "Edit filter operator"
+      ),
+      tabIndex: filter.origin ? -1 : 0,
+      onClick: (event) => {
+        if (filter.origin) {
+          handleChangeViewMode == null ? void 0 : handleChangeViewMode();
+          return;
+        }
+        event.stopPropagation();
+        setInputValue("");
+        switchInputType("operator", setInputType, void 0, refs.domReference.current);
+      },
+      onKeyDown: (event) => {
+        if (filter.origin) {
+          return;
+        }
+        handleShiftTabInput(event, hasMultiValueOperator);
+        if (event.key === "Enter") {
+          setInputValue("");
+          switchInputType("operator", setInputType, void 0, refs.domReference.current);
+        }
+      },
+      ...!filter.origin && { role: "button" }
+    },
+    filter.operator
+  ) : null, /* @__PURE__ */ React__default.default.createElement("div", { ref: multiValuePillWrapperRef }), isMultiValueEdit ? filterMultiValues.map((item, i) => /* @__PURE__ */ React__default.default.createElement(
+    MultiValuePill,
+    {
+      key: `${item.value}-${i}`,
+      item,
+      index: i,
+      handleRemoveMultiValue,
+      handleEditMultiValuePill
+    }
+  )) : null) : null, /* @__PURE__ */ React__default.default.createElement(
+    "input",
+    {
+      ...getReferenceProps({
+        ref: refs.setReference,
+        onChange,
+        value: inputValue,
+        // dynamic placeholder to display operator and/or value in filter edit mode
+        placeholder: generatePlaceholder(filter, filterInputType, isMultiValueEdit, isAlwaysWip, inputPlaceholder),
+        "aria-autocomplete": "list",
+        onKeyDown(event) {
+          if (!open) {
+            setOpen(true);
+            return;
+          }
+          if (filterInputType === "operator") {
+            handleShiftTabInput(event);
+          }
+          handleBackspaceInput(event, isMultiValueEdit);
+          handleTabInput(event, isMultiValueEdit);
+          handleEnterInput(event, isMultiValueEdit);
+        }
+      }),
+      className: css.cx(styles.inputStyle, { [styles.loadingInputPadding]: !optionsLoading }),
+      onClick: (event) => {
+        event.stopPropagation();
+        setOpen(true);
+      },
+      onFocus: () => {
+        setOpen(true);
+      }
+    }
+  ), optionsLoading ? /* @__PURE__ */ React__default.default.createElement(ui.Spinner, { className: styles.loadingIndicator, inline: true }) : null, /* @__PURE__ */ React__default.default.createElement(react.FloatingPortal, null, open && /* @__PURE__ */ React__default.default.createElement(react.FloatingFocusManager, { context, initialFocus: -1, visuallyHiddenDismiss: true, modal: true }, /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      style: {
+        ...floatingStyles,
+        width: `${optionsError ? ERROR_STATE_DROPDOWN_WIDTH : maxOptionWidth}px`,
+        transform: isMultiValueEdit ? `translate(${((_b = multiValuePillWrapperRef.current) == null ? void 0 : _b.getBoundingClientRect().left) || 0}px, ${(((_c = refs.domReference.current) == null ? void 0 : _c.getBoundingClientRect().bottom) || 0) + 10}px )` : floatingStyles.transform
+      },
+      ref: refs.setFloating,
+      className: styles.dropdownWrapper,
+      tabIndex: -1
+    },
+    /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        style: {
+          height: `${rowVirtualizer.getTotalSize() || VIRTUAL_LIST_ITEM_HEIGHT}px`
+          // fallback to 38px for loading/error/no options placeholders
+        },
+        ...getFloatingProps(),
+        tabIndex: -1
+      },
+      optionsLoading ? /* @__PURE__ */ React__default.default.createElement(LoadingOptionsPlaceholder, null) : optionsError ? /* @__PURE__ */ React__default.default.createElement(OptionsErrorPlaceholder, { handleFetchOptions: () => handleFetchOptions(filterInputType) }) : !filteredDropDownItems.length && (!allowCustomValue || filterInputType === "operator" || !inputValue) ? /* @__PURE__ */ React__default.default.createElement(NoOptionsPlaceholder, null) : rowVirtualizer.getVirtualItems().map((virtualItem) => {
+        var _a2;
+        const item = filteredDropDownItems[virtualItem.index];
+        const index = virtualItem.index;
+        if (item.options) {
+          return /* @__PURE__ */ React__default.default.createElement(
+            "div",
+            {
+              key: `${item.label}+${index}`,
+              className: css.cx(styles.optionGroupLabel, styles.groupTopBorder),
+              style: {
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`
+              }
+            },
+            /* @__PURE__ */ React__default.default.createElement(ui.Text, { weight: "bold", variant: "bodySmall", color: "secondary" }, item.label)
+          );
+        }
+        const nextItem = filteredDropDownItems[virtualItem.index + 1];
+        const shouldAddBottomBorder = nextItem && !nextItem.group && !nextItem.options && item.group;
+        const itemLabel = (_a2 = item.label) != null ? _a2 : item.value;
+        return (
+          // key is included in getItemProps()
+          // eslint-disable-next-line react/jsx-key
+          /* @__PURE__ */ React__default.default.createElement(
+            DropdownItem,
+            {
+              ...getItemProps({
+                key: `${item.value}-${index}`,
+                ref(node) {
+                  listRef.current[index] = node;
+                },
+                onClick(event) {
+                  var _a3, _b2;
+                  if (filterInputType !== "value") {
+                    event.stopPropagation();
+                  }
+                  if (isMultiValueEdit) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleLocalMultiValueChange(item);
+                    setInputValue("");
+                    (_a3 = refs.domReference.current) == null ? void 0 : _a3.focus();
+                  } else {
+                    const payload = generateFilterUpdatePayload({
+                      filterInputType,
+                      item,
+                      filter,
+                      setFilterMultiValues,
+                      onAddCustomValue
+                    });
+                    if (filterInputType === "value" && payload.value !== (filter == null ? void 0 : filter.value)) {
+                      (_b2 = controller.startProfile) == null ? void 0 : _b2.call(controller, FILTER_CHANGED_INTERACTION);
+                    }
+                    controller.updateFilter(filter, payload);
+                    populateInputValueOnInputTypeSwitch({
+                      populateInputOnEdit,
+                      item,
+                      filterInputType,
+                      setInputValue,
+                      filter
+                    });
+                    switchToNextInputType(
+                      filterInputType,
+                      setInputType,
+                      handleChangeViewMode,
+                      refs.domReference.current,
+                      // explicitly preventing focus on filter pill due to a11y error
+                      false
+                    );
+                  }
+                }
+              }),
+              active: activeIndex === index,
+              addGroupBottomBorder: shouldAddBottomBorder,
+              style: {
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`
+              },
+              "aria-setsize": filteredDropDownItems.length,
+              "aria-posinset": virtualItem.index + 1,
+              isMultiValueEdit,
+              checked: filterMultiValues.some((val) => val.value === item.value)
+            },
+            /* @__PURE__ */ React__default.default.createElement("span", null, item.isCustom ? i18n.t(
+              "grafana-scenes.components.adhoc-filters-combobox.use-custom-value",
+              "Use custom value: {{itemLabel}}",
+              { itemLabel }
+            ) : itemLabel),
+            item.description ? /* @__PURE__ */ React__default.default.createElement("div", { className: styles.descriptionText }, item.description) : null
+          )
+        );
+      })
+    )
+  ), isMultiValueEdit && !optionsLoading && !optionsError && filteredDropDownItems.length ? /* @__PURE__ */ React__default.default.createElement(
+    MultiValueApplyButton,
+    {
+      onApply: () => {
+        handleMultiValueFilterCommit(controller, filter, filterMultiValues);
+      },
+      floatingElement: refs.floating.current,
+      maxOptionWidth,
+      menuHeight: Math.min(rowVirtualizer.getTotalSize(), MAX_MENU_HEIGHT)
+    }
+  ) : null))));
+});
+const getStyles$b = (theme) => ({
+  comboboxWrapper: css.css({
+    display: "flex",
+    flexWrap: "wrap"
+  }),
+  pillWrapper: css.css({
+    display: "flex",
+    alignItems: "center",
+    flexWrap: "wrap"
+  }),
+  basePill: css.css({
+    display: "flex",
+    alignItems: "center",
+    background: theme.colors.action.disabledBackground,
+    border: `1px solid ${theme.colors.border.weak}`,
+    padding: theme.spacing(0.125, 1, 0.125, 1),
+    color: theme.colors.text.primary,
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    minHeight: theme.spacing(2.75),
+    ...theme.typography.bodySmall,
+    cursor: "pointer"
+  }),
+  keyPill: css.css({
+    fontWeight: theme.typography.fontWeightBold,
+    cursor: "default"
+  }),
+  operatorPill: css.css({
+    "&:hover": {
+      background: theme.colors.action.hover
+    }
+  }),
+  dropdownWrapper: css.css({
+    backgroundColor: theme.colors.background.primary,
+    color: theme.colors.text.primary,
+    boxShadow: theme.shadows.z2,
+    overflowY: "auto",
+    zIndex: theme.zIndex.portal
+  }),
+  inputStyle: css.css({
+    paddingBlock: 0,
+    "&:focus": {
+      outline: "none"
+    }
+  }),
+  loadingIndicator: css.css({
+    color: theme.colors.text.secondary,
+    marginLeft: theme.spacing(0.5)
+  }),
+  loadingInputPadding: css.css({
+    paddingRight: theme.spacing(2.5)
+  }),
+  optionGroupLabel: css.css({
+    padding: theme.spacing(1),
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%"
+  }),
+  groupTopBorder: css.css({
+    "&:not(:first-child)": {
+      borderTop: `1px solid ${theme.colors.border.weak}`
+    }
+  }),
+  descriptionText: css.css({
+    ...theme.typography.bodySmall,
+    color: theme.colors.text.secondary,
+    paddingTop: theme.spacing(0.5)
+  })
+});
+
+const LABEL_MAX_VISIBLE_LENGTH = 20;
+function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
+  var _a, _b, _c, _d;
+  const styles = ui.useStyles2(getStyles$a);
+  const [viewMode, setViewMode] = React.useState(true);
+  const [shouldFocusOnPillWrapper, setShouldFocusOnPillWrapper] = React.useState(false);
+  const pillWrapperRef = React.useRef(null);
+  const [populateInputOnEdit, setPopulateInputOnEdit] = React.useState(false);
+  const keyLabel = (_a = filter.keyLabel) != null ? _a : filter.key;
+  const valueLabel = ((_b = filter.valueLabels) == null ? void 0 : _b.join(", ")) || ((_c = filter.values) == null ? void 0 : _c.join(", ")) || filter.value;
+  const handleChangeViewMode = React.useCallback(
+    (event, shouldFocusOnPillWrapperOverride) => {
+      event == null ? void 0 : event.stopPropagation();
+      if (readOnly) {
+        return;
+      }
+      setShouldFocusOnPillWrapper(shouldFocusOnPillWrapperOverride != null ? shouldFocusOnPillWrapperOverride : !viewMode);
+      setViewMode(!viewMode);
+    },
+    [readOnly, viewMode]
+  );
+  React.useEffect(() => {
+    var _a2;
+    if (shouldFocusOnPillWrapper) {
+      (_a2 = pillWrapperRef.current) == null ? void 0 : _a2.focus();
+      setShouldFocusOnPillWrapper(false);
+    }
+  }, [shouldFocusOnPillWrapper]);
+  React.useEffect(() => {
+    if (filter.forceEdit && viewMode) {
+      setViewMode(false);
+      controller.updateFilter(filter, { forceEdit: void 0 });
+    }
+  }, [filter, controller, viewMode]);
+  React.useEffect(() => {
+    if (viewMode) {
+      setPopulateInputOnEdit((prevValue) => prevValue ? false : prevValue);
+    }
+  }, [viewMode]);
+  const getOriginFilterTooltips = (origin) => {
+    if (origin === "dashboard") {
+      return {
+        info: "Applied by default in this dashboard. If edited, it carries over to other dashboards.",
+        restore: "Restore the value set by this dashboard."
+      };
+    } else if (origin === "scope") {
+      return {
+        info: "Applied automatically from your selected scope.",
+        restore: "Restore the value set by your selected scope."
+      };
+    } else {
+      return {
+        info: `This is a ${origin} injected filter.`,
+        restore: `Restore filter to its original value.`
+      };
+    }
+  };
+  const cleanFilter = !filter.restorable && !filter.readOnly && !filter.nonApplicable;
+  if (viewMode) {
+    const pillTextContent = `${keyLabel} ${filter.operator} ${valueLabel}`;
+    const pillText = /* @__PURE__ */ React__default.default.createElement("span", { className: css.cx(styles.pillText, filter.nonApplicable && styles.strikethrough) }, pillTextContent);
+    return /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        className: css.cx(
+          styles.combinedFilterPill,
+          readOnly && styles.readOnlyCombinedFilter,
+          (isMatchAllFilter(filter) || filter.nonApplicable) && styles.disabledPill,
+          filter.readOnly && styles.filterReadOnly
+        ),
+        onClick: (e) => {
+          e.stopPropagation();
+          setPopulateInputOnEdit(true);
+          handleChangeViewMode();
+        },
+        onKeyDown: (e) => {
+          if (e.key === "Enter") {
+            setPopulateInputOnEdit(true);
+            handleChangeViewMode();
+          }
+        },
+        role: readOnly ? void 0 : "button",
+        "aria-label": i18n.t(
+          "grafana-scenes.components.adhoc-filter-pill.edit-filter-with-key",
+          "Edit filter with key {{keyLabel}}",
+          {
+            keyLabel
+          }
+        ),
+        tabIndex: 0,
+        ref: pillWrapperRef
+      },
+      pillTextContent.length < LABEL_MAX_VISIBLE_LENGTH ? pillText : /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: /* @__PURE__ */ React__default.default.createElement("div", { className: styles.tooltipText }, pillTextContent), placement: "top" }, pillText),
+      !readOnly && !filter.matchAllFilter && (!filter.origin || filter.origin === "dashboard") ? /* @__PURE__ */ React__default.default.createElement(
+        ui.IconButton,
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            if (filter.origin && filter.origin === "dashboard") {
+              controller.updateToMatchAll(filter);
+            } else {
+              controller.removeFilter(filter);
+            }
+            setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
+          },
+          onKeyDownCapture: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              if (filter.origin && filter.origin === "dashboard") {
+                controller.updateToMatchAll(filter);
+              } else {
+                controller.removeFilter(filter);
+              }
+              setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
+            }
+          },
+          name: "times",
+          size: "md",
+          className: css.cx(styles.pillIcon, filter.nonApplicable && styles.disabledPillIcon),
+          tooltip: i18n.t(
+            "grafana-scenes.components.adhoc-filter-pill.remove-filter-with-key",
+            "Remove filter with key {{keyLabel}}",
+            {
+              keyLabel
+            }
+          )
+        }
+      ) : null,
+      filter.origin && filter.readOnly && /* @__PURE__ */ React__default.default.createElement(
+        ui.Tooltip,
+        {
+          content: i18n.t("grafana-scenes.components.adhoc-filter-pill.managed-filter", "{{origin}} managed filter", {
+            origin: filter.origin
+          }),
+          placement: "bottom"
+        },
+        /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "lock", size: "md", className: styles.readOnlyPillIcon })
+      ),
+      filter.origin && cleanFilter && /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: getOriginFilterTooltips(filter.origin).info, placement: "bottom" }, /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "info-circle", size: "md", className: styles.infoPillIcon })),
+      filter.origin && filter.restorable && !filter.readOnly && /* @__PURE__ */ React__default.default.createElement(
+        ui.IconButton,
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            controller.restoreOriginalFilter(filter);
+          },
+          onKeyDownCapture: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              controller.restoreOriginalFilter(filter);
+            }
+          },
+          name: "history",
+          size: "md",
+          className: isMatchAllFilter(filter) ? styles.matchAllPillIcon : styles.pillIcon,
+          tooltip: getOriginFilterTooltips(filter.origin).restore
+        }
+      ),
+      filter.nonApplicable && /* @__PURE__ */ React__default.default.createElement(
+        ui.Tooltip,
+        {
+          content: (_d = filter.nonApplicableReason) != null ? _d : i18n.t("grafana-scenes.components.adhoc-filter-pill.non-applicable", "Filter is not applicable"),
+          placement: "bottom"
+        },
+        /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "info-circle", size: "md", className: styles.infoPillIcon })
+      )
+    );
+  }
+  return /* @__PURE__ */ React__default.default.createElement(
+    AdHocCombobox,
+    {
+      filter,
+      controller,
+      handleChangeViewMode,
+      focusOnWipInputRef,
+      populateInputOnEdit
+    }
+  );
+}
+const getStyles$a = (theme) => ({
+  combinedFilterPill: css.css({
+    display: "flex",
+    alignItems: "center",
+    background: theme.colors.action.selected,
+    borderRadius: theme.shape.radius.default,
+    border: `1px solid ${theme.colors.border.weak}`,
+    padding: theme.spacing(0.125, 0, 0.125, 1),
+    color: theme.colors.text.primary,
+    overflow: "hidden",
+    whiteSpace: "nowrap",
+    minHeight: theme.spacing(2.75),
+    ...theme.typography.bodySmall,
+    fontWeight: theme.typography.fontWeightBold,
+    cursor: "pointer",
+    "&:hover": {
+      background: theme.colors.action.hover
+    }
+  }),
+  readOnlyCombinedFilter: css.css({
+    paddingRight: theme.spacing(1),
+    cursor: "text",
+    "&:hover": {
+      background: theme.colors.action.selected
+    }
+  }),
+  filterReadOnly: css.css({
+    background: theme.colors.background.canvas,
+    cursor: "text",
+    "&:hover": {
+      background: theme.colors.background.canvas
+    }
+  }),
+  pillIcon: css.css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer",
+    "&:hover": {
+      color: theme.colors.text.primary
+    }
+  }),
+  pillText: css.css({
+    maxWidth: "200px",
+    width: "100%",
+    textOverflow: "ellipsis",
+    overflow: "hidden"
+  }),
+  tooltipText: css.css({
+    textAlign: "center"
+  }),
+  infoPillIcon: css.css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer"
+  }),
+  readOnlyPillIcon: css.css({
+    marginInline: theme.spacing(0.5)
+  }),
+  matchAllPillIcon: css.css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer",
+    color: theme.colors.text.disabled
+  }),
+  disabledPillIcon: css.css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer",
+    color: theme.colors.text.disabled,
+    "&:hover": {
+      color: theme.colors.text.disabled
+    }
+  }),
+  ...getNonApplicablePillStyles(theme)
+});
+
+const AdHocFiltersAlwaysWipCombobox = React.forwardRef(function AdHocFiltersAlwaysWipCombobox2({ controller }, parentRef) {
+  const { wip } = controller.useState();
+  React.useLayoutEffect(() => {
+    if (!wip) {
+      controller.addWip();
+    }
+  }, [wip]);
+  return /* @__PURE__ */ React__default.default.createElement(AdHocCombobox, { controller, filter: wip, isAlwaysWip: true, ref: parentRef });
+});
+
+const AdHocFiltersComboboxRenderer = React.memo(function AdHocFiltersComboboxRenderer2({ controller }) {
+  const { originFilters, filters, readOnly } = controller.useState();
+  const styles = ui.useStyles2(getStyles$9);
+  const focusOnWipInputRef = React.useRef();
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      className: css.cx(styles.comboboxWrapper, { [styles.comboboxFocusOutline]: !readOnly }),
+      onClick: () => {
+        var _a;
+        (_a = focusOnWipInputRef.current) == null ? void 0 : _a.call(focusOnWipInputRef);
+      }
+    },
+    /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "filter", className: styles.filterIcon, size: "lg" }),
+    originFilters == null ? void 0 : originFilters.map(
+      (filter, index) => filter.origin ? /* @__PURE__ */ React__default.default.createElement(
+        AdHocFilterPill,
+        {
+          key: `${index}-${filter.key}`,
+          filter,
+          controller,
+          focusOnWipInputRef: focusOnWipInputRef.current
+        }
+      ) : null
+    ),
+    filters.filter((filter) => !filter.hidden).map((filter, index) => /* @__PURE__ */ React__default.default.createElement(
+      AdHocFilterPill,
+      {
+        key: `${index}-${filter.key}`,
+        filter,
+        controller,
+        readOnly: readOnly || filter.readOnly,
+        focusOnWipInputRef: focusOnWipInputRef.current
+      }
+    )),
+    !readOnly ? /* @__PURE__ */ React__default.default.createElement(AdHocFiltersAlwaysWipCombobox, { controller, ref: focusOnWipInputRef }) : null
+  );
+});
+const getStyles$9 = (theme) => ({
+  comboboxWrapper: css.css({
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    columnGap: theme.spacing(1),
+    rowGap: theme.spacing(0.5),
+    minHeight: theme.spacing(4),
+    backgroundColor: theme.components.input.background,
+    border: `1px solid ${theme.colors.border.strong}`,
+    borderRadius: theme.shape.radius.default,
+    paddingInline: theme.spacing(1),
+    paddingBlock: theme.spacing(0.5),
+    flexGrow: 1
+  }),
+  comboboxFocusOutline: css.css({
+    "&:focus-within": {
+      outline: "2px dotted transparent",
+      outlineOffset: "2px",
+      boxShadow: `0 0 0 2px ${theme.colors.background.canvas}, 0 0 0px 4px ${theme.colors.primary.main}`,
+      transitionTimingFunction: `cubic-bezier(0.19, 1, 0.22, 1)`,
+      transitionDuration: "0.2s",
+      transitionProperty: "outline, outline-offset, box-shadow",
+      zIndex: 2
+    }
+  }),
+  filterIcon: css.css({
+    color: theme.colors.text.secondary,
+    alignSelf: "center"
+  })
+});
+
+const reverseScopeFilterOperatorMap = Object.fromEntries(
+  Object.entries(data.scopeFilterOperatorMap).map(([symbol, operator]) => [operator, symbol])
+);
+function isEqualityOrMultiOperator(value) {
+  const operators = /* @__PURE__ */ new Set(["equals", "not-equals", "one-of", "not-one-of"]);
+  return operators.has(value);
+}
+function isRegexOperator(value) {
+  const operators = /* @__PURE__ */ new Set(["regex-match", "regex-not-match"]);
+  return operators.has(value);
+}
+function getAdHocFiltersFromScopes(scopes) {
+  const formattedFilters = /* @__PURE__ */ new Map();
+  const duplicatedFilters = [];
+  const allFilters = scopes.flatMap((scope) => scope.spec.filters);
+  for (const filter of allFilters) {
+    processFilter(formattedFilters, duplicatedFilters, filter);
+  }
+  return [...formattedFilters.values(), ...duplicatedFilters];
+}
+function processFilter(formattedFilters, duplicatedFilters, filter) {
+  var _a, _b;
+  if (!filter) {
+    return;
+  }
+  const existingFilter = formattedFilters.get(filter.key);
+  if (existingFilter && isEqualityValue(existingFilter.operator, filter.operator)) {
+    mergeFilterValues(existingFilter, filter);
+  } else if (existingFilter && isRegexValue(existingFilter.operator, filter.operator)) {
+    existingFilter.value += `|${filter.value}`;
+    existingFilter.values = [existingFilter.value];
+  } else if (!existingFilter) {
+    formattedFilters.set(filter.key, {
+      key: filter.key,
+      operator: reverseScopeFilterOperatorMap[filter.operator],
+      value: filter.value,
+      values: (_a = filter.values) != null ? _a : [filter.value],
+      origin: "scope"
+    });
+  } else {
+    duplicatedFilters.push({
+      key: filter.key,
+      operator: reverseScopeFilterOperatorMap[filter.operator],
+      value: filter.value,
+      values: (_b = filter.values) != null ? _b : [filter.value],
+      origin: "scope"
+    });
+  }
+}
+function mergeFilterValues(adHocFilter, filter) {
+  var _a, _b, _c, _d;
+  const values = (_a = filter.values) != null ? _a : [filter.value];
+  for (const value of values) {
+    if (!((_b = adHocFilter.values) == null ? void 0 : _b.includes(value))) {
+      (_c = adHocFilter.values) == null ? void 0 : _c.push(value);
+    }
+  }
+  if (((_d = adHocFilter.values) == null ? void 0 : _d.length) === 1) {
+    return;
+  }
+  if (filter.operator === "equals" && adHocFilter.operator === reverseScopeFilterOperatorMap["equals"]) {
+    adHocFilter.operator = reverseScopeFilterOperatorMap["one-of"];
+  } else if (filter.operator === "not-equals" && adHocFilter.operator === reverseScopeFilterOperatorMap["not-equals"]) {
+    adHocFilter.operator = reverseScopeFilterOperatorMap["not-one-of"];
+  }
+}
+function isRegexValue(adHocFilterOperator, filterOperator) {
+  const scopeConvertedOperator = data.scopeFilterOperatorMap[adHocFilterOperator];
+  if (!isRegexOperator(scopeConvertedOperator) || !isRegexOperator(filterOperator)) {
+    return false;
+  }
+  return hasSameOperators(scopeConvertedOperator, filterOperator);
+}
+function isEqualityValue(adHocFilterOperator, filterOperator) {
+  const scopeConvertedOperator = data.scopeFilterOperatorMap[adHocFilterOperator];
+  if (!isEqualityOrMultiOperator(scopeConvertedOperator) || !isEqualityOrMultiOperator(filterOperator)) {
+    return false;
+  }
+  return hasSameOperators(scopeConvertedOperator, filterOperator);
+}
+function hasSameOperators(scopeConvertedOperator, filterOperator) {
+  if (scopeConvertedOperator.includes("not") && !filterOperator.includes("not") || !scopeConvertedOperator.includes("not") && filterOperator.includes("not")) {
+    return false;
+  }
+  return true;
+}
+
+class AdHocFiltersVariableController {
+  constructor(model) {
+    this.model = model;
+  }
+  useState() {
+    const state = this.model.useState();
+    return {
+      filters: state.filters,
+      originFilters: state.originFilters,
+      readOnly: state.readOnly,
+      allowCustomValue: state.allowCustomValue,
+      supportsMultiValueOperators: state.supportsMultiValueOperators,
+      onAddCustomValue: state.onAddCustomValue,
+      wip: state._wip
+    };
+  }
+  async getKeys(currentKey) {
+    return this.model._getKeys(currentKey);
+  }
+  async getValuesFor(filter) {
+    return this.model._getValuesFor(filter);
+  }
+  getOperators() {
+    return this.model._getOperators();
+  }
+  updateFilter(filter, update) {
+    this.model._updateFilter(filter, update);
+  }
+  updateToMatchAll(filter) {
+    this.model.updateToMatchAll(filter);
+  }
+  removeFilter(filter) {
+    this.model._removeFilter(filter);
+  }
+  removeLastFilter() {
+    this.model._removeLastFilter();
+  }
+  handleComboboxBackspace(filter) {
+    this.model._handleComboboxBackspace(filter);
+  }
+  addWip() {
+    this.model._addWip();
+  }
+  restoreOriginalFilter(filter) {
+    this.model.restoreOriginalFilter(filter);
+  }
+  startProfile(name) {
+    const queryController = getQueryController(this.model);
+    queryController == null ? void 0 : queryController.startProfile(name);
+  }
+  startInteraction(name) {
+    const interactionTracker = getInteractionTracker(this.model);
+    interactionTracker == null ? void 0 : interactionTracker.startInteraction(name);
+  }
+  stopInteraction() {
+    const interactionTracker = getInteractionTracker(this.model);
+    interactionTracker == null ? void 0 : interactionTracker.stopInteraction();
+  }
+}
+
+const OPERATORS = [
+  {
+    value: "=",
+    description: "Equals"
+  },
+  {
+    value: "!=",
+    description: "Not equal"
+  },
+  {
+    value: "=|",
+    description: "One of. Use to filter on multiple values.",
+    isMulti: true
+  },
+  {
+    value: "!=|",
+    description: "Not one of. Use to exclude multiple values.",
+    isMulti: true
+  },
+  {
+    value: "=~",
+    description: "Matches regex",
+    isRegex: true
+  },
+  {
+    value: "!~",
+    description: "Does not match regex",
+    isRegex: true
+  },
+  {
+    value: "<",
+    description: "Less than"
+  },
+  {
+    value: "<=",
+    description: "Less than or equal to"
+  },
+  {
+    value: ">",
+    description: "Greater than"
+  },
+  {
+    value: ">=",
+    description: "Greater than or equal to"
+  }
+];
+class AdHocFiltersVariable extends SceneObjectBase {
+  constructor(state) {
+    var _a, _b, _c, _d, _e;
+    super({
+      type: "adhoc",
+      name: (_a = state.name) != null ? _a : "Filters",
+      filters: [],
+      datasource: null,
+      applyMode: "auto",
+      filterExpression: (_d = state.filterExpression) != null ? _d : renderExpression(state.expressionBuilder, [...(_b = state.originFilters) != null ? _b : [], ...(_c = state.filters) != null ? _c : []]),
+      ...state
+    });
+    this._scopedVars = { __sceneObject: wrapInSafeSerializableSceneObject(this) };
+    this._dataSourceSrv = runtime.getDataSourceSrv();
+    // holds the originalValues of all baseFilters in a map. The values
+    // are set on construct and used to restore a baseFilter with an origin
+    // to its original value if edited at some point
+    this._originalValues = /* @__PURE__ */ new Map();
+    this._prevScopes = [];
+    /** Needed for scopes dependency */
+    this._variableDependency = new VariableDependencyConfig(this, {
+      dependsOnScopes: true,
+      onReferencedVariableValueChanged: () => this._updateScopesFilters()
+    });
+    this._urlSync = new AdHocFiltersVariableUrlSyncHandler(this);
+    this._debouncedVerifyApplicability = lodash.debounce(this._verifyApplicability, 100);
+    this._activationHandler = () => {
+      this._debouncedVerifyApplicability();
+      return () => {
+        var _a;
+        (_a = this.state.originFilters) == null ? void 0 : _a.forEach((filter) => {
+          if (filter.restorable) {
+            this.restoreOriginalFilter(filter);
+          }
+        });
+      };
+    };
+    if (this.state.applyMode === "auto") {
+      patchGetAdhocFilters(this);
+    }
+    (_e = this.state.originFilters) == null ? void 0 : _e.forEach((filter) => {
+      var _a2;
+      this._originalValues.set(`${filter.key}-${filter.origin}`, {
+        operator: filter.operator,
+        value: (_a2 = filter.values) != null ? _a2 : [filter.value]
+      });
+    });
+    this.addActivationHandler(this._activationHandler);
+  }
+  _updateScopesFilters() {
+    var _a, _b;
+    const scopes = sceneGraph.getScopes(this);
+    if (!scopes || !scopes.length) {
+      this.setState({
+        originFilters: (_a = this.state.originFilters) == null ? void 0 : _a.filter((filter) => filter.origin !== "scope")
+      });
+      return;
+    }
+    const scopeFilters = getAdHocFiltersFromScopes(scopes);
+    if (!scopeFilters.length) {
+      return;
+    }
+    let finalFilters = scopeFilters;
+    const scopeInjectedFilters = [];
+    const remainingFilters = [];
+    finalFilters.forEach((scopeFilter) => {
+      var _a2;
+      this._originalValues.set(`${scopeFilter.key}-${scopeFilter.origin}`, {
+        value: (_a2 = scopeFilter.values) != null ? _a2 : [scopeFilter.value],
+        operator: scopeFilter.operator
+      });
+    });
+    (_b = this.state.originFilters) == null ? void 0 : _b.forEach((filter) => {
+      if (filter.origin === "scope") {
+        scopeInjectedFilters.push(filter);
+      } else {
+        remainingFilters.push(filter);
+      }
+    });
+    if (this._prevScopes.length) {
+      this.setState({ originFilters: [...finalFilters, ...remainingFilters] });
+      this._prevScopes = scopes;
+      this._debouncedVerifyApplicability();
+      return;
+    }
+    const editedScopeFilters = scopeInjectedFilters.filter((filter) => filter.restorable);
+    const editedScopeFilterKeys = editedScopeFilters.map((filter) => filter.key);
+    const scopeFilterKeys = scopeFilters.map((filter) => filter.key);
+    finalFilters = [
+      ...editedScopeFilters.filter((filter) => scopeFilterKeys.includes(filter.key)),
+      ...scopeFilters.filter((filter) => !editedScopeFilterKeys.includes(filter.key))
+    ];
+    this.setState({ originFilters: [...finalFilters, ...remainingFilters] });
+    this._prevScopes = scopes;
+    this._debouncedVerifyApplicability();
+  }
+  setState(update) {
+    var _a, _b;
+    let filterExpressionChanged = false;
+    if ((update.filters && update.filters !== this.state.filters || update.originFilters && update.originFilters !== this.state.originFilters) && !update.filterExpression) {
+      const filters = (_a = update.filters) != null ? _a : this.state.filters;
+      const originFilters = (_b = update.originFilters) != null ? _b : this.state.originFilters;
+      update.filterExpression = renderExpression(this.state.expressionBuilder, [...originFilters != null ? originFilters : [], ...filters]);
+      filterExpressionChanged = update.filterExpression !== this.state.filterExpression;
+    }
+    super.setState(update);
+    if (filterExpressionChanged) {
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    }
+  }
+  /**
+   * Updates the variable's `filters` and `filterExpression` state.
+   * If `skipPublish` option is true, this will not emit the `SceneVariableValueChangedEvent`,
+   * allowing consumers to update the filters without triggering dependent data providers.
+   */
+  updateFilters(filters, options) {
+    var _a;
+    let filterExpressionChanged = false;
+    let filterExpression = void 0;
+    if (filters && filters !== this.state.filters) {
+      filterExpression = renderExpression(this.state.expressionBuilder, [
+        ...(_a = this.state.originFilters) != null ? _a : [],
+        ...filters
+      ]);
+      filterExpressionChanged = filterExpression !== this.state.filterExpression;
+    }
+    super.setState({
+      filters,
+      filterExpression
+    });
+    if (filterExpressionChanged && (options == null ? void 0 : options.skipPublish) !== true || (options == null ? void 0 : options.forcePublish)) {
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    }
+  }
+  restoreOriginalFilter(filter) {
+    const original = {
+      matchAllFilter: false,
+      restorable: false
+    };
+    if (filter.restorable) {
+      const originalFilter = this._originalValues.get(`${filter.key}-${filter.origin}`);
+      if (!originalFilter) {
+        return;
+      }
+      original.value = originalFilter == null ? void 0 : originalFilter.value[0];
+      original.values = originalFilter == null ? void 0 : originalFilter.value;
+      original.valueLabels = originalFilter == null ? void 0 : originalFilter.value;
+      original.operator = originalFilter == null ? void 0 : originalFilter.operator;
+      original.nonApplicable = originalFilter == null ? void 0 : originalFilter.nonApplicable;
+      const queryController = getQueryController(this);
+      queryController == null ? void 0 : queryController.startProfile(FILTER_RESTORED_INTERACTION);
+      this._updateFilter(filter, original);
+    }
+  }
+  getValue() {
+    return this.state.filterExpression;
+  }
+  _updateFilter(filter, update) {
+    var _a;
+    const { originFilters, filters, _wip } = this.state;
+    if (filter.origin) {
+      const originalValues = this._originalValues.get(`${filter.key}-${filter.origin}`);
+      const updateValues = update.values || (update.value ? [update.value] : void 0);
+      if (updateValues && !lodash.isEqual(updateValues, originalValues == null ? void 0 : originalValues.value) || update.operator && update.operator !== (originalValues == null ? void 0 : originalValues.operator)) {
+        update.restorable = true;
+      } else if (updateValues && lodash.isEqual(updateValues, originalValues == null ? void 0 : originalValues.value)) {
+        update.restorable = false;
+      }
+      const updatedFilters2 = (_a = originFilters == null ? void 0 : originFilters.map((f) => {
+        return f === filter ? { ...f, ...update } : f;
+      })) != null ? _a : [];
+      this.setState({ originFilters: updatedFilters2 });
+      return;
+    }
+    if (filter === _wip) {
+      if ("value" in update && update["value"] !== "") {
+        this.setState({ filters: [...filters, { ..._wip, ...update }], _wip: void 0 });
+        this._debouncedVerifyApplicability();
+      } else {
+        this.setState({ _wip: { ...filter, ...update } });
+      }
+      return;
+    }
+    const updatedFilters = this.state.filters.map((f) => {
+      return f === filter ? { ...f, ...update } : f;
+    });
+    this.setState({ filters: updatedFilters });
+  }
+  updateToMatchAll(filter) {
+    this._updateFilter(filter, {
+      operator: "=~",
+      value: ".*",
+      values: [".*"],
+      valueLabels: ["All"],
+      matchAllFilter: true,
+      nonApplicable: false,
+      restorable: true
+    });
+  }
+  _removeFilter(filter) {
+    if (filter === this.state._wip) {
+      this.setState({ _wip: void 0 });
+      return;
+    }
+    const queryController = getQueryController(this);
+    queryController == null ? void 0 : queryController.startProfile(FILTER_REMOVED_INTERACTION);
+    this.setState({ filters: this.state.filters.filter((f) => f !== filter) });
+    this._debouncedVerifyApplicability();
+  }
+  _removeLastFilter() {
+    const filterToRemove = this.state.filters.at(-1);
+    if (filterToRemove) {
+      this._removeFilter(filterToRemove);
+    }
+  }
+  _handleComboboxBackspace(filter) {
+    var _a;
+    if (this.state.filters.length) {
+      let filterToForceIndex = this.state.filters.length - 1;
+      if (filter !== this.state._wip) {
+        filterToForceIndex = -1;
+      }
+      this.setState({
+        filters: this.state.filters.reduce((acc, f, index) => {
+          if (index === filterToForceIndex && !f.readOnly) {
+            return [
+              ...acc,
+              {
+                ...f,
+                forceEdit: true
+              }
+            ];
+          }
+          if (f === filter) {
+            return acc;
+          }
+          return [...acc, f];
+        }, [])
+      });
+    } else if ((_a = this.state.originFilters) == null ? void 0 : _a.length) {
+      let filterToForceIndex = this.state.originFilters.length - 1;
+      if (filter !== this.state._wip) {
+        filterToForceIndex = -1;
+      }
+      this.setState({
+        originFilters: this.state.originFilters.reduce((acc, f, index) => {
+          if (index === filterToForceIndex && !f.readOnly) {
+            return [
+              ...acc,
+              {
+                ...f,
+                forceEdit: true
+              }
+            ];
+          }
+          if (f === filter) {
+            return acc;
+          }
+          return [...acc, f];
+        }, [])
+      });
+    }
+  }
+  async _verifyApplicability() {
+    var _a, _b, _c;
+    const filters = [...this.state.filters, ...(_a = this.state.originFilters) != null ? _a : []];
+    const ds = await this._dataSourceSrv.get(this.state.datasource, this._scopedVars);
+    if (!ds || !ds.getDrilldownsApplicability) {
+      return;
+    }
+    if (!filters) {
+      return;
+    }
+    const timeRange = sceneGraph.getTimeRange(this).state.value;
+    const queries = this.state.useQueriesAsFilterForOptions ? getQueriesForVariables(this) : void 0;
+    const response = await ds.getDrilldownsApplicability({
+      filters,
+      queries,
+      timeRange,
+      scopes: sceneGraph.getScopes(this),
+      ...getEnrichedFiltersRequest(this)
+    });
+    const responseMap = /* @__PURE__ */ new Map();
+    response.forEach((filter) => {
+      responseMap.set(`${filter.key}${filter.origin ? `-${filter.origin}` : ""}`, filter);
+    });
+    const update = {
+      filters: [...this.state.filters],
+      originFilters: [...(_b = this.state.originFilters) != null ? _b : []]
+    };
+    update.filters.forEach((f) => {
+      const filter = responseMap.get(f.key);
+      if (filter) {
+        f.nonApplicable = !filter.applicable;
+        f.nonApplicableReason = filter.reason;
+      }
+    });
+    (_c = update.originFilters) == null ? void 0 : _c.forEach((f) => {
+      const filter = responseMap.get(`${f.key}-${f.origin}`);
+      if (filter) {
+        if (!f.matchAllFilter) {
+          f.nonApplicable = !filter.applicable;
+          f.nonApplicableReason = filter.reason;
+        }
+        const originalValue = this._originalValues.get(`${f.key}-${f.origin}`);
+        if (originalValue) {
+          originalValue.nonApplicable = !filter.applicable;
+          originalValue.nonApplicableReason = filter == null ? void 0 : filter.reason;
+        }
+      }
+    });
+    this.setState(update);
+  }
+  /**
+   * Get possible keys given current filters. Do not call from plugins directly
+   */
+  async _getKeys(currentKey) {
+    var _a, _b, _c, _d, _e;
+    const override = await ((_b = (_a = this.state).getTagKeysProvider) == null ? void 0 : _b.call(_a, this, currentKey));
+    if (override && override.replace) {
+      return dataFromResponse(override.values).map(toSelectableValue);
+    }
+    if (this.state.defaultKeys) {
+      return this.state.defaultKeys.map(toSelectableValue);
+    }
+    const ds = await this._dataSourceSrv.get(this.state.datasource, this._scopedVars);
+    if (!ds || !ds.getTagKeys) {
+      return [];
+    }
+    const applicableOriginFilters = (_d = (_c = this.state.originFilters) == null ? void 0 : _c.filter((f) => !f.nonApplicable)) != null ? _d : [];
+    const otherFilters = this.state.filters.filter((f) => f.key !== currentKey && !f.nonApplicable).concat((_e = this.state.baseFilters) != null ? _e : []).concat(applicableOriginFilters);
+    const timeRange = sceneGraph.getTimeRange(this).state.value;
+    const queries = this.state.useQueriesAsFilterForOptions ? getQueriesForVariables(this) : void 0;
+    const response = await ds.getTagKeys({
+      filters: otherFilters,
+      queries,
+      timeRange,
+      scopes: sceneGraph.getScopes(this),
+      ...getEnrichedFiltersRequest(this)
+    });
+    if (responseHasError(response)) {
+      this.setState({ error: response.error.message });
+    }
+    let keys = dataFromResponse(response);
+    if (override) {
+      keys = keys.concat(dataFromResponse(override.values));
+    }
+    const tagKeyRegexFilter = this.state.tagKeyRegexFilter;
+    if (tagKeyRegexFilter) {
+      keys = keys.filter((f) => f.text.match(tagKeyRegexFilter));
+    }
+    return keys.map(toSelectableValue);
+  }
+  /**
+   * Get possible key values for a specific key given current filters. Do not call from plugins directly
+   */
+  async _getValuesFor(filter) {
+    var _a, _b, _c, _d;
+    const override = await ((_b = (_a = this.state).getTagValuesProvider) == null ? void 0 : _b.call(_a, this, filter));
+    if (override && override.replace) {
+      return dataFromResponse(override.values).map(toSelectableValue);
+    }
+    const ds = await this._dataSourceSrv.get(this.state.datasource, this._scopedVars);
+    if (!ds || !ds.getTagValues) {
+      return [];
+    }
+    const originFilters = (_d = (_c = this.state.originFilters) == null ? void 0 : _c.filter((f) => f.key !== filter.key)) != null ? _d : [];
+    const otherFilters = this.state.filters.filter((f) => f.key !== filter.key).concat(originFilters);
+    const timeRange = sceneGraph.getTimeRange(this).state.value;
+    const queries = this.state.useQueriesAsFilterForOptions ? getQueriesForVariables(this) : void 0;
+    let scopes = sceneGraph.getScopes(this);
+    if (filter.origin === "scope") {
+      scopes = scopes == null ? void 0 : scopes.map((scope) => {
+        return {
+          ...scope,
+          spec: {
+            ...scope.spec,
+            filters: scope.spec.filters.filter((f) => f.key !== filter.key)
+          }
+        };
+      });
+    }
+    const response = await ds.getTagValues({
+      key: filter.key,
+      filters: otherFilters,
+      timeRange,
+      queries,
+      scopes,
+      ...getEnrichedFiltersRequest(this)
+    });
+    if (responseHasError(response)) {
+      this.setState({ error: response.error.message });
+    }
+    let values = dataFromResponse(response);
+    if (override) {
+      values = values.concat(dataFromResponse(override.values));
+    }
+    return values.map(toSelectableValue);
+  }
+  _addWip() {
+    this.setState({
+      _wip: { key: "", value: "", operator: "=", condition: "" }
+    });
+  }
+  _getOperators() {
+    const { supportsMultiValueOperators, allowCustomValue = true } = this.state;
+    return OPERATORS.filter(({ isMulti, isRegex }) => {
+      if (!supportsMultiValueOperators && isMulti) {
+        return false;
+      }
+      if (!allowCustomValue && isRegex) {
+        return false;
+      }
+      return true;
+    }).map(({ value, description }) => ({
+      label: value,
+      value,
+      description
+    }));
+  }
+}
+AdHocFiltersVariable.Component = AdHocFiltersVariableRenderer;
+function renderExpression(builder, filters) {
+  var _a;
+  return (builder != null ? builder : renderPrometheusLabelFilters)((_a = filters == null ? void 0 : filters.filter((f) => isFilterApplicable(f))) != null ? _a : []);
+}
+function AdHocFiltersVariableRenderer({ model }) {
+  const { filters, readOnly, addFilterButtonText } = model.useState();
+  const styles = ui.useStyles2(getStyles$8);
+  const controller = React.useMemo(
+    () => model.state.layout === "combobox" ? new AdHocFiltersVariableController(model) : void 0,
+    [model]
+  );
+  if (controller) {
+    return /* @__PURE__ */ React__default.default.createElement(AdHocFiltersComboboxRenderer, { controller });
+  }
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.wrapper }, filters.filter((filter) => !filter.hidden).map((filter, index) => /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, { key: index }, /* @__PURE__ */ React__default.default.createElement(AdHocFilterRenderer, { filter, model }))), !readOnly && /* @__PURE__ */ React__default.default.createElement(AdHocFilterBuilder, { model, key: "'builder", addFilterButtonText }));
+}
+const getStyles$8 = (theme) => ({
+  wrapper: css.css({
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "flex-end",
+    columnGap: theme.spacing(2),
+    rowGap: theme.spacing(1)
+  })
+});
+function toSelectableValue(input) {
+  const { text, value } = input;
+  const result = {
+    // converting text to string due to some edge cases where it can be a number
+    // TODO: remove once https://github.com/grafana/grafana/issues/99021 is closed
+    label: String(text),
+    value: String(value != null ? value : text)
+  };
+  if ("group" in input) {
+    result.group = input.group;
+  }
+  if ("meta" in input) {
+    result.meta = input.meta;
+  }
+  return result;
+}
+function isMatchAllFilter(filter) {
+  return filter.operator === "=~" && filter.value === ".*";
+}
+function isFilterComplete(filter) {
+  return filter.key !== "" && filter.operator !== "" && filter.value !== "";
+}
+function isFilterApplicable(filter) {
+  return !filter.nonApplicable;
+}
+function isMultiValueOperator(operatorValue) {
+  const operator = OPERATORS.find((o) => o.value === operatorValue);
+  if (!operator) {
+    return false;
+  }
+  return Boolean(operator.isMulti);
+}
+
+class DrilldownDependenciesManager {
+  constructor(variableDependency) {
+    this._variableDependency = variableDependency;
+  }
+  /**
+   * Walk up scene graph and find the closest filterset with matching data source
+   */
+  findAndSubscribeToDrilldowns(interpolatedUid) {
+    const filtersVar = findActiveAdHocFilterVariableByUid(interpolatedUid);
+    const groupByVar = findActiveGroupByVariablesByUid(interpolatedUid);
+    let hasChanges = false;
+    if (this._adhocFiltersVar !== filtersVar) {
+      this._adhocFiltersVar = filtersVar;
+      hasChanges = true;
+    }
+    if (this._groupByVar !== groupByVar) {
+      this._groupByVar = groupByVar;
+      hasChanges = true;
+    }
+    if (hasChanges) {
+      this._updateExplicitDrilldownVariableDependencies();
+    }
+  }
+  _updateExplicitDrilldownVariableDependencies() {
+    const explicitDependencies = [];
+    if (this._adhocFiltersVar) {
+      explicitDependencies.push(this._adhocFiltersVar.state.name);
+    }
+    if (this._groupByVar) {
+      explicitDependencies.push(this._groupByVar.state.name);
+    }
+    this._variableDependency.setVariableNames(explicitDependencies);
+  }
+  get adHocFiltersVar() {
+    return this._adhocFiltersVar;
+  }
+  get groupByVar() {
+    return this._groupByVar;
+  }
+  getFilters() {
+    var _a;
+    return this._adhocFiltersVar ? [...(_a = this._adhocFiltersVar.state.originFilters) != null ? _a : [], ...this._adhocFiltersVar.state.filters].filter(
+      (f) => isFilterComplete(f) && isFilterApplicable(f)
+    ) : void 0;
+  }
+  getGroupByKeys() {
+    return this._groupByVar ? this._groupByVar.getApplicableKeys() : void 0;
+  }
+  cleanup() {
+    this._adhocFiltersVar = void 0;
+    this._groupByVar = void 0;
+  }
+}
+
+let counter$1 = 100;
+function getNextRequestId$1() {
+  return "SQR" + counter$1++;
+}
+class SceneQueryRunner extends SceneObjectBase {
+  constructor(initialState) {
+    super(initialState);
+    this._dataLayersMerger = new DataLayersMerger();
+    this._variableValueRecorder = new VariableValueRecorder();
+    this._results = new rxjs.ReplaySubject(1);
+    this._scopedVars = { __sceneObject: wrapInSafeSerializableSceneObject(this) };
+    this._isInView = true;
+    this._bypassIsInView = false;
+    this._queryNotExecutedWhenOutOfView = false;
+    this._variableDependency = new VariableDependencyConfig(this, {
+      statePaths: ["queries", "datasource", "minInterval"],
+      onVariableUpdateCompleted: this.onVariableUpdatesCompleted.bind(this),
+      onAnyVariableChanged: this.onAnyVariableChanged.bind(this),
+      dependsOnScopes: true
+    });
+    this._drilldownDependenciesManager = new DrilldownDependenciesManager(this._variableDependency);
+    this.onDataReceived = (data$1) => {
+      const preProcessedData = data.preProcessPanelData(data$1, this.state.data);
+      this._resultAnnotations = data$1.annotations;
+      const dataWithLayersApplied = this._combineDataLayers(preProcessedData);
+      let hasFetchedData = this.state._hasFetchedData;
+      if (!hasFetchedData && preProcessedData.state !== schema.LoadingState.Loading) {
+        hasFetchedData = true;
+      }
+      this.setState({ data: dataWithLayersApplied, _hasFetchedData: hasFetchedData });
+      this._results.next({ origin: this, data: dataWithLayersApplied });
+    };
+    this.addActivationHandler(() => this._onActivate());
+  }
+  getResultsStream() {
+    return this._results;
+  }
+  _onActivate() {
+    if (this.isQueryModeAuto()) {
+      const timeRange = sceneGraph.getTimeRange(this);
+      const providers = this.getClosestExtraQueryProviders();
+      for (const provider of providers) {
+        this._subs.add(
+          provider.subscribeToState((n, p) => {
+            if (provider.shouldRerun(p, n, this.state.queries)) {
+              this.runQueries();
+            }
+          })
+        );
+      }
+      this.subscribeToTimeRangeChanges(timeRange);
+      if (this.shouldRunQueriesOnActivate()) {
+        this.runQueries();
+      }
+    }
+    if (!this._dataLayersSub) {
+      this._handleDataLayers();
+    }
+    return () => this._onDeactivate();
+  }
+  // This method subscribes to all SceneDataLayers up until the root, and combines the results into data provided from SceneQueryRunner
+  _handleDataLayers() {
+    const dataLayers = sceneGraph.getDataLayers(this);
+    if (dataLayers.length === 0) {
+      return;
+    }
+    this._dataLayersSub = this._dataLayersMerger.getMergedStream(dataLayers).subscribe(this._onLayersReceived.bind(this));
+  }
+  _onLayersReceived(results) {
+    var _a, _b, _c, _d, _e;
+    const timeRange = sceneGraph.getTimeRange(this);
+    const { dataLayerFilter } = this.state;
+    let annotations = [];
+    let alertStates = [];
+    let alertState;
+    for (const result of results) {
+      for (let frame of result.data.series) {
+        if (((_a = frame.meta) == null ? void 0 : _a.dataTopic) === data.DataTopic.Annotations) {
+          annotations = annotations.concat(frame);
+        }
+        if (((_b = frame.meta) == null ? void 0 : _b.dataTopic) === data.DataTopic.AlertStates) {
+          alertStates = alertStates.concat(frame);
+        }
+      }
+    }
+    if (dataLayerFilter == null ? void 0 : dataLayerFilter.panelId) {
+      if (annotations.length > 0) {
+        annotations = filterAnnotations(annotations, dataLayerFilter);
+      }
+      if (alertStates.length > 0) {
+        for (const frame of alertStates) {
+          const frameView = new data.DataFrameView(frame);
+          for (const row of frameView) {
+            if (row.panelId === dataLayerFilter.panelId) {
+              alertState = row;
+              break;
+            }
+          }
+        }
+      }
+    }
+    if (allFramesEmpty(annotations) && allFramesEmpty(this._layerAnnotations) && lodash.isEqual(alertState, (_c = this.state.data) == null ? void 0 : _c.alertState)) {
+      return;
+    }
+    this._layerAnnotations = annotations;
+    const baseStateUpdate = this.state.data ? this.state.data : { ...emptyPanelData, timeRange: timeRange.state.value };
+    this.setState({
+      data: {
+        ...baseStateUpdate,
+        annotations: [...(_d = this._resultAnnotations) != null ? _d : [], ...annotations],
+        alertState: alertState != null ? alertState : (_e = this.state.data) == null ? void 0 : _e.alertState
+      }
+    });
+  }
+  /**
+   * This tries to start a new query whenever a variable completes or is changed.
+   *
+   * We care about variable update completions even when the variable has not changed and even when it is not a direct dependency.
+   * Example: Variables A and B (B depends on A). A update depends on time range. So when time change query runner will
+   * find that variable A is loading which is a dependency on of variable B so will set _isWaitingForVariables to true and
+   * not issue any query.
+   *
+   * When A completes it's loading (with no value change, so B never updates) it will cause a call of this function letting
+   * the query runner know that A has completed, and in case _isWaitingForVariables we try to run the query. The query will
+   * only run if all variables are in a non loading state so in other scenarios where a query depends on many variables this will
+   * be called many times until all dependencies are in a non loading state.   *
+   */
+  onVariableUpdatesCompleted() {
+    if (this.isQueryModeAuto()) {
+      this.runQueries();
+    }
+  }
+  /**
+   * Check if value changed is a adhoc filter o group by variable that did not exist when we issued the last query
+   */
+  onAnyVariableChanged(variable) {
+    if (this._drilldownDependenciesManager.adHocFiltersVar === variable || this._drilldownDependenciesManager.groupByVar === variable || !this.isQueryModeAuto()) {
+      return;
+    }
+    if (variable instanceof AdHocFiltersVariable && this._isRelevantAutoVariable(variable)) {
+      this.runQueries();
+    }
+    if (variable instanceof GroupByVariable && this._isRelevantAutoVariable(variable)) {
+      this.runQueries();
+    }
+  }
+  _isRelevantAutoVariable(variable) {
+    var _a, _b;
+    const datasource = (_a = this.state.datasource) != null ? _a : findFirstDatasource(this.state.queries);
+    return variable.state.applyMode === "auto" && (datasource == null ? void 0 : datasource.uid) === ((_b = variable.state.datasource) == null ? void 0 : _b.uid);
+  }
+  shouldRunQueriesOnActivate() {
+    if (this._variableValueRecorder.hasDependenciesChanged(this)) {
+      writeSceneLog(
+        "SceneQueryRunner",
+        "Variable dependency changed while inactive, shouldRunQueriesOnActivate returns true"
+      );
+      return true;
+    }
+    if (!this.state.data) {
+      return true;
+    }
+    if (this._isDataTimeRangeStale(this.state.data)) {
+      return true;
+    }
+    return false;
+  }
+  _isDataTimeRangeStale(data) {
+    const timeRange = sceneGraph.getTimeRange(this);
+    const stateTimeRange = timeRange.state.value;
+    const dataTimeRange = data.timeRange;
+    if (stateTimeRange.from.unix() === dataTimeRange.from.unix() && stateTimeRange.to.unix() === dataTimeRange.to.unix()) {
+      return false;
+    }
+    writeSceneLog("SceneQueryRunner", "Data time range is stale");
+    return true;
+  }
+  _onDeactivate() {
+    var _a;
+    if (this._querySub) {
+      this._querySub.unsubscribe();
+      this._querySub = void 0;
+    }
+    if (this._dataLayersSub) {
+      this._dataLayersSub.unsubscribe();
+      this._dataLayersSub = void 0;
+    }
+    (_a = this._timeSub) == null ? void 0 : _a.unsubscribe();
+    this._timeSub = void 0;
+    this._timeSubRange = void 0;
+    this._drilldownDependenciesManager.cleanup();
+  }
+  setContainerWidth(width) {
+    if (!this._containerWidth && width > 0) {
+      this._containerWidth = width;
+      if (this.state.maxDataPointsFromWidth && !this.state.maxDataPoints) {
+        setTimeout(() => {
+          if (this.isActive && !this.state._hasFetchedData) {
+            this.runQueries();
+          }
+        }, 0);
+      }
+    } else {
+      if (width > 0) {
+        this._containerWidth = width;
+      }
+    }
+  }
+  isDataReadyToDisplay() {
+    return Boolean(this.state._hasFetchedData);
+  }
+  subscribeToTimeRangeChanges(timeRange) {
+    if (this._timeSubRange === timeRange) {
+      return;
+    }
+    if (this._timeSub) {
+      this._timeSub.unsubscribe();
+    }
+    this._timeSubRange = timeRange;
+    this._timeSub = timeRange.subscribeToState(() => {
+      this.runWithTimeRange(timeRange);
+    });
+  }
+  runQueries() {
+    const timeRange = sceneGraph.getTimeRange(this);
+    if (this.isQueryModeAuto()) {
+      this.subscribeToTimeRangeChanges(timeRange);
+    }
+    this.runWithTimeRange(timeRange);
+  }
+  getMaxDataPoints() {
+    var _a;
+    if (this.state.maxDataPoints) {
+      return this.state.maxDataPoints;
+    }
+    return this.state.maxDataPointsFromWidth ? (_a = this._containerWidth) != null ? _a : 500 : 500;
+  }
+  cancelQuery() {
+    var _a;
+    (_a = this._querySub) == null ? void 0 : _a.unsubscribe();
+    if (this._dataLayersSub) {
+      this._dataLayersSub.unsubscribe();
+      this._dataLayersSub = void 0;
+    }
+    this.setState({
+      data: { ...this.state.data, state: schema.LoadingState.Done }
+    });
+  }
+  async runWithTimeRange(timeRange) {
+    var _a, _b, _c;
+    if (!this.state.maxDataPoints && this.state.maxDataPointsFromWidth && !this._containerWidth) {
+      return;
+    }
+    if (this.isQueryModeAuto() && !this._isInView && !this._bypassIsInView) {
+      this._queryNotExecutedWhenOutOfView = true;
+      return;
+    }
+    this._queryNotExecutedWhenOutOfView = false;
+    if (!this._dataLayersSub) {
+      this._handleDataLayers();
+    }
+    (_a = this._querySub) == null ? void 0 : _a.unsubscribe();
+    if (this._variableDependency.hasDependencyInLoadingState()) {
+      writeSceneLog("SceneQueryRunner", "Variable dependency is in loading state, skipping query execution");
+      this.setState({ data: { ...(_b = this.state.data) != null ? _b : emptyPanelData, state: schema.LoadingState.Loading } });
+      return;
+    }
+    this._variableValueRecorder.recordCurrentDependencyValuesForSceneObject(this);
+    const { queries } = this.state;
+    if (!(queries == null ? void 0 : queries.length)) {
+      this._setNoDataState();
+      return;
+    }
+    try {
+      const datasource = (_c = this.state.datasource) != null ? _c : findFirstDatasource(queries);
+      const ds = await getDataSource(datasource, this._scopedVars);
+      this._drilldownDependenciesManager.findAndSubscribeToDrilldowns(ds.uid);
+      const runRequest = runtime.getRunRequest();
+      const { primary, secondaries, processors } = this.prepareRequests(timeRange, ds);
+      writeSceneLog("SceneQueryRunner", "Starting runRequest", this.state.key);
+      let stream = runRequest(ds, primary);
+      if (secondaries.length > 0) {
+        const secondaryStreams = secondaries.map((r) => runRequest(ds, r));
+        const op = extraQueryProcessingOperator(processors);
+        stream = rxjs.forkJoin([stream, ...secondaryStreams]).pipe(op);
+      }
+      const panelProfiler = findPanelProfiler(this);
+      stream = stream.pipe(
+        registerQueryWithController(
+          {
+            type: "SceneQueryRunner/runQueries",
+            request: primary,
+            origin: this,
+            cancel: () => this.cancelQuery()
+          },
+          panelProfiler
+        )
+      );
+      this._querySub = stream.subscribe(this.onDataReceived);
+    } catch (err) {
+      console.error("PanelQueryRunner Error", err);
+      this.onDataReceived({
+        ...emptyPanelData,
+        ...this.state.data,
+        state: schema.LoadingState.Error,
+        errors: [runtime.toDataQueryError(err)]
+      });
+    }
+  }
+  clone(withState) {
+    var _a;
+    const clone = super.clone(withState);
+    if (this._resultAnnotations) {
+      clone["_resultAnnotations"] = this._resultAnnotations.map((frame) => ({ ...frame }));
+    }
+    if (this._layerAnnotations) {
+      clone["_layerAnnotations"] = this._layerAnnotations.map((frame) => ({ ...frame }));
+    }
+    clone["_variableValueRecorder"] = this._variableValueRecorder.cloneAndRecordCurrentValuesForSceneObject(this);
+    clone["_containerWidth"] = this._containerWidth;
+    clone["_results"].next({ origin: this, data: (_a = this.state.data) != null ? _a : emptyPanelData });
+    return clone;
+  }
+  prepareRequests(timeRange, ds) {
+    var _a;
+    const { minInterval, queries } = this.state;
+    let request = {
+      app: "scenes",
+      requestId: getNextRequestId$1(),
+      timezone: timeRange.getTimeZone(),
+      range: timeRange.state.value,
+      interval: "1s",
+      intervalMs: 1e3,
+      targets: lodash.cloneDeep(queries),
+      maxDataPoints: this.getMaxDataPoints(),
+      scopedVars: this._scopedVars,
+      startTime: Date.now(),
+      liveStreaming: this.state.liveStreaming,
+      rangeRaw: {
+        from: timeRange.state.from,
+        to: timeRange.state.to
+      },
+      cacheTimeout: this.state.cacheTimeout,
+      queryCachingTTL: this.state.queryCachingTTL,
+      scopes: sceneGraph.getScopes(this),
+      // This asks the scene root to provide context properties like app, panel and dashboardUID
+      ...getEnrichedDataRequest(this)
+    };
+    const filters = this._drilldownDependenciesManager.getFilters();
+    const groupByKeys = this._drilldownDependenciesManager.getGroupByKeys();
+    if (filters) {
+      request.filters = filters;
+    }
+    if (groupByKeys) {
+      request.groupByKeys = groupByKeys;
+    }
+    request.targets = request.targets.map((query) => {
+      var _a2;
+      if (!query.datasource || query.datasource.uid !== ds.uid && !((_a2 = ds.meta) == null ? void 0 : _a2.mixed) && runtime.isExpressionReference && !runtime.isExpressionReference(query.datasource)) {
+        query.datasource = ds.getRef();
+      }
+      return query;
+    });
+    const lowerIntervalLimit = minInterval ? interpolate(this, minInterval) : ds.interval;
+    const norm = data.rangeUtil.calculateInterval(timeRange.state.value, request.maxDataPoints, lowerIntervalLimit);
+    request.scopedVars = Object.assign({}, request.scopedVars, {
+      __interval: { text: norm.interval, value: norm.interval },
+      __interval_ms: { text: norm.intervalMs.toString(), value: norm.intervalMs }
+    });
+    request.interval = norm.interval;
+    request.intervalMs = norm.intervalMs;
+    const primaryTimeRange = timeRange.state.value;
+    let secondaryRequests = [];
+    let secondaryProcessors = /* @__PURE__ */ new Map();
+    for (const provider of (_a = this.getClosestExtraQueryProviders()) != null ? _a : []) {
+      for (const { req, processor } of provider.getExtraQueries(request)) {
+        const requestId = getNextRequestId$1();
+        secondaryRequests.push({ ...req, requestId });
+        secondaryProcessors.set(requestId, processor != null ? processor : passthroughProcessor);
+      }
+    }
+    request.range = primaryTimeRange;
+    return { primary: request, secondaries: secondaryRequests, processors: secondaryProcessors };
+  }
+  _combineDataLayers(data) {
+    if (this._layerAnnotations && this._layerAnnotations.length > 0) {
+      data.annotations = (data.annotations || []).concat(this._layerAnnotations);
+    }
+    if (this.state.data && this.state.data.alertState) {
+      data.alertState = this.state.data.alertState;
+    }
+    return data;
+  }
+  _setNoDataState() {
+    if (this.state.data !== emptyPanelData) {
+      this.setState({ data: emptyPanelData });
+    }
+  }
+  /**
+   * Walk up the scene graph and find any ExtraQueryProviders.
+   *
+   * This will return an array of the closest provider of each type.
+   */
+  getClosestExtraQueryProviders() {
+    const found = /* @__PURE__ */ new Map();
+    if (!this.parent) {
+      return [];
+    }
+    getClosest(this.parent, (s) => {
+      if (isExtraQueryProvider(s) && !found.has(s.constructor)) {
+        found.set(s.constructor, s);
+      }
+      s.forEachChild((child) => {
+        if (isExtraQueryProvider(child) && !found.has(child.constructor)) {
+          found.set(child.constructor, child);
+        }
+      });
+      return null;
+    });
+    return Array.from(found.values());
+  }
+  isQueryModeAuto() {
+    var _a;
+    return ((_a = this.state.runQueriesMode) != null ? _a : "auto") === "auto";
+  }
+  isInViewChanged(isInView) {
+    writeSceneLog("SceneQueryRunner", `isInViewChanged: ${isInView}`, this.state.key);
+    this._isInView = isInView;
+    if (isInView && this._queryNotExecutedWhenOutOfView) {
+      this.runQueries();
+    }
+  }
+  bypassIsInViewChanged(bypassIsInView) {
+    writeSceneLog("SceneQueryRunner", `bypassIsInViewChanged: ${bypassIsInView}`, this.state.key);
+    this._bypassIsInView = bypassIsInView;
+    if (bypassIsInView && this._queryNotExecutedWhenOutOfView) {
+      this.runQueries();
+    }
+  }
+}
+function findFirstDatasource(targets) {
+  var _a, _b;
+  return (_b = (_a = targets.find((t) => t.datasource !== null)) == null ? void 0 : _a.datasource) != null ? _b : void 0;
+}
+function allFramesEmpty(frames) {
+  if (!frames) {
+    return true;
+  }
+  for (let i = 0; i < frames.length; i++) {
+    if (frames[i].length > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function isVariableValueEqual(a, b) {
+  if (a === b) {
+    return true;
+  }
+  return lodash.isEqual(a, b);
+}
+function safeStringifyValue(value) {
+  const getCircularReplacer = () => {
+    const seen = /* @__PURE__ */ new WeakSet();
+    return (_, value2) => {
+      if (typeof value2 === "object" && value2 !== null) {
+        if (seen.has(value2)) {
+          return;
+        }
+        seen.add(value2);
+      }
+      return value2;
+    };
+  };
+  try {
+    return JSON.stringify(value, getCircularReplacer());
+  } catch (error) {
+    console.error(error);
+  }
+  return "";
+}
+function renderPrometheusLabelFilters(filters) {
+  return filters.map((filter) => renderFilter(filter)).join(",");
+}
+function renderFilter(filter) {
+  var _a, _b;
+  let value = "";
+  let operator = filter.operator;
+  if (operator === "=|") {
+    operator = "=~";
+    value = (_a = filter.values) == null ? void 0 : _a.map(escapeLabelValueInRegexSelector).join("|");
+  } else if (operator === "!=|") {
+    operator = "!~";
+    value = (_b = filter.values) == null ? void 0 : _b.map(escapeLabelValueInRegexSelector).join("|");
+  } else if (operator === "=~" || operator === "!~") {
+    value = escapeLabelValueInRegexSelector(filter.value);
+  } else {
+    value = escapeLabelValueInExactSelector(filter.value);
+  }
+  return `${filter.key}${operator}"${value}"`;
+}
+function escapeLabelValueInExactSelector(labelValue) {
+  return labelValue.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/"/g, '\\"');
+}
+function escapeLabelValueInRegexSelector(labelValue) {
+  return escapeLabelValueInExactSelector(escapeLokiRegexp(labelValue));
+}
+const RE2_METACHARACTERS = /[*+?()|\\.\[\]{}^$]/g;
+function escapeLokiRegexp(value) {
+  return value.replace(RE2_METACHARACTERS, "\\$&");
+}
+function getQueriesForVariables(sourceObject) {
+  var _a;
+  const runners = sceneGraph.findAllObjects(
+    sourceObject.getRoot(),
+    (o) => o instanceof SceneQueryRunner
+  );
+  const interpolatedDsUuid = sceneGraph.interpolate(sourceObject, (_a = sourceObject.state.datasource) == null ? void 0 : _a.uid);
+  const applicableRunners = filterOutInactiveRunnerDuplicates(runners).filter((r) => {
+    var _a2;
+    const interpolatedQueryDsUuid = sceneGraph.interpolate(sourceObject, (_a2 = r.state.datasource) == null ? void 0 : _a2.uid);
+    return interpolatedQueryDsUuid === interpolatedDsUuid;
+  });
+  if (applicableRunners.length === 0) {
+    return [];
+  }
+  const result = [];
+  applicableRunners.forEach((r) => {
+    result.push(
+      ...r.state.queries.filter((q) => {
+        if (!q.datasource || !q.datasource.uid) {
+          return true;
+        }
+        const interpolatedQueryDsUuid = sceneGraph.interpolate(sourceObject, q.datasource.uid);
+        return interpolatedQueryDsUuid === interpolatedDsUuid;
+      })
+    );
+  });
+  return result;
+}
+function filterOutInactiveRunnerDuplicates(runners) {
+  const groupedItems = {};
+  for (const item of runners) {
+    if (item.state.key) {
+      if (!(item.state.key in groupedItems)) {
+        groupedItems[item.state.key] = [];
+      }
+      groupedItems[item.state.key].push(item);
+    }
+  }
+  return Object.values(groupedItems).flatMap((group) => {
+    const activeItems = group.filter((item) => item.isActive);
+    if (activeItems.length === 0 && group.length === 1) {
+      return group;
+    }
+    return activeItems;
+  });
+}
+function escapeUrlPipeDelimiters(value) {
+  if (value === null || value === void 0) {
+    return "";
+  }
+  return value = /\|/g[Symbol.replace](value, "__gfp__");
+}
+function escapeUrlCommaDelimiters(value) {
+  if (value === null || value === void 0) {
+    return "";
+  }
+  return /,/g[Symbol.replace](value, "__gfc__");
+}
+function escapeUrlHashDelimiters(value) {
+  if (value === null || value === void 0) {
+    return "";
+  }
+  return /#/g[Symbol.replace](value, "__gfh__");
+}
+function escapeOriginFilterUrlDelimiters(value) {
+  return escapeUrlHashDelimiters(escapeUrlPipeDelimiters(value));
+}
+function escapeURLDelimiters(value) {
+  return escapeUrlCommaDelimiters(escapeUrlPipeDelimiters(value));
+}
+function unescapeUrlDelimiters(value) {
+  if (value === null || value === void 0) {
+    return "";
+  }
+  value = /__gfp__/g[Symbol.replace](value, "|");
+  value = /__gfc__/g[Symbol.replace](value, ",");
+  value = /__gfh__/g[Symbol.replace](value, "#");
+  return value;
+}
+function toUrlCommaDelimitedString(key, label) {
+  if (!label || key === label) {
+    return escapeUrlCommaDelimiters(key);
+  }
+  return [key, label].map(escapeUrlCommaDelimiters).join(",");
+}
+function dataFromResponse(response) {
+  return Array.isArray(response) ? response : response.data;
+}
+function responseHasError(response) {
+  return !Array.isArray(response) && Boolean(response.error);
+}
+function handleOptionGroups(values) {
+  const result = [];
+  const groupedResults = /* @__PURE__ */ new Map();
+  for (const value of values) {
+    const groupLabel = value.group;
+    if (groupLabel) {
+      let group = groupedResults.get(groupLabel);
+      if (!group) {
+        group = [];
+        groupedResults.set(groupLabel, group);
+        result.push({ label: groupLabel, options: group });
+      }
+      group.push(value);
+    } else {
+      result.push(value);
+    }
+  }
+  return result;
+}
+function getNonApplicablePillStyles(theme) {
+  return {
+    disabledPill: css.css({
+      background: theme.colors.action.selected,
+      color: theme.colors.text.disabled,
+      border: 0,
+      "&:hover": {
+        background: theme.colors.action.selected
+      }
+    }),
+    strikethrough: css.css({
+      textDecoration: "line-through"
+    })
+  };
+}
+
+class ConstantVariable extends SceneObjectBase {
+  constructor(initialState) {
+    super({
+      type: "constant",
+      value: "",
+      name: "",
+      ...initialState,
+      skipUrlSync: true
+    });
+    this._variableDependency = new VariableDependencyConfig(this, {
+      statePaths: ["value"]
+    });
+    this._prevValue = "";
+  }
+  /**
+   * This function is called on when SceneVariableSet is activated or when a dependency changes.
+   */
+  validateAndUpdate() {
+    const newValue = this.getValue();
+    if (this._prevValue !== newValue) {
+      this._prevValue = newValue;
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    }
+    return rxjs.of({});
+  }
+  getValue() {
+    if (typeof this.state.value === "string") {
+      return sceneGraph.interpolate(this, this.state.value);
+    }
+    return this.state.value;
+  }
+}
+
+class VariableDependencyConfig {
+  constructor(_sceneObject, _options) {
+    this._sceneObject = _sceneObject;
+    this._options = _options;
+    this._dependencies = /* @__PURE__ */ new Set();
+    this._isWaitingForVariables = false;
+    this.scanCount = 0;
+    this._statePaths = _options.statePaths;
+    if (this._options.handleTimeMacros) {
+      this.handleTimeMacros();
+    }
+  }
+  /**
+   * Used to check for dependency on a specific variable
+   */
+  hasDependencyOn(name) {
+    return this.getNames().has(name);
+  }
+  /**
+   * This is called whenever any set of variables have new values. It is up to this implementation to check if it's relevant given the current dependencies.
+   */
+  variableUpdateCompleted(variable, hasChanged) {
+    var _a, _b, _c, _d;
+    const deps = this.getNames();
+    const dependencyChanged = (deps.has(variable.state.name) || deps.has(data.DataLinkBuiltInVars.includeVars)) && hasChanged;
+    writeSceneLog(
+      "VariableDependencyConfig",
+      "variableUpdateCompleted",
+      variable.state.name,
+      dependencyChanged,
+      this._isWaitingForVariables
+    );
+    (_b = (_a = this._options).onAnyVariableChanged) == null ? void 0 : _b.call(_a, variable);
+    if (this._options.onVariableUpdateCompleted && (this._isWaitingForVariables || dependencyChanged)) {
+      this._options.onVariableUpdateCompleted();
+    }
+    if (dependencyChanged) {
+      (_d = (_c = this._options).onReferencedVariableValueChanged) == null ? void 0 : _d.call(_c, variable);
+      if (!this._options.onReferencedVariableValueChanged && !this._options.onVariableUpdateCompleted) {
+        this._sceneObject.forceRender();
+      }
+    }
+  }
+  hasDependencyInLoadingState() {
+    this._isWaitingForVariables = sceneGraph.hasVariableDependencyInLoadingState(this._sceneObject);
+    return this._isWaitingForVariables;
+  }
+  getNames() {
+    const prevState = this._state;
+    const newState = this._state = this._sceneObject.state;
+    const noPreviousState = !prevState;
+    const stateDiffers = newState !== prevState;
+    const shouldScanForDependencies = noPreviousState || stateDiffers && (!this._statePaths || this._statePaths.some((path) => path === "*" || newState[path] !== prevState[path]));
+    if (shouldScanForDependencies) {
+      this.scanStateForDependencies(newState);
+    }
+    return this._dependencies;
+  }
+  /**
+   * Update variableNames
+   */
+  setVariableNames(varNames) {
+    this._options.variableNames = varNames;
+    this.scanStateForDependencies(this._state);
+  }
+  setPaths(paths) {
+    this._statePaths = paths;
+  }
+  scanStateForDependencies(state) {
+    this._dependencies.clear();
+    this.scanCount++;
+    if (this._options.variableNames) {
+      for (const name of this._options.variableNames) {
+        this._dependencies.add(name);
+      }
+    }
+    if (this._options.dependsOnScopes) {
+      this._dependencies.add(SCOPES_VARIABLE_NAME);
+    }
+    if (this._statePaths) {
+      for (const path of this._statePaths) {
+        if (path === "*") {
+          this.extractVariablesFrom(state);
+          break;
+        } else {
+          const value = state[path];
+          if (value) {
+            this.extractVariablesFrom(value);
+          }
+        }
+      }
+    }
+  }
+  extractVariablesFrom(value) {
+    VARIABLE_REGEX.lastIndex = 0;
+    const stringToCheck = typeof value !== "string" ? safeStringifyValue(value) : value;
+    const matches = stringToCheck.matchAll(VARIABLE_REGEX);
+    if (!matches) {
+      return;
+    }
+    for (const match of matches) {
+      const [, var1, var2, , var3] = match;
+      const variableName = var1 || var2 || var3;
+      this._dependencies.add(variableName);
+    }
+  }
+  handleTimeMacros() {
+    this._sceneObject.addActivationHandler(() => {
+      const timeRange = sceneGraph.getTimeRange(this._sceneObject);
+      const sub = timeRange.subscribeToState((newState, oldState) => {
+        const deps = this.getNames();
+        const hasFromDep = deps.has("__from");
+        const hasToDep = deps.has("__to");
+        const hasTimeZone = deps.has("__timezone");
+        if (newState.value !== oldState.value) {
+          if (hasFromDep) {
+            const variable = new ConstantVariable({ name: "__from", value: newState.from });
+            this.variableUpdateCompleted(variable, true);
+          } else if (hasToDep) {
+            const variable = new ConstantVariable({ name: "__to", value: newState.to });
+            this.variableUpdateCompleted(variable, true);
+          }
+        }
+        if (newState.timeZone !== oldState.timeZone && hasTimeZone) {
+          const variable = new ConstantVariable({ name: "__timezone", value: newState.timeZone });
+          this.variableUpdateCompleted(variable, true);
+        }
+      });
+      return () => sub.unsubscribe();
+    });
+  }
+}
+
+const hasLegacyVariableSupport = (datasource) => {
+  return Boolean(datasource.metricFindQuery) && !Boolean(datasource.variables);
+};
+const hasStandardVariableSupport = (datasource) => {
+  if (!datasource.variables) {
+    return false;
+  }
+  if (datasource.variables.getType() !== data.VariableSupportType.Standard) {
+    return false;
+  }
+  const variableSupport = datasource.variables;
+  return "toDataQuery" in variableSupport && Boolean(variableSupport.toDataQuery);
+};
+const hasCustomVariableSupport = (datasource) => {
+  if (!datasource.variables) {
+    return false;
+  }
+  if (datasource.variables.getType() !== data.VariableSupportType.Custom) {
+    return false;
+  }
+  const variableSupport = datasource.variables;
+  return "query" in variableSupport && "editor" in variableSupport && Boolean(variableSupport.query) && Boolean(variableSupport.editor);
+};
+const hasDataSourceVariableSupport = (datasource) => {
+  if (!datasource.variables) {
+    return false;
+  }
+  return datasource.variables.getType() === data.VariableSupportType.Datasource;
+};
+
+class StandardQueryRunner {
+  constructor(datasource, _runRequest = runtime.getRunRequest()) {
+    this.datasource = datasource;
+    this._runRequest = _runRequest;
+  }
+  getTarget(variable) {
+    if (hasStandardVariableSupport(this.datasource)) {
+      return this.datasource.variables.toDataQuery(ensureVariableQueryModelIsADataQuery(variable));
+    }
+    throw new Error("Couldn't create a target with supplied arguments.");
+  }
+  runRequest(_, request) {
+    if (!hasStandardVariableSupport(this.datasource)) {
+      return getEmptyMetricFindValueObservable();
+    }
+    if (!this.datasource.variables.query) {
+      return this._runRequest(this.datasource, request);
+    }
+    return this._runRequest(this.datasource, request, this.datasource.variables.query.bind(this.datasource.variables));
+  }
+}
+class LegacyQueryRunner {
+  constructor(datasource) {
+    this.datasource = datasource;
+  }
+  getTarget(variable) {
+    if (hasLegacyVariableSupport(this.datasource)) {
+      return variable.state.query;
+    }
+    throw new Error("Couldn't create a target with supplied arguments.");
+  }
+  runRequest({ variable, searchFilter }, request) {
+    if (!hasLegacyVariableSupport(this.datasource)) {
+      return getEmptyMetricFindValueObservable();
+    }
+    return rxjs.from(
+      this.datasource.metricFindQuery(variable.state.query, {
+        ...request,
+        // variable is used by SQL common data source
+        variable: {
+          name: variable.state.name,
+          type: variable.state.type
+        },
+        searchFilter
+      })
+    ).pipe(
+      rxjs.mergeMap((values) => {
+        if (!values || !values.length) {
+          return getEmptyMetricFindValueObservable();
+        }
+        const series = values;
+        return rxjs.of({ series, state: data.LoadingState.Done, timeRange: request.range });
+      })
+    );
+  }
+}
+class CustomQueryRunner {
+  constructor(datasource, _runRequest = runtime.getRunRequest()) {
+    this.datasource = datasource;
+    this._runRequest = _runRequest;
+  }
+  getTarget(variable) {
+    if (hasCustomVariableSupport(this.datasource)) {
+      return variable.state.query;
+    }
+    throw new Error("Couldn't create a target with supplied arguments.");
+  }
+  runRequest(_, request) {
+    if (!hasCustomVariableSupport(this.datasource)) {
+      return getEmptyMetricFindValueObservable();
+    }
+    if (!this.datasource.variables.query) {
+      return this._runRequest(this.datasource, request);
+    }
+    return this._runRequest(this.datasource, request, this.datasource.variables.query.bind(this.datasource.variables));
+  }
+}
+const variableDummyRefId = "variable-query";
+class DatasourceQueryRunner {
+  constructor(datasource, _runRequest = runtime.getRunRequest()) {
+    this.datasource = datasource;
+    this._runRequest = _runRequest;
+  }
+  getTarget(variable) {
+    var _a;
+    if (hasDataSourceVariableSupport(this.datasource)) {
+      if (typeof variable.state.query === "string") {
+        return variable.state.query;
+      }
+      return { ...variable.state.query, refId: (_a = variable.state.query.refId) != null ? _a : variableDummyRefId };
+    }
+    throw new Error("Couldn't create a target with supplied arguments.");
+  }
+  runRequest(_, request) {
+    if (!hasDataSourceVariableSupport(this.datasource)) {
+      return getEmptyMetricFindValueObservable();
+    }
+    return this._runRequest(this.datasource, request);
+  }
+}
+function getEmptyMetricFindValueObservable() {
+  return rxjs.of({ state: data.LoadingState.Done, series: [], timeRange: data.getDefaultTimeRange() });
+}
+function createQueryVariableRunnerFactory(datasource) {
+  if (hasStandardVariableSupport(datasource)) {
+    return new StandardQueryRunner(datasource, runtime.getRunRequest());
+  }
+  if (hasLegacyVariableSupport(datasource)) {
+    return new LegacyQueryRunner(datasource);
+  }
+  if (hasCustomVariableSupport(datasource)) {
+    return new CustomQueryRunner(datasource);
+  }
+  if (hasDataSourceVariableSupport(datasource)) {
+    return new DatasourceQueryRunner(datasource);
+  }
+  throw new Error(`Couldn't create a query runner for datasource ${datasource.type}`);
+}
+let createQueryVariableRunner = createQueryVariableRunnerFactory;
+function ensureVariableQueryModelIsADataQuery(variable) {
+  var _a;
+  const query = (_a = variable.state.query) != null ? _a : "";
+  if (typeof query === "string") {
+    return { query, refId: `variable-${variable.state.name}` };
+  }
+  if (query.refId == null) {
+    return { ...query, refId: `variable-${variable.state.name}` };
+  }
+  return variable.state.query;
+}
+
+function metricNamesToVariableValues(variableRegEx, sort, metricNames) {
+  var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+  let regex;
+  let options = [];
+  if (variableRegEx) {
+    regex = data.stringToJsRegex(variableRegEx);
+  }
+  for (let i = 0; i < metricNames.length; i++) {
+    const item = metricNames[i];
+    let text = (_b = (_a = item.text) != null ? _a : item.value) != null ? _b : "";
+    let value = (_d = (_c = item.value) != null ? _c : item.text) != null ? _d : "";
+    if (lodash.isNumber(value)) {
+      value = value.toString();
+    }
+    if (lodash.isNumber(text)) {
+      text = text.toString();
+    }
+    if (regex) {
+      const matches = getAllMatches(value, regex);
+      if (!matches.length) {
+        continue;
+      }
+      const valueGroup = matches.find((m) => m.groups && m.groups.value);
+      const textGroup = matches.find((m) => m.groups && m.groups.text);
+      const firstMatch = matches.find((m) => m.length > 1);
+      const manyMatches = matches.length > 1 && firstMatch;
+      if (valueGroup || textGroup) {
+        value = (_g = (_e = valueGroup == null ? void 0 : valueGroup.groups) == null ? void 0 : _e.value) != null ? _g : (_f = textGroup == null ? void 0 : textGroup.groups) == null ? void 0 : _f.text;
+        text = (_j = (_h = textGroup == null ? void 0 : textGroup.groups) == null ? void 0 : _h.text) != null ? _j : (_i = valueGroup == null ? void 0 : valueGroup.groups) == null ? void 0 : _i.value;
+      } else if (manyMatches) {
+        for (let j = 0; j < matches.length; j++) {
+          const match = matches[j];
+          options.push({ label: match[1], value: match[1] });
+        }
+        continue;
+      } else if (firstMatch) {
+        text = firstMatch[1];
+        value = firstMatch[1];
+      }
+    }
+    options.push({ label: text, value });
+  }
+  options = lodash.uniqBy(options, "value");
+  return sortVariableValues(options, sort);
+}
+const getAllMatches = (str, regex) => {
+  const results = [];
+  let matches = null;
+  regex.lastIndex = 0;
+  do {
+    matches = regex.exec(str);
+    if (matches) {
+      results.push(matches);
+    }
+  } while (regex.global && matches && matches[0] !== "" && matches[0] !== void 0);
+  return results;
+};
+const sortVariableValues = (options, sortOrder) => {
+  if (sortOrder === data.VariableSort.disabled) {
+    return options;
+  }
+  switch (sortOrder) {
+    case data.VariableSort.alphabeticalAsc:
+      options = lodash.sortBy(options, "label");
+      break;
+    case data.VariableSort.alphabeticalDesc:
+      options = lodash.sortBy(options, "label").reverse();
+      break;
+    case data.VariableSort.numericalAsc:
+      options = lodash.sortBy(options, sortByNumeric);
+      break;
+    case data.VariableSort.numericalDesc:
+      options = lodash.sortBy(options, sortByNumeric);
+      options = options.reverse();
+      break;
+    case data.VariableSort.alphabeticalCaseInsensitiveAsc:
+      options = lodash.sortBy(options, (opt) => {
+        return lodash.toLower(opt.label);
+      });
+      break;
+    case data.VariableSort.alphabeticalCaseInsensitiveDesc:
+      options = lodash.sortBy(options, (opt) => {
+        return lodash.toLower(opt.label);
+      });
+      options = options.reverse();
+      break;
+    case (data.VariableSort.naturalAsc || 7):
+      options = sortByNaturalSort(options);
+      break;
+    case (data.VariableSort.naturalDesc || 8):
+      options = sortByNaturalSort(options);
+      options = options.reverse();
+      break;
+  }
+  return options;
+};
+function sortByNumeric(opt) {
+  if (!opt.label) {
+    return -1;
+  }
+  const matches = opt.label.match(/.*?(\d+).*/);
+  if (!matches || matches.length < 2) {
+    return -1;
+  } else {
+    return parseInt(matches[1], 10);
+  }
+}
+const collator = new Intl.Collator(void 0, { sensitivity: "accent", numeric: true });
+function sortByNaturalSort(options) {
+  return options.slice().sort((a, b) => {
+    return collator.compare(a.label, b.label);
+  });
+}
+
+function toMetricFindValues() {
+  return (source) => source.pipe(
+    rxjs.map((panelData) => {
+      const frames = panelData.series;
+      if (!frames || !frames.length) {
+        return [];
+      }
+      if (areMetricFindValues(frames)) {
+        return frames;
+      }
+      if (frames[0].fields.length === 0) {
+        return [];
+      }
+      const processedDataFrames = data.getProcessedDataFrames(frames);
+      const metrics = [];
+      let valueIndex = -1;
+      let textIndex = -1;
+      let stringIndex = -1;
+      let expandableIndex = -1;
+      for (const frame of processedDataFrames) {
+        for (let index = 0; index < frame.fields.length; index++) {
+          const field = frame.fields[index];
+          const fieldName = data.getFieldDisplayName(field, frame, frames).toLowerCase();
+          if (field.type === data.FieldType.string && stringIndex === -1) {
+            stringIndex = index;
+          }
+          if (fieldName === "text" && field.type === data.FieldType.string && textIndex === -1) {
+            textIndex = index;
+          }
+          if (fieldName === "value" && field.type === data.FieldType.string && valueIndex === -1) {
+            valueIndex = index;
+          }
+          if (fieldName === "expandable" && (field.type === data.FieldType.boolean || field.type === data.FieldType.number) && expandableIndex === -1) {
+            expandableIndex = index;
+          }
+        }
+      }
+      if (stringIndex === -1) {
+        throw new Error("Couldn't find any field of type string in the results.");
+      }
+      for (const frame of frames) {
+        for (let index = 0; index < frame.length; index++) {
+          const expandable = expandableIndex !== -1 ? frame.fields[expandableIndex].values.get(index) : void 0;
+          const string = frame.fields[stringIndex].values.get(index);
+          const text = textIndex !== -1 ? frame.fields[textIndex].values.get(index) : "";
+          const value = valueIndex !== -1 ? frame.fields[valueIndex].values.get(index) : "";
+          if (valueIndex === -1 && textIndex === -1) {
+            metrics.push({ text: string, value: string, expandable });
+            continue;
+          }
+          if (valueIndex === -1 && textIndex !== -1) {
+            metrics.push({ text, value: text, expandable });
+            continue;
+          }
+          if (valueIndex !== -1 && textIndex === -1) {
+            metrics.push({ text: value, value, expandable });
+            continue;
+          }
+          metrics.push({ text, value, expandable });
+        }
+      }
+      return metrics;
+    })
+  );
+}
+function areMetricFindValues(data$1) {
+  if (!data$1) {
+    return false;
+  }
+  if (!data$1.length) {
+    return true;
+  }
+  const firstValue = data$1[0];
+  if (data.isDataFrame(firstValue)) {
+    return false;
+  }
+  for (const firstValueKey in firstValue) {
+    if (!firstValue.hasOwnProperty(firstValueKey)) {
+      continue;
+    }
+    if (firstValue[firstValueKey] !== null && typeof firstValue[firstValueKey] !== "string" && typeof firstValue[firstValueKey] !== "number") {
+      continue;
+    }
+    const key = firstValueKey.toLowerCase();
+    if (key === "text" || key === "value") {
+      return true;
+    }
+  }
+  return false;
+}
+
+class QueryVariable extends MultiValueVariable {
+  constructor(initialState) {
+    super({
+      type: "query",
+      name: "",
+      value: "",
+      text: "",
+      options: [],
+      datasource: null,
+      regex: "",
+      query: "",
+      refresh: data.VariableRefresh.onDashboardLoad,
+      sort: data.VariableSort.disabled,
+      ...initialState
+    });
+    this._variableDependency = new VariableDependencyConfig(this, {
+      statePaths: ["regex", "query", "datasource"]
+    });
+    this.onSearchChange = (searchFilter) => {
+      if (!containsSearchFilter(this.state.query)) {
+        return;
+      }
+      this._updateOptionsBasedOnSearchFilter(searchFilter);
+    };
+    this._updateOptionsBasedOnSearchFilter = lodash.debounce(async (searchFilter) => {
+      const result = await rxjs.lastValueFrom(this.getValueOptions({ searchFilter }));
+      this.setState({ options: result, loading: false });
+    }, 400);
+  }
+  getValueOptions(args) {
+    if (!this.state.query) {
+      return rxjs.of([]);
+    }
+    this.setState({ loading: true, error: null });
+    return rxjs.from(
+      getDataSource(this.state.datasource, {
+        __sceneObject: wrapInSafeSerializableSceneObject(this)
+      })
+    ).pipe(
+      rxjs.mergeMap((ds) => {
+        const runner = createQueryVariableRunner(ds);
+        const target = runner.getTarget(this);
+        const request = this.getRequest(target, args.searchFilter);
+        return runner.runRequest({ variable: this, searchFilter: args.searchFilter }, request).pipe(
+          registerQueryWithController({
+            type: "QueryVariable/getValueOptions",
+            request,
+            origin: this
+          }),
+          rxjs.filter((data$1) => data$1.state === data.LoadingState.Done || data$1.state === data.LoadingState.Error),
+          // we only care about done or error for now
+          rxjs.take(1),
+          // take the first result, using first caused a bug where it in some situations throw an uncaught error because of no results had been received yet
+          rxjs.mergeMap((data$1) => {
+            if (data$1.state === data.LoadingState.Error) {
+              return rxjs.throwError(() => data$1.error);
+            }
+            return rxjs.of(data$1);
+          }),
+          toMetricFindValues(),
+          rxjs.mergeMap((values) => {
+            let regex = "";
+            if (this.state.regex) {
+              regex = sceneGraph.interpolate(this, this.state.regex, void 0, "regex");
+            }
+            let options = metricNamesToVariableValues(regex, this.state.sort, values);
+            if (this.state.staticOptions) {
+              const customOptions = this.state.staticOptions;
+              options = options.filter((option) => !customOptions.find((custom) => custom.value === option.value));
+              if (this.state.staticOptionsOrder === "after") {
+                options.push(...customOptions);
+              } else if (this.state.staticOptionsOrder === "sorted") {
+                options = sortVariableValues(options.concat(customOptions), this.state.sort);
+              } else {
+                options.unshift(...customOptions);
+              }
+            }
+            return rxjs.of(options);
+          }),
+          rxjs.catchError((error) => {
+            if (error.cancelled) {
+              return rxjs.of([]);
+            }
+            return rxjs.throwError(() => error);
+          })
+        );
+      })
+    );
+  }
+  getRequest(target, searchFilter) {
+    const scopedVars = {
+      __sceneObject: wrapInSafeSerializableSceneObject(this)
+    };
+    if (searchFilter) {
+      scopedVars.__searchFilter = { value: searchFilter, text: searchFilter };
+    }
+    const range = sceneGraph.getTimeRange(this).state.value;
+    const request = {
+      app: data.CoreApp.Dashboard,
+      requestId: uuid.v4(),
+      timezone: "",
+      range,
+      interval: "",
+      intervalMs: 0,
+      // @ts-ignore
+      targets: [target],
+      scopedVars,
+      startTime: Date.now()
+    };
+    return request;
+  }
+}
+QueryVariable.Component = ({ model }) => {
+  return /* @__PURE__ */ React__default.default.createElement(MultiOrSingleValueSelect, { model });
+};
+function containsSearchFilter(query) {
+  const str = safeStringifyValue(query);
+  return str.indexOf(SEARCH_FILTER_VARIABLE) > -1;
+}
+
+class ScopesVariable extends SceneObjectBase {
+  constructor(state) {
+    super({
+      skipUrlSync: true,
+      loading: true,
+      scopes: [],
+      ...state,
+      type: "system",
+      name: SCOPES_VARIABLE_NAME,
+      hide: schema.VariableHide.hideVariable
+    });
+    this._renderBeforeActivation = true;
+    // Special options that enables variables to be hidden but still render to access react contexts
+    this.UNSAFE_renderAsHidden = true;
+  }
+  /**
+   * Temporary simple implementation to stringify the scopes.
+   */
+  getValue() {
+    var _a;
+    const scopes = (_a = this.state.scopes) != null ? _a : [];
+    return new ScopesVariableFormatter(scopes.map((scope) => scope.metadata.name));
+  }
+  getScopes() {
+    return this.state.scopes;
+  }
+  /**
+   * This method is used to keep the context up to date with the scopes context received from React
+   * 1) Subscribes to ScopesContext state changes and synchronizes it with the variable state
+   * 2) Handles enable / disabling of scopes based on variable enable option.
+   */
+  setContext(context) {
+    if (!context) {
+      return;
+    }
+    this._context = context;
+    const oldState = context.state;
+    if (this.state.enable != null) {
+      context.setEnabled(this.state.enable);
+    }
+    const sub = context.stateObservable.subscribe((state) => {
+      this.updateStateFromContext(state);
+    });
+    return () => {
+      sub.unsubscribe();
+      if (this.state.enable != null) {
+        context.setEnabled(oldState.enabled);
+      }
+    };
+  }
+  updateStateFromContext(state) {
+    const loading = state.value.length === 0 ? false : state.loading;
+    const oldScopes = this.state.scopes.map((scope) => scope.metadata.name);
+    const newScopes = state.value.map((scope) => scope.metadata.name);
+    const scopesHaveChanged = !lodash.isEqual(oldScopes, newScopes);
+    if (!loading && (scopesHaveChanged || newScopes.length === 0)) {
+      const queryController = getQueryController(this);
+      queryController == null ? void 0 : queryController.startProfile(SCOPES_CHANGED_INTERACTION);
+      this.setState({ scopes: state.value, loading });
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    } else {
+      this.setState({ loading });
+    }
+  }
+}
+ScopesVariable.Component = ScopesVariableRenderer;
+function ScopesVariableRenderer({ model }) {
+  const context = React.useContext(runtime.ScopesContext);
+  React.useEffect(() => {
+    return model.setContext(context);
+  }, [context, model]);
+  return null;
+}
+class ScopesVariableFormatter {
+  constructor(_value) {
+    this._value = _value;
+  }
+  formatter(formatNameOrFn) {
+    if (formatNameOrFn === schema.VariableFormatID.QueryParam) {
+      return this._value.map((scope) => `scope=${encodeURIComponent(scope)}`).join("&");
+    }
+    return this._value.join(", ");
+  }
+}
+
+function getVariables(sceneObject) {
+  var _a;
+  return (_a = getClosest(sceneObject, (s) => s.state.$variables)) != null ? _a : EmptyVariableSet;
+}
+function getData(sceneObject) {
+  var _a;
+  return (_a = getClosest(sceneObject, (s) => s.state.$data)) != null ? _a : EmptyDataNode;
+}
+function isSceneLayout(s) {
+  return "isDraggable" in s;
+}
+function getLayout(scene) {
+  const parent = getClosest(scene, (s) => isSceneLayout(s) ? s : void 0);
+  if (parent) {
+    return parent;
+  }
+  return null;
+}
+function interpolate(sceneObject, value, scopedVars, format, interpolations) {
+  if (value === "" || value == null) {
+    return "";
+  }
+  return sceneInterpolator(sceneObject, value, scopedVars, format, interpolations);
+}
+function hasVariableDependencyInLoadingState(sceneObject) {
+  if (!sceneObject.variableDependency) {
+    return false;
+  }
+  for (const name of sceneObject.variableDependency.getNames()) {
+    if (sceneObject instanceof QueryVariable && sceneObject.state.name === name) {
+      console.warn("Query variable is referencing itself");
+      continue;
+    }
+    const variable = lookupVariable(name, sceneObject);
+    if (!variable) {
+      continue;
+    }
+    const set = variable.parent;
+    if (set.isVariableLoadingOrWaitingToUpdate(variable)) {
+      return true;
+    }
+  }
+  return false;
+}
+function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) {
+  if (check(scene)) {
+    return scene;
+  }
+  let found = null;
+  scene.forEachChild((child) => {
+    if (child === alreadySearchedChild) {
+      return;
+    }
+    let maybe = findObjectInternal(child, check);
+    if (maybe) {
+      found = maybe;
+      return false;
+    }
+    return;
+  });
+  if (found) {
+    return found;
+  }
+  if (shouldSearchUp && scene.parent) {
+    return findObjectInternal(scene.parent, check, scene, true);
+  }
+  return null;
+}
+function findByKey(sceneObject, key) {
+  const found = findObject(sceneObject, (sceneToCheck) => {
+    return sceneToCheck.state.key === key;
+  });
+  if (!found) {
+    throw new Error("Unable to find scene with key " + key);
+  }
+  return found;
+}
+function findByKeyAndType(sceneObject, key, targetType) {
+  const found = findObject(sceneObject, (sceneToCheck) => {
+    return sceneToCheck.state.key === key;
+  });
+  if (!found) {
+    throw new Error("Unable to find scene with key " + key);
+  }
+  if (!(found instanceof targetType)) {
+    throw new Error(`Found scene object with key ${key} does not match type ${targetType.name}`);
+  }
+  return found;
+}
+function findObject(scene, check) {
+  return findObjectInternal(scene, check, void 0, true);
+}
+function findAllObjects(scene, check) {
+  const found = [];
+  scene.forEachChild((child) => {
+    if (check(child)) {
+      found.push(child);
+    }
+    found.push(...findAllObjects(child, check));
+  });
+  return found;
+}
+function getDataLayers(sceneObject, localOnly = false) {
+  let currentLevel = sceneObject;
+  let collected = [];
+  while (currentLevel) {
+    const dataProvider = currentLevel.state.$data;
+    if (!dataProvider) {
+      currentLevel = currentLevel.parent;
+      continue;
+    }
+    if (isDataLayer(dataProvider)) {
+      collected = collected.concat(dataProvider);
+    } else {
+      if (dataProvider.state.$data && isDataLayer(dataProvider.state.$data)) {
+        collected = collected.concat(dataProvider.state.$data);
+      }
+    }
+    if (localOnly && collected.length > 0) {
+      break;
+    }
+    currentLevel = currentLevel.parent;
+  }
+  return collected;
+}
+function getAncestor(sceneObject, ancestorType) {
+  let parent = sceneObject;
+  while (parent) {
+    if (parent instanceof ancestorType) {
+      return parent;
+    }
+    parent = parent.parent;
+  }
+  if (!parent) {
+    throw new Error("Unable to find parent of type " + ancestorType.name);
+  }
+  return parent;
+}
+function findDescendents(scene, descendentType) {
+  function isDescendentType(scene2) {
+    return scene2 instanceof descendentType;
+  }
+  const targetScenes = findAllObjects(scene, isDescendentType);
+  return targetScenes.filter(isDescendentType);
+}
+function getScopes(sceneObject) {
+  const scopesVariable = lookupVariable(SCOPES_VARIABLE_NAME, sceneObject);
+  if (scopesVariable instanceof ScopesVariable) {
+    return scopesVariable.state.scopes;
+  }
+  return void 0;
+}
+
+const sceneGraph = {
+  getVariables,
+  getData,
+  getTimeRange,
+  getLayout,
+  getDataLayers,
+  interpolate,
+  lookupVariable,
+  hasVariableDependencyInLoadingState,
+  findByKey,
+  findByKeyAndType,
+  findObject,
+  findAllObjects,
+  getAncestor,
+  getQueryController,
+  findDescendents,
+  getScopes
+};
+
+class LocalValueVariable extends SceneObjectBase {
+  constructor(initialState) {
+    super({
+      type: "system",
+      value: "",
+      text: "",
+      name: "",
+      ...initialState,
+      skipUrlSync: true
+    });
+  }
+  getValue() {
+    return this.state.value;
+  }
+  getValueText() {
+    return this.state.text.toString();
+  }
+  /**
+   * Checks the ancestor of our parent SceneVariableSet for loading state of a variable with the same name
+   * This function is unit tested from SceneVariableSet tests.
+   */
+  isAncestorLoading() {
+    var _a, _b;
+    const ancestorScope = (_b = (_a = this.parent) == null ? void 0 : _a.parent) == null ? void 0 : _b.parent;
+    if (!ancestorScope) {
+      throw new Error("LocalValueVariable requires a parent SceneVariableSet that has an ancestor SceneVariableSet");
+    }
+    const set = sceneGraph.getVariables(ancestorScope);
+    const parentVar = sceneGraph.lookupVariable(this.state.name, ancestorScope);
+    if (set && parentVar) {
+      return set.isVariableLoadingOrWaitingToUpdate(parentVar);
+    }
+    return false;
+  }
+}
+
+const PATH_ID_SEPARATOR = "$";
+function buildPathIdFor(panel) {
+  let pathId = `panel-${panel.getLegacyPanelId()}`;
+  let lastName;
+  let currentObj = panel;
+  while (currentObj) {
+    const variables = currentObj.state.$variables;
+    if (variables) {
+      variables.state.variables.forEach((variable) => {
+        if (variable.state.name === lastName) {
+          return;
+        }
+        if (variable instanceof LocalValueVariable) {
+          pathId = `${variable.state.value}${PATH_ID_SEPARATOR}${pathId}`;
+          lastName = variable.state.name;
+        }
+      });
+    }
+    currentObj = currentObj.parent;
+  }
+  return pathId;
+}
+
+function isAdHocVariable(variable) {
+  return variable.state.type === "adhoc";
+}
+function isConstantVariable(variable) {
+  return variable.state.type === "constant";
+}
+function isCustomVariable(variable) {
+  return variable.state.type === "custom";
+}
+function isDataSourceVariable(variable) {
+  return variable.state.type === "datasource";
+}
+function isIntervalVariable(variable) {
+  return variable.state.type === "interval";
+}
+function isQueryVariable(variable) {
+  return variable.state.type === "query";
+}
+function isTextBoxVariable(variable) {
+  return variable.state.type === "textbox";
+}
+function isGroupByVariable(variable) {
+  return variable.state.type === "groupby";
+}
+function isSwitchVariable(variable) {
+  return variable.state.type === "switch";
+}
+
+class ActWhenVariableChanged extends SceneObjectBase {
+  constructor() {
+    super(...arguments);
+    this._runningEffect = null;
+    this._variableDependency = new VariableDependencyConfig(this, {
+      variableNames: [this.state.variableName],
+      onReferencedVariableValueChanged: this._onVariableChanged.bind(this)
+    });
+  }
+  _onVariableChanged(variable) {
+    const effect = this.state.onChange;
+    if (this._runningEffect) {
+      this._runningEffect();
+      this._runningEffect = null;
+    }
+    const cancellation = effect(variable, this);
+    if (cancellation) {
+      this._runningEffect = cancellation;
+    }
+  }
+}
+
+var index$2 = /*#__PURE__*/Object.freeze({
   __proto__: null,
   ActWhenVariableChanged: ActWhenVariableChanged,
   CursorSync: CursorSync,
-  SceneQueryController: SceneQueryController,
-  LiveNowTimer: LiveNowTimer
+  LiveNowTimer: LiveNowTimer,
+  SceneInteractionTracker: SceneInteractionTracker,
+  SceneQueryController: SceneQueryController
+});
+
+function writePerformanceLog(logger, message, ...rest) {
+  let loggingEnabled = false;
+  if (typeof window !== "undefined") {
+    loggingEnabled = localStorage.getItem("grafana.debug.sceneProfiling") === "true";
+  }
+  if (loggingEnabled) {
+    console.log(`${logger}: `, message, ...rest);
+  }
+}
+
+class PanelProfilingManager {
+  constructor(_config) {
+    this._config = _config;
+    this._subscriptions = [];
+  }
+  /**
+   * Attach panel profiling to a scene object
+   */
+  attachToScene(sceneObject) {
+    this._sceneObject = sceneObject;
+    const subscription = sceneObject.subscribeToState((newState, prevState) => {
+      if (this._config.watchStateKey) {
+        if (newState[this._config.watchStateKey] !== prevState[this._config.watchStateKey]) {
+          this._attachProfilersToPanels();
+        }
+      } else {
+        this._attachProfilersToPanels();
+      }
+    });
+    this._subscriptions.push(subscription);
+    this._attachProfilersToPanels();
+  }
+  /**
+   * Attach VizPanelRenderProfiler to a specific panel if it doesn't already have one
+   * @param panel - The VizPanel to attach profiling to
+   */
+  attachProfilerToPanel(panel) {
+    var _a;
+    const existingProfiler = (_a = panel.state.$behaviors) == null ? void 0 : _a.find((b) => b instanceof VizPanelRenderProfiler);
+    if (existingProfiler) {
+      return;
+    }
+    const profiler = new VizPanelRenderProfiler();
+    panel.setState({
+      $behaviors: [...panel.state.$behaviors || [], profiler]
+    });
+  }
+  /**
+   * Attach VizPanelRenderProfiler to all VizPanels that don't already have one
+   */
+  _attachProfilersToPanels() {
+    if (!this._sceneObject) {
+      return;
+    }
+    const panels = sceneGraph.findAllObjects(this._sceneObject, (obj) => obj instanceof VizPanel);
+    panels.forEach((panel) => {
+      this.attachProfilerToPanel(panel);
+    });
+  }
+  /**
+   * Clean up subscriptions and references
+   */
+  cleanup() {
+    this._subscriptions.forEach((sub) => sub.unsubscribe());
+    this._subscriptions = [];
+    this._sceneObject = void 0;
+  }
+}
+
+var __typeError$2 = (msg) => {
+  throw TypeError(msg);
+};
+var __accessCheck$2 = (obj, member, msg) => member.has(obj) || __typeError$2("Cannot " + msg);
+var __privateGet$2 = (obj, member, getter) => (__accessCheck$2(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd$2 = (obj, member, value) => member.has(obj) ? __typeError$2("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet$2 = (obj, member, value, setter) => (__accessCheck$2(obj, member, "write to private field"), member.set(obj, value), value);
+var _isTracking, _callback, _frameTrackingId, _lastFrameTime, _loafObserver;
+const LONG_FRAME_THRESHOLD = 50;
+class LongFrameDetector {
+  constructor() {
+    __privateAdd$2(this, _isTracking, false);
+    __privateAdd$2(this, _callback, null);
+    // Manual tracking state
+    __privateAdd$2(this, _frameTrackingId, null);
+    __privateAdd$2(this, _lastFrameTime, 0);
+    // LoAF tracking state
+    __privateAdd$2(this, _loafObserver, null);
+    /**
+     * Measure frame durations using requestAnimationFrame
+     */
+    this.measureFrames = () => {
+      if (!__privateGet$2(this, _isTracking)) {
+        return;
+      }
+      const currentFrameTime = performance.now();
+      const frameLength = currentFrameTime - __privateGet$2(this, _lastFrameTime);
+      if (frameLength > LONG_FRAME_THRESHOLD) {
+        const event = {
+          duration: frameLength,
+          timestamp: currentFrameTime,
+          method: "manual"
+        };
+        if (__privateGet$2(this, _callback)) {
+          __privateGet$2(this, _callback).call(this, event);
+        }
+        if (typeof performance !== "undefined" && performance.mark && performance.measure) {
+          const frameId = `long-frame-manual-${currentFrameTime.toFixed(0)}`;
+          const startMarkName = `${frameId}-start`;
+          const endMarkName = `${frameId}-end`;
+          const measureName = `Long Frame (Manual): ${frameLength.toFixed(1)}ms`;
+          try {
+            performance.mark(startMarkName, { startTime: currentFrameTime - frameLength });
+            performance.mark(endMarkName, { startTime: currentFrameTime });
+            performance.measure(measureName, startMarkName, endMarkName);
+          } catch (e) {
+            performance.mark(measureName);
+          }
+        }
+        writePerformanceLog(
+          "LFD",
+          `Long frame detected (manual): ${frameLength}ms (threshold: ${LONG_FRAME_THRESHOLD}ms)`
+        );
+      }
+      __privateSet$2(this, _lastFrameTime, currentFrameTime);
+      if (__privateGet$2(this, _isTracking)) {
+        __privateSet$2(this, _frameTrackingId, requestAnimationFrame(this.measureFrames));
+      }
+    };
+  }
+  /**
+   * Check if LoAF API is available in the browser
+   */
+  isLoAFAvailable() {
+    return typeof PerformanceObserver !== "undefined" && PerformanceObserver.supportedEntryTypes && PerformanceObserver.supportedEntryTypes.includes("long-animation-frame");
+  }
+  /**
+   * Start detecting long frames and call the provided callback when they occur
+   */
+  start(callback) {
+    if (__privateGet$2(this, _isTracking)) {
+      writePerformanceLog("LFD", "Already tracking frames, stopping previous session");
+      this.stop();
+    }
+    __privateSet$2(this, _callback, callback);
+    __privateSet$2(this, _isTracking, true);
+    if (this.isLoAFAvailable()) {
+      this.startLoAFTracking();
+    } else {
+      this.startManualFrameTracking();
+    }
+    writePerformanceLog(
+      "LFD",
+      `Started tracking with ${this.isLoAFAvailable() ? "LoAF API" : "manual"} method, threshold: ${LONG_FRAME_THRESHOLD}ms`
+    );
+  }
+  /**
+   * Stop detecting long frames
+   */
+  stop() {
+    if (!__privateGet$2(this, _isTracking)) {
+      return;
+    }
+    __privateSet$2(this, _isTracking, false);
+    __privateSet$2(this, _callback, null);
+    this.stopLoAFTracking();
+    this.stopManualFrameTracking();
+  }
+  /**
+   * Check if currently tracking frames
+   */
+  isTracking() {
+    return __privateGet$2(this, _isTracking);
+  }
+  /**
+   * Start tracking using the Long Animation Frame API
+   * @see https://developer.mozilla.org/en-US/docs/Web/API/PerformanceLongAnimationFrameTiming
+   */
+  startLoAFTracking() {
+    if (!this.isLoAFAvailable()) {
+      writePerformanceLog("LFD", "LoAF API not available, falling back to manual tracking");
+      this.startManualFrameTracking();
+      return;
+    }
+    try {
+      __privateSet$2(this, _loafObserver, new PerformanceObserver((list) => {
+        for (const entry of list.getEntries()) {
+          const event = {
+            duration: entry.duration,
+            timestamp: entry.startTime,
+            method: "loaf"
+          };
+          if (__privateGet$2(this, _callback)) {
+            __privateGet$2(this, _callback).call(this, event);
+          }
+          if (typeof performance !== "undefined" && performance.mark && performance.measure) {
+            const frameId = `long-frame-${entry.startTime.toFixed(0)}`;
+            const startMarkName = `${frameId}-start`;
+            const endMarkName = `${frameId}-end`;
+            const measureName = `Long Frame (LoAF): ${entry.duration.toFixed(1)}ms`;
+            try {
+              performance.mark(startMarkName, { startTime: entry.startTime });
+              performance.mark(endMarkName, { startTime: entry.startTime + entry.duration });
+              performance.measure(measureName, startMarkName, endMarkName);
+            } catch (e) {
+              performance.mark(measureName);
+            }
+          }
+          writePerformanceLog("LFD", `Long frame detected (LoAF): ${entry.duration}ms at ${entry.startTime}ms`);
+        }
+      }));
+      __privateGet$2(this, _loafObserver).observe({ type: "long-animation-frame", buffered: false });
+    } catch (error) {
+      writePerformanceLog("LFD", "Failed to start LoAF tracking, falling back to manual:", error);
+      this.startManualFrameTracking();
+    }
+  }
+  /**
+   * Stop LoAF tracking
+   */
+  stopLoAFTracking() {
+    if (__privateGet$2(this, _loafObserver)) {
+      __privateGet$2(this, _loafObserver).disconnect();
+      __privateSet$2(this, _loafObserver, null);
+      writePerformanceLog("LFD", "Stopped LoAF tracking");
+    }
+  }
+  /**
+   * Start manual frame tracking using requestAnimationFrame
+   */
+  startManualFrameTracking() {
+    __privateSet$2(this, _lastFrameTime, performance.now());
+    __privateSet$2(this, _frameTrackingId, requestAnimationFrame(() => this.measureFrames()));
+  }
+  /**
+   * Stop manual frame tracking
+   */
+  stopManualFrameTracking() {
+    if (__privateGet$2(this, _frameTrackingId)) {
+      cancelAnimationFrame(__privateGet$2(this, _frameTrackingId));
+      __privateSet$2(this, _frameTrackingId, null);
+      writePerformanceLog("LFD", "Stopped manual frame tracking");
+    }
+  }
+}
+_isTracking = new WeakMap();
+_callback = new WeakMap();
+_frameTrackingId = new WeakMap();
+_lastFrameTime = new WeakMap();
+_loafObserver = new WeakMap();
+
+var __typeError$1 = (msg) => {
+  throw TypeError(msg);
+};
+var __accessCheck$1 = (obj, member, msg) => member.has(obj) || __typeError$1("Cannot " + msg);
+var __privateGet$1 = (obj, member, getter) => (__accessCheck$1(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd$1 = (obj, member, value) => member.has(obj) ? __typeError$1("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet$1 = (obj, member, value, setter) => (__accessCheck$1(obj, member, "write to private field"), member.set(obj, value), value);
+var __privateWrapper = (obj, member, setter, getter) => ({
+  set _(value) {
+    __privateSet$1(obj, member, value);
+  },
+  get _() {
+    return __privateGet$1(obj, member, getter);
+  }
+});
+var _profileInProgress, _interactionInProgress, _profileStartTs, _trailAnimationFrameId, _currentOperationId, _recordedTrailingSpans, _longFrameDetector, _longFramesCount, _longFramesTotalTime, _visibilityChangeHandler, _onInteractionComplete;
+const POST_STORM_WINDOW = 2e3;
+const DEFAULT_LONG_FRAME_THRESHOLD = 30;
+class SceneRenderProfiler {
+  constructor(panelProfilingConfig) {
+    __privateAdd$1(this, _profileInProgress, null);
+    __privateAdd$1(this, _interactionInProgress, null);
+    __privateAdd$1(this, _profileStartTs, null);
+    __privateAdd$1(this, _trailAnimationFrameId, null);
+    // Generic metadata for observer notifications
+    this.metadata = {};
+    // Operation ID for correlating dashboard interaction events
+    __privateAdd$1(this, _currentOperationId);
+    // Trailing frame measurements
+    __privateAdd$1(this, _recordedTrailingSpans, []);
+    // Long frame tracking
+    __privateAdd$1(this, _longFrameDetector);
+    __privateAdd$1(this, _longFramesCount, 0);
+    __privateAdd$1(this, _longFramesTotalTime, 0);
+    __privateAdd$1(this, _visibilityChangeHandler, null);
+    __privateAdd$1(this, _onInteractionComplete, null);
+    this.measureTrailingFrames = (measurementStartTs, lastFrameTime, profileStartTs) => {
+      const currentFrameTime = performance.now();
+      const frameLength = currentFrameTime - lastFrameTime;
+      __privateGet$1(this, _recordedTrailingSpans).push(frameLength);
+      if (currentFrameTime - measurementStartTs < POST_STORM_WINDOW) {
+        if (__privateGet$1(this, _profileInProgress)) {
+          __privateSet$1(this, _trailAnimationFrameId, requestAnimationFrame(
+            () => this.measureTrailingFrames(measurementStartTs, currentFrameTime, profileStartTs)
+          ));
+        }
+      } else {
+        const slowFrames = processRecordedSpans(__privateGet$1(this, _recordedTrailingSpans));
+        const slowFramesTime = slowFrames.reduce((acc, val) => acc + val, 0);
+        writePerformanceLog(
+          "SRP",
+          "Profile tail recorded, slow frames duration:",
+          slowFramesTime,
+          slowFrames,
+          __privateGet$1(this, _profileInProgress)
+        );
+        __privateSet$1(this, _recordedTrailingSpans, []);
+        const profileDuration = measurementStartTs - profileStartTs;
+        const slowFrameSummary = slowFrames.length > 0 ? `${slowFramesTime.toFixed(1)}ms slow frames[tail recording] (${slowFrames.length}) \u26A0\uFE0F` : `${slowFramesTime.toFixed(1)}ms slow frames[tail recording] (${slowFrames.length})`;
+        const longFrameSummary = __privateGet$1(this, _longFramesCount) > 0 ? `${__privateGet$1(this, _longFramesTotalTime).toFixed(1)}ms long frames[LoAF] (${__privateGet$1(this, _longFramesCount)}) \u26A0\uFE0F` : `${__privateGet$1(this, _longFramesTotalTime).toFixed(1)}ms long frames[LoAF] (${__privateGet$1(this, _longFramesCount)})`;
+        writePerformanceLog(
+          "SRP",
+          `[PROFILER] Complete: ${(profileDuration + slowFramesTime).toFixed(
+            1
+          )}ms total | ${slowFrameSummary} | ${longFrameSummary}`
+        );
+        __privateGet$1(this, _longFrameDetector).stop();
+        __privateSet$1(this, _trailAnimationFrameId, null);
+        const profileEndTs = profileStartTs + profileDuration + slowFramesTime;
+        if (!__privateGet$1(this, _profileInProgress)) {
+          return;
+        }
+        const networkDuration = captureNetwork(profileStartTs, profileEndTs);
+        if (__privateGet$1(this, _profileInProgress)) {
+          const dashboardData = {
+            operationId: __privateGet$1(this, _currentOperationId) || generateOperationId("dashboard-fallback"),
+            interactionType: __privateGet$1(this, _profileInProgress).origin,
+            timestamp: profileEndTs,
+            duration: profileDuration + slowFramesTime,
+            networkDuration,
+            longFramesCount: __privateGet$1(this, _longFramesCount),
+            longFramesTotalTime: __privateGet$1(this, _longFramesTotalTime),
+            metadata: this.metadata
+          };
+          const tracker = getScenePerformanceTracker();
+          tracker.notifyDashboardInteractionComplete(dashboardData);
+          __privateSet$1(this, _profileInProgress, null);
+          __privateSet$1(this, _trailAnimationFrameId, null);
+        }
+      }
+    };
+    __privateSet$1(this, _longFrameDetector, new LongFrameDetector());
+    this.setupVisibilityChangeHandler();
+    __privateSet$1(this, _interactionInProgress, null);
+    if (panelProfilingConfig) {
+      this._panelProfilingManager = new PanelProfilingManager(panelProfilingConfig);
+    }
+  }
+  /** Set generic metadata for observer notifications */
+  setMetadata(metadata) {
+    this.metadata = { ...metadata };
+  }
+  setQueryController(queryController) {
+    this.queryController = queryController;
+  }
+  /** Attach panel profiling to a scene object */
+  attachPanelProfiling(sceneObject) {
+    var _a;
+    (_a = this._panelProfilingManager) == null ? void 0 : _a.attachToScene(sceneObject);
+  }
+  /** Attach profiler to a specific panel */
+  attachProfilerToPanel(panel) {
+    var _a;
+    writePerformanceLog("SRP", "Attaching profiler to panel", panel.state.key);
+    (_a = this._panelProfilingManager) == null ? void 0 : _a.attachProfilerToPanel(panel);
+  }
+  setInteractionCompleteHandler(handler) {
+    __privateSet$1(this, _onInteractionComplete, handler != null ? handler : null);
+  }
+  setupVisibilityChangeHandler() {
+    if (__privateGet$1(this, _visibilityChangeHandler)) {
+      return;
+    }
+    __privateSet$1(this, _visibilityChangeHandler, () => {
+      if (document.hidden && __privateGet$1(this, _profileInProgress)) {
+        writePerformanceLog("SRP", "Tab became inactive, cancelling profile");
+        this.cancelProfile();
+      }
+    });
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", __privateGet$1(this, _visibilityChangeHandler));
+    }
+  }
+  cleanup() {
+    var _a;
+    if (__privateGet$1(this, _visibilityChangeHandler) && typeof document !== "undefined") {
+      document.removeEventListener("visibilitychange", __privateGet$1(this, _visibilityChangeHandler));
+      __privateSet$1(this, _visibilityChangeHandler, null);
+    }
+    __privateGet$1(this, _longFrameDetector).stop();
+    this.cancelProfile();
+    (_a = this._panelProfilingManager) == null ? void 0 : _a.cleanup();
+  }
+  startProfile(name) {
+    if (document.hidden) {
+      writePerformanceLog("SRP", "Tab is inactive, skipping profile", name);
+      return;
+    }
+    if (__privateGet$1(this, _profileInProgress)) {
+      if (__privateGet$1(this, _trailAnimationFrameId)) {
+        this.cancelProfile();
+        this._startNewProfile(name, true);
+      } else {
+        this.addCrumb(name);
+      }
+    } else {
+      this._startNewProfile(name);
+    }
+  }
+  startInteraction(interaction) {
+    if (__privateGet$1(this, _interactionInProgress)) {
+      writePerformanceLog("SRP", "Cancelled interaction:", __privateGet$1(this, _interactionInProgress));
+      __privateSet$1(this, _interactionInProgress, null);
+    }
+    __privateSet$1(this, _interactionInProgress, {
+      interaction,
+      startTs: performance.now()
+    });
+    writePerformanceLog("SRP", "Started interaction:", interaction);
+  }
+  stopInteraction() {
+    if (!__privateGet$1(this, _interactionInProgress)) {
+      return;
+    }
+    const endTs = performance.now();
+    const interactionDuration = endTs - __privateGet$1(this, _interactionInProgress).startTs;
+    const networkDuration = captureNetwork(__privateGet$1(this, _interactionInProgress).startTs, endTs);
+    writePerformanceLog(
+      "SRP",
+      `[INTERACTION] Complete: ${interactionDuration.toFixed(1)}ms total | ${networkDuration.toFixed(1)}ms network`
+    );
+    if (__privateGet$1(this, _onInteractionComplete) && __privateGet$1(this, _profileInProgress)) {
+      __privateGet$1(this, _onInteractionComplete).call(this, {
+        origin: __privateGet$1(this, _interactionInProgress).interaction,
+        duration: interactionDuration,
+        networkDuration,
+        startTs: __privateGet$1(this, _interactionInProgress).startTs,
+        endTs
+      });
+    }
+    performance.mark(`${__privateGet$1(this, _interactionInProgress).interaction}_start`, {
+      startTime: __privateGet$1(this, _interactionInProgress).startTs
+    });
+    performance.mark(`${__privateGet$1(this, _interactionInProgress).interaction}_end`, {
+      startTime: endTs
+    });
+    performance.measure(
+      `Interaction_${__privateGet$1(this, _interactionInProgress).interaction}`,
+      `${__privateGet$1(this, _interactionInProgress).interaction}_start`,
+      `${__privateGet$1(this, _interactionInProgress).interaction}_end`
+    );
+    __privateSet$1(this, _interactionInProgress, null);
+  }
+  getCurrentInteraction() {
+    var _a, _b;
+    return (_b = (_a = __privateGet$1(this, _interactionInProgress)) == null ? void 0 : _a.interaction) != null ? _b : null;
+  }
+  /**
+   * Start new performance profile
+   * @param name - Profile trigger (e.g., 'time_range_change')
+   * @param force - True if canceling existing profile, false if starting clean
+   */
+  _startNewProfile(name, force = false) {
+    const profileType = force ? "forced" : "clean";
+    writePerformanceLog("SRP", `[PROFILER] ${name} started (${profileType})`);
+    __privateSet$1(this, _profileInProgress, { origin: name, crumbs: [] });
+    __privateSet$1(this, _profileStartTs, performance.now());
+    __privateSet$1(this, _longFramesCount, 0);
+    __privateSet$1(this, _longFramesTotalTime, 0);
+    __privateSet$1(this, _currentOperationId, generateOperationId("dashboard"));
+    getScenePerformanceTracker().notifyDashboardInteractionStart({
+      operationId: __privateGet$1(this, _currentOperationId),
+      interactionType: name,
+      timestamp: __privateGet$1(this, _profileStartTs),
+      metadata: this.metadata
+    });
+    __privateGet$1(this, _longFrameDetector).start((event) => {
+      if (!__privateGet$1(this, _profileInProgress) || !__privateGet$1(this, _profileStartTs)) {
+        return;
+      }
+      if (event.timestamp < __privateGet$1(this, _profileStartTs)) {
+        return;
+      }
+      __privateWrapper(this, _longFramesCount)._++;
+      __privateSet$1(this, _longFramesTotalTime, __privateGet$1(this, _longFramesTotalTime) + event.duration);
+    });
+  }
+  recordProfileTail(measurementStartTime, profileStartTs) {
+    __privateSet$1(this, _trailAnimationFrameId, requestAnimationFrame(
+      () => this.measureTrailingFrames(measurementStartTime, measurementStartTime, profileStartTs)
+    ));
+  }
+  tryCompletingProfile() {
+    var _a;
+    writePerformanceLog("SRP", "Trying to complete profile", __privateGet$1(this, _profileInProgress));
+    if (((_a = this.queryController) == null ? void 0 : _a.runningQueriesCount()) === 0 && __privateGet$1(this, _profileInProgress)) {
+      writePerformanceLog("SRP", "All queries completed, stopping profile");
+      this.recordProfileTail(performance.now(), __privateGet$1(this, _profileStartTs));
+    }
+  }
+  isTailRecording() {
+    return Boolean(__privateGet$1(this, _trailAnimationFrameId));
+  }
+  cancelTailRecording() {
+    if (__privateGet$1(this, _trailAnimationFrameId)) {
+      cancelAnimationFrame(__privateGet$1(this, _trailAnimationFrameId));
+      __privateSet$1(this, _trailAnimationFrameId, null);
+      writePerformanceLog("SRP", "Cancelled recording frames, new profile started");
+    }
+  }
+  cancelProfile() {
+    if (__privateGet$1(this, _profileInProgress)) {
+      writePerformanceLog("SRP", "Cancelling profile", __privateGet$1(this, _profileInProgress));
+      __privateSet$1(this, _profileInProgress, null);
+      if (__privateGet$1(this, _trailAnimationFrameId)) {
+        cancelAnimationFrame(__privateGet$1(this, _trailAnimationFrameId));
+        __privateSet$1(this, _trailAnimationFrameId, null);
+      }
+      __privateGet$1(this, _longFrameDetector).stop();
+      writePerformanceLog("SRP", "Stopped long frame detection - profile cancelled");
+      __privateSet$1(this, _recordedTrailingSpans, []);
+      __privateSet$1(this, _longFramesCount, 0);
+      __privateSet$1(this, _longFramesTotalTime, 0);
+    }
+  }
+  addCrumb(crumb) {
+    if (__privateGet$1(this, _profileInProgress)) {
+      getScenePerformanceTracker().notifyDashboardInteractionMilestone({
+        operationId: generateOperationId("dashboard-milestone"),
+        interactionType: __privateGet$1(this, _profileInProgress).origin,
+        timestamp: performance.now(),
+        milestone: crumb,
+        metadata: this.metadata
+      });
+      __privateGet$1(this, _profileInProgress).crumbs.push(crumb);
+    }
+  }
+}
+_profileInProgress = new WeakMap();
+_interactionInProgress = new WeakMap();
+_profileStartTs = new WeakMap();
+_trailAnimationFrameId = new WeakMap();
+_currentOperationId = new WeakMap();
+_recordedTrailingSpans = new WeakMap();
+_longFrameDetector = new WeakMap();
+_longFramesCount = new WeakMap();
+_longFramesTotalTime = new WeakMap();
+_visibilityChangeHandler = new WeakMap();
+_onInteractionComplete = new WeakMap();
+function processRecordedSpans(spans) {
+  for (let i = spans.length - 1; i >= 0; i--) {
+    if (spans[i] > DEFAULT_LONG_FRAME_THRESHOLD) {
+      return spans.slice(0, i + 1);
+    }
+  }
+  return [spans[0]];
+}
+function captureNetwork(startTs, endTs) {
+  const entries = performance.getEntriesByType("resource");
+  performance.clearResourceTimings();
+  const networkEntries = entries.filter(
+    (entry) => entry.startTime >= startTs && entry.startTime <= endTs && entry.responseEnd >= startTs && entry.responseEnd <= endTs
+  );
+  for (const entry of networkEntries) {
+    performance.measure("Network entry " + entry.name, {
+      start: entry.startTime,
+      end: entry.responseEnd
+    });
+  }
+  return calculateNetworkTime(networkEntries);
+}
+function calculateNetworkTime(requests) {
+  if (requests.length === 0) {
+    return 0;
+  }
+  requests.sort((a, b) => a.startTime - b.startTime);
+  let totalNetworkTime = 0;
+  let currentStart = requests[0].startTime;
+  let currentEnd = requests[0].responseEnd;
+  for (let i = 1; i < requests.length; i++) {
+    if (requests[i].startTime <= currentEnd) {
+      currentEnd = Math.max(currentEnd, requests[i].responseEnd);
+    } else {
+      totalNetworkTime += currentEnd - currentStart;
+      currentStart = requests[i].startTime;
+      currentEnd = requests[i].responseEnd;
+    }
+  }
+  totalNetworkTime += currentEnd - currentStart;
+  return totalNetworkTime;
+}
+
+var index$1 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  SceneRenderProfiler: SceneRenderProfiler,
+  getScenePerformanceTracker: getScenePerformanceTracker
 });
 
 function getMessageFromError(err) {
@@ -8097,32 +10763,27 @@ function getMessageFromError(err) {
   return JSON.stringify(err);
 }
 
-var __defProp$p = Object.defineProperty;
-var __getOwnPropSymbols$p = Object.getOwnPropertySymbols;
-var __hasOwnProp$p = Object.prototype.hasOwnProperty;
-var __propIsEnum$p = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$p = (obj, key, value) => key in obj ? __defProp$p(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$p = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$p.call(b, prop))
-      __defNormalProp$p(a, prop, b[prop]);
-  if (__getOwnPropSymbols$p)
-    for (var prop of __getOwnPropSymbols$p(b)) {
-      if (__propIsEnum$p.call(b, prop))
-        __defNormalProp$p(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneDataLayerBase extends SceneObjectBase {
+  /**
+   * For variables support in data layer provide variableDependencyStatePaths with keys of the state to be scanned for variables.
+   */
   constructor(initialState, variableDependencyStatePaths = []) {
-    super(__spreadValues$p({
-      isEnabled: true
-    }, initialState));
+    super({
+      isEnabled: true,
+      ...initialState
+    });
+    /**
+     * Subject to emit results to.
+     */
     this._results = new rxjs.ReplaySubject(1);
+    /**
+     * Mark data provider as data layer
+     */
     this.isDataLayer = true;
     this._variableValueRecorder = new VariableValueRecorder();
     this._variableDependency = new VariableDependencyConfig(this, {
-      onVariableUpdateCompleted: this.onVariableUpdateCompleted.bind(this)
+      onVariableUpdateCompleted: this.onVariableUpdateCompleted.bind(this),
+      dependsOnScopes: true
     });
     this._variableDependency.setPaths(variableDependencyStatePaths);
     this.addActivationHandler(() => this.onActivate());
@@ -8194,98 +10855,39 @@ class SceneDataLayerBase extends SceneObjectBase {
     }
     return false;
   }
+  /**
+   * This helper function is to counter the contravariance of setState
+   */
   setStateHelper(state) {
     setBaseClassState(this, state);
   }
 }
 
-class SceneDataLayerControls extends SceneObjectBase {
-  constructor() {
-    super({});
-  }
-}
-SceneDataLayerControls.Component = SceneDataLayerControlsRenderer;
-function SceneDataLayerControlsRenderer({ model }) {
-  const layers = sceneGraph.getDataLayers(model, true);
-  if (layers.length === 0) {
-    return null;
-  }
-  return /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, layers.map((layer) => /* @__PURE__ */ React__default["default"].createElement(layer.Component, {
-    model: layer,
-    key: layer.state.key
-  })));
-}
-function DataLayerControlSwitch({ layer }) {
-  var _a, _b;
-  const elementId = `data-layer-${layer.state.key}`;
-  const { data, isEnabled } = layer.useState();
-  const showLoading = Boolean(data && data.state === schema.LoadingState.Loading);
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: containerStyle$1
-  }, /* @__PURE__ */ React__default["default"].createElement(ControlsLabel, {
-    htmlFor: elementId,
-    isLoading: showLoading,
-    onCancel: () => {
-      var _a2;
-      return (_a2 = layer.cancelQuery) == null ? void 0 : _a2.call(layer);
-    },
-    label: layer.state.name,
-    description: layer.state.description,
-    error: (_b = (_a = layer.state.data) == null ? void 0 : _a.errors) == null ? void 0 : _b[0].message
-  }), /* @__PURE__ */ React__default["default"].createElement(ui.InlineSwitch, {
-    id: elementId,
-    value: isEnabled,
-    onChange: () => layer.setState({ isEnabled: !isEnabled })
-  }));
-}
-const containerStyle$1 = css.css({ display: "flex" });
-
-var __defProp$o = Object.defineProperty;
-var __defProps$e = Object.defineProperties;
-var __getOwnPropDescs$e = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$o = Object.getOwnPropertySymbols;
-var __hasOwnProp$o = Object.prototype.hasOwnProperty;
-var __propIsEnum$o = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$o = (obj, key, value) => key in obj ? __defProp$o(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$o = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$o.call(b, prop))
-      __defNormalProp$o(a, prop, b[prop]);
-  if (__getOwnPropSymbols$o)
-    for (var prop of __getOwnPropSymbols$o(b)) {
-      if (__propIsEnum$o.call(b, prop))
-        __defNormalProp$o(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$e = (a, b) => __defProps$e(a, __getOwnPropDescs$e(b));
-var __objRest$2 = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp$o.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols$o)
-    for (var prop of __getOwnPropSymbols$o(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum$o.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 const standardAnnotationSupport = {
+  /**
+   * Assume the stored value is standard model.
+   */
   prepareAnnotation: (json) => {
     if (lodash.isString(json == null ? void 0 : json.query)) {
-      const _a = json, { query } = _a, rest = __objRest$2(_a, ["query"]);
-      return __spreadProps$e(__spreadValues$o({}, rest), {
+      const { query, ...rest } = json;
+      return {
+        ...rest,
         target: {
           refId: "annotation_query",
           query
         },
         mappings: {}
-      });
+      };
     }
     return json;
   },
+  /**
+   * Default will just return target from the annotation.
+   */
   prepareQuery: (anno) => anno.target,
+  /**
+   * Provides default processing from dataFrame to annotation events.
+   */
   processEvents: (anno, data) => {
     return getAnnotationsFromData(data, anno.mappings);
   }
@@ -8437,36 +11039,18 @@ const legacyRunner = [
   "loki",
   "elasticsearch",
   "grafana-opensearch-datasource"
+  // external
 ];
 function shouldUseLegacyRunner(datasource) {
   const { type } = datasource;
   return !datasource.annotations || legacyRunner.includes(type);
 }
 
-var __defProp$n = Object.defineProperty;
-var __defProps$d = Object.defineProperties;
-var __getOwnPropDescs$d = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$n = Object.getOwnPropertySymbols;
-var __hasOwnProp$n = Object.prototype.hasOwnProperty;
-var __propIsEnum$n = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$n = (obj, key, value) => key in obj ? __defProp$n(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$n = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$n.call(b, prop))
-      __defNormalProp$n(a, prop, b[prop]);
-  if (__getOwnPropSymbols$n)
-    for (var prop of __getOwnPropSymbols$n(b)) {
-      if (__propIsEnum$n.call(b, prop))
-        __defNormalProp$n(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$d = (a, b) => __defProps$d(a, __getOwnPropDescs$d(b));
 let counter = 100;
 function getNextRequestId() {
   return "AQ" + counter++;
 }
-function executeAnnotationQuery(datasource, timeRange, query, layer) {
+function executeAnnotationQuery(datasource, timeRange, query, layer, filters, groupByKeys) {
   var _a;
   if (datasource.annotationQuery && shouldUseLegacyRunner(datasource)) {
     console.warn("Using deprecated annotationQuery method, please upgrade your datasource");
@@ -8486,8 +11070,15 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
       }))
     );
   }
-  const processor = __spreadValues$n(__spreadValues$n({}, standardAnnotationSupport), datasource.annotations);
-  const annotationWithDefaults = __spreadValues$n(__spreadValues$n({}, (_a = processor.getDefaultQuery) == null ? void 0 : _a.call(processor)), query);
+  const processor = {
+    ...standardAnnotationSupport,
+    ...datasource.annotations
+  };
+  const annotationWithDefaults = {
+    // Default query provided by a data source
+    ...(_a = processor.getDefaultQuery) == null ? void 0 : _a.call(processor),
+    ...query
+  };
   const annotation = processor.prepareAnnotation(annotationWithDefaults);
   if (!annotation) {
     return rxjs.of({
@@ -8510,21 +11101,26 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
     __annotation: { text: annotation.name, value: annotation },
     __sceneObject: wrapInSafeSerializableSceneObject(layer)
   };
-  const queryRequest = __spreadValues$n(__spreadProps$d(__spreadValues$n({
+  const queryRequest = {
     startTime: Date.now(),
     requestId: getNextRequestId(),
     range: timeRange.state.value,
     maxDataPoints,
-    scopedVars
-  }, interval), {
+    scopedVars,
+    ...interval,
     app: data.CoreApp.Dashboard,
     timezone: timeRange.getTimeZone(),
     targets: [
-      __spreadProps$d(__spreadValues$n({}, processedQuery), {
+      {
+        ...processedQuery,
         refId: "Anno"
-      })
-    ]
-  }), getEnrichedDataRequest(layer));
+      }
+    ],
+    scopes: sceneGraph.getScopes(layer),
+    filters,
+    groupByKeys,
+    ...getEnrichedDataRequest(layer)
+  };
   const runRequest = runtime.getRunRequest();
   return runRequest(datasource, queryRequest).pipe(
     operators.mergeMap((panelData) => {
@@ -8538,7 +11134,7 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
       data$1.forEach((frame) => {
         var _a2;
         if (!((_a2 = frame.meta) == null ? void 0 : _a2.dataTopic)) {
-          frame.meta = __spreadProps$d(__spreadValues$n({}, frame.meta || {}), { dataTopic: data.DataTopic.Annotations });
+          frame.meta = { ...frame.meta || {}, dataTopic: data.DataTopic.Annotations };
         }
       });
       return processor.processEvents(annotation, data$1).pipe(
@@ -8553,22 +11149,6 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
   );
 }
 
-var __defProp$m = Object.defineProperty;
-var __getOwnPropSymbols$m = Object.getOwnPropertySymbols;
-var __hasOwnProp$m = Object.prototype.hasOwnProperty;
-var __propIsEnum$m = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$m = (obj, key, value) => key in obj ? __defProp$m(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$m = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$m.call(b, prop))
-      __defNormalProp$m(a, prop, b[prop]);
-  if (__getOwnPropSymbols$m)
-    for (var prop of __getOwnPropSymbols$m(b)) {
-      if (__propIsEnum$m.call(b, prop))
-        __defNormalProp$m(a, prop, b[prop]);
-    }
-  return a;
-};
 function postProcessQueryResult(annotation, results) {
   if (annotation.snapshotData) {
     annotation = lodash.cloneDeep(annotation);
@@ -8576,7 +11156,7 @@ function postProcessQueryResult(annotation, results) {
   }
   const processed = results.map((item) => {
     var _a;
-    const processedItem = __spreadValues$m({}, item);
+    const processedItem = { ...item };
     processedItem.source = annotation;
     processedItem.color = runtime.config.theme2.visualization.getColorByName(annotation.iconColor);
     processedItem.type = annotation.name;
@@ -8625,40 +11205,29 @@ function isPanelAlert(event) {
   return event.eventType === "panel-alert";
 }
 
-var __defProp$l = Object.defineProperty;
-var __defProps$c = Object.defineProperties;
-var __getOwnPropDescs$c = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$l = Object.getOwnPropertySymbols;
-var __hasOwnProp$l = Object.prototype.hasOwnProperty;
-var __propIsEnum$l = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$l = (obj, key, value) => key in obj ? __defProp$l(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$l = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$l.call(b, prop))
-      __defNormalProp$l(a, prop, b[prop]);
-  if (__getOwnPropSymbols$l)
-    for (var prop of __getOwnPropSymbols$l(b)) {
-      if (__propIsEnum$l.call(b, prop))
-        __defNormalProp$l(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$c = (a, b) => __defProps$c(a, __getOwnPropDescs$c(b));
 class AnnotationsDataLayer extends SceneDataLayerBase {
   constructor(initialState) {
     super(
-      __spreadValues$l({
-        isEnabled: true
-      }, initialState),
+      {
+        isEnabled: true,
+        ...initialState
+      },
       ["query"]
     );
     this._scopedVars = {
       __sceneObject: wrapInSafeSerializableSceneObject(this)
     };
+    this._drilldownDependenciesManager = new DrilldownDependenciesManager(this._variableDependency);
   }
   onEnable() {
     this.publishEvent(new runtime.RefreshEvent(), true);
     const timeRange = sceneGraph.getTimeRange(this);
+    this.setState({
+      query: {
+        ...this.state.query,
+        enable: true
+      }
+    });
     this._timeRangeSub = timeRange.subscribeToState(() => {
       this.runWithTimeRange(timeRange);
     });
@@ -8666,6 +11235,12 @@ class AnnotationsDataLayer extends SceneDataLayerBase {
   onDisable() {
     var _a;
     this.publishEvent(new runtime.RefreshEvent(), true);
+    this.setState({
+      query: {
+        ...this.state.query,
+        enable: false
+      }
+    });
     (_a = this._timeRangeSub) == null ? void 0 : _a.unsubscribe();
   }
   runLayer() {
@@ -8674,7 +11249,12 @@ class AnnotationsDataLayer extends SceneDataLayerBase {
     this.runWithTimeRange(timeRange);
   }
   async runWithTimeRange(timeRange) {
+    var _a;
     const { query } = this.state;
+    if (!query.enable) {
+      return;
+    }
+    this._drilldownDependenciesManager.findAndSubscribeToDrilldowns((_a = query.datasource) == null ? void 0 : _a.uid);
     if (this.querySub) {
       this.querySub.unsubscribe();
     }
@@ -8684,9 +11264,16 @@ class AnnotationsDataLayer extends SceneDataLayerBase {
     }
     try {
       const ds = await this.resolveDataSource(query);
-      let stream = executeAnnotationQuery(ds, timeRange, query, this).pipe(
+      let stream = executeAnnotationQuery(
+        ds,
+        timeRange,
+        query,
+        this,
+        this._drilldownDependenciesManager.getFilters(),
+        this._drilldownDependenciesManager.getGroupByKeys()
+      ).pipe(
         registerQueryWithController({
-          type: "annotations",
+          type: "AnnotationsDataLayer/annotationsLoading",
           origin: this,
           cancel: () => this.cancelQuery()
         }),
@@ -8699,14 +11286,15 @@ class AnnotationsDataLayer extends SceneDataLayerBase {
         this.publishResults(stateUpdate);
       });
     } catch (e) {
-      this.publishResults(__spreadProps$c(__spreadValues$l({}, emptyPanelData), {
+      this.publishResults({
+        ...emptyPanelData,
         state: schema.LoadingState.Error,
         errors: [
           {
             message: getMessageFromError(e)
           }
         ]
-      }));
+      });
       console.error("AnnotationsDataLayer error", e);
     }
   }
@@ -8716,25 +11304,37 @@ class AnnotationsDataLayer extends SceneDataLayerBase {
   processEvents(query, events) {
     let processedEvents = postProcessQueryResult(query, events.events || []);
     processedEvents = dedupAnnotations(processedEvents);
-    const stateUpdate = __spreadProps$c(__spreadValues$l({}, emptyPanelData), { state: events.state });
+    const stateUpdate = { ...emptyPanelData, state: events.state };
     const df = data.arrayToDataFrame(processedEvents);
-    df.meta = __spreadProps$c(__spreadValues$l({}, df.meta), {
+    df.meta = {
+      ...df.meta,
       dataTopic: data.DataTopic.Annotations
-    });
+    };
     stateUpdate.series = [df];
     return stateUpdate;
   }
 }
 AnnotationsDataLayer.Component = AnnotationsDataLayerRenderer;
 function AnnotationsDataLayerRenderer({ model }) {
-  const { isHidden } = model.useState();
+  const { isEnabled, isHidden } = model.useState();
+  const elementId = `data-layer-${model.state.key}`;
   if (isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement(DataLayerControlSwitch, {
-    layer: model
-  });
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.InlineSwitch,
+    {
+      className: switchStyle,
+      id: elementId,
+      value: isEnabled,
+      onChange: () => model.setState({ isEnabled: !isEnabled })
+    }
+  );
 }
+const switchStyle = css.css({
+  borderBottomLeftRadius: 0,
+  borderTopLeftRadius: 0
+});
 
 var index = /*#__PURE__*/Object.freeze({
   __proto__: null,
@@ -8771,36 +11371,20 @@ class SceneTimeRangeTransformerBase extends SceneObjectBase {
   }
 }
 
-var __defProp$k = Object.defineProperty;
-var __defProps$b = Object.defineProperties;
-var __getOwnPropDescs$b = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$k = Object.getOwnPropertySymbols;
-var __hasOwnProp$k = Object.prototype.hasOwnProperty;
-var __propIsEnum$k = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$k = (obj, key, value) => key in obj ? __defProp$k(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$k = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$k.call(b, prop))
-      __defNormalProp$k(a, prop, b[prop]);
-  if (__getOwnPropSymbols$k)
-    for (var prop of __getOwnPropSymbols$k(b)) {
-      if (__propIsEnum$k.call(b, prop))
-        __defNormalProp$k(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$b = (a, b) => __defProps$b(a, __getOwnPropDescs$b(b));
 class SceneTimeZoneOverride extends SceneTimeRangeTransformerBase {
   constructor(state) {
-    super(__spreadProps$b(__spreadValues$k({}, state), {
+    super({
+      ...state,
       timeZone: state.timeZone,
+      // We set a default time range here. It will be overwritten on activation based on ancestor time range.
       from: "now-6h",
       to: "now",
       value: data.getDefaultTimeRange()
-    }));
+    });
   }
   ancestorTimeRangeChanged(timeRange) {
-    this.setState(__spreadProps$b(__spreadValues$k({}, timeRange), {
+    this.setState({
+      ...timeRange,
       timeZone: this.state.timeZone,
       value: evaluateTimeRange(
         timeRange.from,
@@ -8810,7 +11394,7 @@ class SceneTimeZoneOverride extends SceneTimeRangeTransformerBase {
         timeRange.UNSAFE_nowDelay,
         timeRange.weekStart
       )
-    }));
+    });
   }
   getTimeZone() {
     return this.state.timeZone;
@@ -8864,302 +11448,63 @@ class DataProviderProxy extends SceneObjectBase {
   }
 }
 
-var __defProp$j = Object.defineProperty;
-var __defProps$a = Object.defineProperties;
-var __getOwnPropDescs$a = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$j = Object.getOwnPropertySymbols;
-var __hasOwnProp$j = Object.prototype.hasOwnProperty;
-var __propIsEnum$j = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$j = (obj, key, value) => key in obj ? __defProp$j(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$j = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$j.call(b, prop))
-      __defNormalProp$j(a, prop, b[prop]);
-  if (__getOwnPropSymbols$j)
-    for (var prop of __getOwnPropSymbols$j(b)) {
-      if (__propIsEnum$j.call(b, prop))
-        __defNormalProp$j(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$a = (a, b) => __defProps$a(a, __getOwnPropDescs$a(b));
-class SceneDataLayerSetBase extends SceneObjectBase {
+class SceneDataLayerControls extends SceneObjectBase {
   constructor() {
-    super(...arguments);
-    this.isDataLayer = true;
-    this._results = new rxjs.ReplaySubject(1);
-    this._dataLayersMerger = new DataLayersMerger();
-  }
-  subscribeToAllLayers(layers) {
-    if (layers.length > 0) {
-      this.querySub = this._dataLayersMerger.getMergedStream(layers).subscribe(this._onLayerUpdateReceived.bind(this));
-    } else {
-      this._results.next({ origin: this, data: emptyPanelData });
-      this.setStateHelper({ data: emptyPanelData });
-    }
-  }
-  _onLayerUpdateReceived(results) {
-    var _a;
-    let series = [];
-    for (const result of results) {
-      if ((_a = result.data) == null ? void 0 : _a.series) {
-        series = series.concat(result.data.series);
-      }
-    }
-    const combinedData = __spreadProps$a(__spreadValues$j({}, emptyPanelData), { series });
-    this._results.next({ origin: this, data: combinedData });
-    this.setStateHelper({ data: combinedData });
-  }
-  getResultsStream() {
-    return this._results;
-  }
-  cancelQuery() {
-    var _a;
-    (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
-  }
-  setStateHelper(state) {
-    setBaseClassState(this, state);
+    super({});
   }
 }
-class SceneDataLayerSet extends SceneDataLayerSetBase {
-  constructor(state) {
-    var _a, _b;
-    super({
-      name: (_a = state.name) != null ? _a : "Data layers",
-      layers: (_b = state.layers) != null ? _b : []
-    });
-    this.addActivationHandler(() => this._onActivate());
+SceneDataLayerControls.Component = SceneDataLayerControlsRenderer;
+function SceneDataLayerControlsRenderer({ model }) {
+  const layers = sceneGraph.getDataLayers(model, true);
+  if (layers.length === 0) {
+    return null;
   }
-  _onActivate() {
-    this._subs.add(
-      this.subscribeToState((newState, oldState) => {
-        var _a;
-        if (newState.layers !== oldState.layers) {
-          (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
-          this.subscribeToAllLayers(newState.layers);
-        }
-      })
-    );
-    this.subscribeToAllLayers(this.state.layers);
-    return () => {
-      var _a;
-      (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
-    };
-  }
+  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, layers.map((layer) => /* @__PURE__ */ React__default.default.createElement(SceneDataLayerControlRenderer, { layer, key: layer.state.key })));
 }
-SceneDataLayerSet.Component = ({ model }) => {
-  const { layers } = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, layers.map((layer) => /* @__PURE__ */ React__default["default"].createElement(layer.Component, {
-    model: layer,
-    key: layer.state.key
-  })));
-};
-
-var __defProp$i = Object.defineProperty;
-var __defProps$9 = Object.defineProperties;
-var __getOwnPropDescs$9 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$i = Object.getOwnPropertySymbols;
-var __hasOwnProp$i = Object.prototype.hasOwnProperty;
-var __propIsEnum$i = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$i = (obj, key, value) => key in obj ? __defProp$i(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$i = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$i.call(b, prop))
-      __defNormalProp$i(a, prop, b[prop]);
-  if (__getOwnPropSymbols$i)
-    for (var prop of __getOwnPropSymbols$i(b)) {
-      if (__propIsEnum$i.call(b, prop))
-        __defNormalProp$i(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$9 = (a, b) => __defProps$9(a, __getOwnPropDescs$9(b));
-class SceneDataTransformer extends SceneObjectBase {
-  constructor(state) {
-    super(state);
-    this._results = new rxjs.ReplaySubject(1);
-    this._variableDependency = new VariableDependencyConfig(
-      this,
-      {
-        statePaths: ["transformations"],
-        onReferencedVariableValueChanged: () => this.reprocessTransformations()
-      }
-    );
-    this.addActivationHandler(() => this.activationHandler());
+function SceneDataLayerControlRenderer({ layer }) {
+  var _a, _b;
+  const elementId = `data-layer-${layer.state.key}`;
+  const { data, isHidden } = layer.useState();
+  const showLoading = Boolean(data && data.state === schema.LoadingState.Loading);
+  if (isHidden) {
+    return null;
   }
-  activationHandler() {
-    const sourceData = this.getSourceData();
-    this._subs.add(sourceData.subscribeToState((state) => this.transform(state.data)));
-    if (sourceData.state.data) {
-      this.transform(sourceData.state.data);
-    }
-    return () => {
-      if (this._transformSub) {
-        this._transformSub.unsubscribe();
-      }
-    };
-  }
-  getSourceData() {
-    if (this.state.$data) {
-      if (this.state.$data instanceof SceneDataLayerSet) {
-        throw new Error("SceneDataLayerSet can not be used as data provider for SceneDataTransformer.");
-      }
-      return this.state.$data;
-    }
-    if (!this.parent || !this.parent.parent) {
-      throw new Error("SceneDataTransformer must either have $data set on it or have a parent.parent with $data");
-    }
-    return sceneGraph.getData(this.parent.parent);
-  }
-  setContainerWidth(width) {
-    if (this.state.$data && this.state.$data.setContainerWidth) {
-      this.state.$data.setContainerWidth(width);
-    }
-  }
-  isDataReadyToDisplay() {
-    const dataObject = this.getSourceData();
-    if (dataObject.isDataReadyToDisplay) {
-      return dataObject.isDataReadyToDisplay();
-    }
-    return true;
-  }
-  reprocessTransformations() {
-    this.transform(this.getSourceData().state.data, true);
-  }
-  cancelQuery() {
-    var _a, _b;
-    (_b = (_a = this.getSourceData()).cancelQuery) == null ? void 0 : _b.call(_a);
-  }
-  getResultsStream() {
-    return this._results;
-  }
-  clone(withState) {
-    const clone = super.clone(withState);
-    if (this._prevDataFromSource) {
-      clone["_prevDataFromSource"] = this._prevDataFromSource;
-    }
-    return clone;
-  }
-  haveAlreadyTransformedData(data) {
-    if (!this._prevDataFromSource) {
-      return false;
-    }
-    if (data === this._prevDataFromSource) {
-      return true;
-    }
-    const { series, annotations } = this._prevDataFromSource;
-    if (data.series === series && data.annotations === annotations) {
-      if (this.state.data && data.state !== this.state.data.state) {
-        this.setState({ data: __spreadProps$9(__spreadValues$i({}, this.state.data), { state: data.state }) });
-      }
-      return true;
-    }
-    return false;
-  }
-  transform(data$1, force = false) {
-    var _a;
-    if (this.state.transformations.length === 0 || !data$1) {
-      this._prevDataFromSource = data$1;
-      this.setState({ data: data$1 });
-      if (data$1) {
-        this._results.next({ origin: this, data: data$1 });
-      }
-      return;
-    }
-    if (!force && this.haveAlreadyTransformedData(data$1)) {
-      return;
-    }
-    const seriesTransformations = this.state.transformations.filter((transformation) => {
-      if ("options" in transformation || "topic" in transformation) {
-        return transformation.topic == null || transformation.topic === data.DataTopic.Series;
-      }
-      return true;
-    }).map((transformation) => "operator" in transformation ? transformation.operator : transformation);
-    const annotationsTransformations = this.state.transformations.filter((transformation) => {
-      if ("options" in transformation || "topic" in transformation) {
-        return transformation.topic === data.DataTopic.Annotations;
-      }
-      return false;
-    }).map((transformation) => "operator" in transformation ? transformation.operator : transformation);
-    if (this._transformSub) {
-      this._transformSub.unsubscribe();
-    }
-    const ctx = {
-      interpolate: (value) => {
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: containerStyle$1 }, /* @__PURE__ */ React__default.default.createElement(
+    ControlsLabel,
+    {
+      htmlFor: elementId,
+      isLoading: showLoading,
+      onCancel: () => {
         var _a2;
-        return sceneGraph.interpolate(this, value, (_a2 = data$1.request) == null ? void 0 : _a2.scopedVars);
-      }
-    };
-    let streams = [data.transformDataFrame(seriesTransformations, data$1.series, ctx)];
-    if (data$1.annotations && data$1.annotations.length > 0 && annotationsTransformations.length > 0) {
-      streams.push(data.transformDataFrame(annotationsTransformations, (_a = data$1.annotations) != null ? _a : []));
+        return (_a2 = layer.cancelQuery) == null ? void 0 : _a2.call(layer);
+      },
+      label: layer.state.name,
+      description: layer.state.description,
+      error: (_b = (_a = layer.state.data) == null ? void 0 : _a.errors) == null ? void 0 : _b[0].message
     }
-    this._transformSub = rxjs.forkJoin(streams).pipe(
-      rxjs.map((values) => {
-        const transformedSeries = values[0];
-        const transformedAnnotations = values[1];
-        return __spreadProps$9(__spreadValues$i({}, data$1), {
-          series: transformedSeries,
-          annotations: transformedAnnotations != null ? transformedAnnotations : data$1.annotations
-        });
-      }),
-      rxjs.catchError((err) => {
-        var _a2;
-        console.error("Error transforming data: ", err);
-        const sourceErr = ((_a2 = this.getSourceData().state.data) == null ? void 0 : _a2.errors) || [];
-        const transformationError = runtime.toDataQueryError(err);
-        transformationError.message = `Error transforming data: ${transformationError.message}`;
-        const result = __spreadProps$9(__spreadValues$i({}, data$1), {
-          state: data.LoadingState.Error,
-          errors: [...sourceErr, transformationError]
-        });
-        return rxjs.of(result);
-      })
-    ).subscribe((transformedData) => {
-      this.setState({ data: transformedData });
-      this._results.next({ origin: this, data: transformedData });
-      this._prevDataFromSource = data$1;
-    });
-  }
+  ), /* @__PURE__ */ React__default.default.createElement(layer.Component, { model: layer }));
 }
+const containerStyle$1 = css.css({ display: "flex" });
 
 class VariableValueSelectors extends SceneObjectBase {
 }
 VariableValueSelectors.Component = VariableValueSelectorsRenderer;
 function VariableValueSelectorsRenderer({ model }) {
   const variables = sceneGraph.getVariables(model).useState();
-  return /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, variables.variables.map((variable) => /* @__PURE__ */ React__default["default"].createElement(VariableValueSelectWrapper, {
-    key: variable.state.key,
-    variable,
-    layout: model.state.layout
-  })));
+  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, variables.variables.map((variable) => /* @__PURE__ */ React__default.default.createElement(VariableValueSelectWrapper, { key: variable.state.key, variable, layout: model.state.layout })));
 }
 function VariableValueSelectWrapper({ variable, layout, showAlways, hideLabel }) {
   const state = useSceneObjectState(variable, { shouldActivateOrKeepAlive: true });
   if (state.hide === data.VariableHide.hideVariable && !showAlways) {
+    if (variable.UNSAFE_renderAsHidden) {
+      return /* @__PURE__ */ React__default.default.createElement(variable.Component, { model: variable });
+    }
     return null;
   }
   if (layout === "vertical") {
-    return /* @__PURE__ */ React__default["default"].createElement("div", {
-      className: verticalContainer,
-      "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItem
-    }, /* @__PURE__ */ React__default["default"].createElement(VariableLabel, {
-      variable,
-      layout,
-      hideLabel
-    }), /* @__PURE__ */ React__default["default"].createElement(variable.Component, {
-      model: variable
-    }));
+    return /* @__PURE__ */ React__default.default.createElement("div", { className: verticalContainer, "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItem }, /* @__PURE__ */ React__default.default.createElement(VariableLabel, { variable, layout, hideLabel }), /* @__PURE__ */ React__default.default.createElement(variable.Component, { model: variable }));
   }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: containerStyle,
-    "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItem
-  }, /* @__PURE__ */ React__default["default"].createElement(VariableLabel, {
-    variable,
-    hideLabel
-  }), /* @__PURE__ */ React__default["default"].createElement(variable.Component, {
-    model: variable
-  }));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: containerStyle, "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItem }, /* @__PURE__ */ React__default.default.createElement(VariableLabel, { variable, hideLabel }), /* @__PURE__ */ React__default.default.createElement(variable.Component, { model: variable }));
 }
 function VariableLabel({ variable, layout, hideLabel }) {
   var _a;
@@ -9169,20 +11514,30 @@ function VariableLabel({ variable, layout, hideLabel }) {
   }
   const elementId = `var-${state.key}`;
   const labelOrName = state.label || state.name;
-  return /* @__PURE__ */ React__default["default"].createElement(ControlsLabel, {
-    htmlFor: elementId,
-    isLoading: state.loading,
-    onCancel: () => {
-      var _a2;
-      return (_a2 = variable.onCancel) == null ? void 0 : _a2.call(variable);
-    },
-    label: labelOrName,
-    error: state.error,
-    layout,
-    description: (_a = state.description) != null ? _a : void 0
-  });
+  return /* @__PURE__ */ React__default.default.createElement(
+    ControlsLabel,
+    {
+      htmlFor: elementId,
+      isLoading: state.loading,
+      onCancel: () => {
+        var _a2;
+        return (_a2 = variable.onCancel) == null ? void 0 : _a2.call(variable);
+      },
+      label: labelOrName,
+      error: state.error,
+      layout,
+      description: (_a = state.description) != null ? _a : void 0
+    }
+  );
 }
-const containerStyle = css.css({ display: "flex" });
+const containerStyle = css.css({
+  display: "flex",
+  // No border for second element (inputs) as label and input border is shared
+  "> :nth-child(2)": css.css({
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0
+  })
+});
 const verticalContainer = css.css({ display: "flex", flexDirection: "column" });
 
 class VariableValueControl extends SceneObjectBase {
@@ -9193,24 +11548,34 @@ function VariableValueControlRenderer({ model }) {
   if (!variable) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement(VariableValueSelectWrapper, {
-    key: variable.state.key,
-    variable,
-    layout: model.state.layout,
-    showAlways: true
-  });
+  return /* @__PURE__ */ React__default.default.createElement(
+    VariableValueSelectWrapper,
+    {
+      key: variable.state.key,
+      variable,
+      layout: model.state.layout,
+      showAlways: true
+    }
+  );
 }
 
 class SceneVariableSet extends SceneObjectBase {
   constructor(state) {
     super(state);
-    this._variablesThatHaveChanged = /* @__PURE__ */ new Set();
+    /** Variables that are scheduled to be validated and updated */
     this._variablesToUpdate = /* @__PURE__ */ new Set();
+    /** Variables currently updating  */
     this._updating = /* @__PURE__ */ new Map();
     this._variableValueRecorder = new VariableValueRecorder();
+    /**
+     * This makes sure SceneVariableSet's higher up in the chain notify us when parent level variables complete update batches.
+     **/
     this._variableDependency = new SceneVariableSetVariableDependencyHandler(
       this._handleParentVariableUpdatesCompleted.bind(this)
     );
+    /**
+     * Subscribes to child variable value changes, and starts the variable value validation process
+     */
     this._onActivate = () => {
       const timeRange = sceneGraph.getTimeRange(this);
       this._subs.add(
@@ -9231,6 +11596,9 @@ class SceneVariableSet extends SceneObjectBase {
       this._updateNextBatch();
       return this._onDeactivate;
     };
+    /**
+     * Cancel all currently running updates
+     */
     this._onDeactivate = () => {
       var _a;
       for (const update of this._updating.values()) {
@@ -9244,6 +11612,9 @@ class SceneVariableSet extends SceneObjectBase {
       this._variablesToUpdate.clear();
       this._updating.clear();
     };
+    /**
+     * Look for new variables that need to be initialized
+     */
     this._onStateChanged = (newState, oldState) => {
       const variablesToUpdateCountStart = this._variablesToUpdate.size;
       for (const variable of oldState.variables) {
@@ -9272,6 +11643,9 @@ class SceneVariableSet extends SceneObjectBase {
   getByName(name) {
     return this.state.variables.find((x) => x.state.name === name);
   }
+  /**
+   * Add all variables that depend on the changed variable to the update queue
+   */
   _refreshTimeRangeBasedVariables() {
     for (const variable of this.state.variables) {
       if ("refresh" in variable.state && variable.state.refresh === data.VariableRefresh.onTimeRangeChanged) {
@@ -9280,6 +11654,9 @@ class SceneVariableSet extends SceneObjectBase {
     }
     this._updateNextBatch();
   }
+  /**
+   * If variables changed while in in-active state we don't get any change events, so we need to check for that here.
+   */
   _checkForVariablesThatChangedWhileInactive() {
     if (!this._variableValueRecorder.hasValues()) {
       return;
@@ -9304,10 +11681,15 @@ class SceneVariableSet extends SceneObjectBase {
     }
     return true;
   }
+  /**
+   * This loops through variablesToUpdate and update all that can.
+   * If one has a dependency that is currently in variablesToUpdate it will be skipped for now.
+   */
   _updateNextBatch() {
     for (const variable of this._variablesToUpdate) {
       if (!variable.validateAndUpdate) {
-        throw new Error("Variable added to variablesToUpdate but does not have validateAndUpdate");
+        console.error("Variable added to variablesToUpdate but does not have validateAndUpdate");
+        continue;
       }
       if (this._updating.has(variable)) {
         continue;
@@ -9327,6 +11709,9 @@ class SceneVariableSet extends SceneObjectBase {
       });
     }
   }
+  /**
+   * A variable has completed its update process. This could mean that variables that depend on it can now be updated in turn.
+   */
   _validateAndUpdateCompleted(variable) {
     var _a;
     if (!this._updating.has(variable)) {
@@ -9360,13 +11745,16 @@ class SceneVariableSet extends SceneObjectBase {
     this._updateNextBatch();
   }
   _handleVariableValueChanged(variableThatChanged) {
-    this._variablesThatHaveChanged.add(variableThatChanged);
     this._addDependentVariablesToUpdateQueue(variableThatChanged);
     if (!this._updating.has(variableThatChanged)) {
       this._updateNextBatch();
       this._notifyDependentSceneObjects(variableThatChanged);
     }
   }
+  /**
+   * This is called by any parent level variable set to notify scene that an update batch is completed.
+   * This is the main mechanism lower level variable set's react to changes on higher levels.
+   */
   _handleParentVariableUpdatesCompleted(variable, hasChanged) {
     if (hasChanged) {
       this._addDependentVariablesToUpdateQueue(variable);
@@ -9383,18 +11771,26 @@ class SceneVariableSet extends SceneObjectBase {
           if (this._updating.has(otherVariable) && otherVariable.onCancel) {
             otherVariable.onCancel();
           }
-          this._variablesToUpdate.add(otherVariable);
+          if (otherVariable.validateAndUpdate) {
+            this._variablesToUpdate.add(otherVariable);
+          }
+          otherVariable.variableDependency.variableUpdateCompleted(variableThatChanged, true);
         }
       }
     }
   }
+  /**
+   * Walk scene object graph and update all objects that depend on variables that have changed
+   */
   _notifyDependentSceneObjects(variable) {
     if (!this.parent) {
       return;
     }
-    this._traverseSceneAndNotify(this.parent, variable, this._variablesThatHaveChanged.has(variable));
-    this._variablesThatHaveChanged.delete(variable);
+    this._traverseSceneAndNotify(this.parent, variable, true);
   }
+  /**
+   * Recursivly walk the full scene object graph and notify all objects with dependencies that include any of changed variables
+   */
   _traverseSceneAndNotify(sceneObject, variable, hasChanged) {
     if (this === sceneObject) {
       return;
@@ -9404,7 +11800,9 @@ class SceneVariableSet extends SceneObjectBase {
     }
     if (sceneObject.state.$variables && sceneObject.state.$variables !== this) {
       const localVar = sceneObject.state.$variables.getByName(variable.state.name);
-      if (localVar) {
+      if (localVar == null ? void 0 : localVar.isAncestorLoading) {
+        variable = localVar;
+      } else if (localVar) {
         return;
       }
     }
@@ -9413,7 +11811,16 @@ class SceneVariableSet extends SceneObjectBase {
     }
     sceneObject.forEachChild((child) => this._traverseSceneAndNotify(child, variable, hasChanged));
   }
+  /**
+   * Return true if variable is waiting to update or currently updating.
+   * It also returns true if a dependency of the variable is loading.
+   *
+   * For example if C depends on variable B which depends on variable A and A is loading this returns true for variable C and B.
+   */
   isVariableLoadingOrWaitingToUpdate(variable) {
+    if (variable.state.loading) {
+      return true;
+    }
     if (variable.isAncestorLoading && variable.isAncestorLoading()) {
       return true;
     }
@@ -9446,44 +11853,31 @@ class SceneVariableSetVariableDependencyHandler {
   }
 }
 
-var __defProp$h = Object.defineProperty;
-var __getOwnPropSymbols$h = Object.getOwnPropertySymbols;
-var __hasOwnProp$h = Object.prototype.hasOwnProperty;
-var __propIsEnum$h = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$h = (obj, key, value) => key in obj ? __defProp$h(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$h = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$h.call(b, prop))
-      __defNormalProp$h(a, prop, b[prop]);
-  if (__getOwnPropSymbols$h)
-    for (var prop of __getOwnPropSymbols$h(b)) {
-      if (__propIsEnum$h.call(b, prop))
-        __defNormalProp$h(a, prop, b[prop]);
-    }
-  return a;
-};
 class CustomVariable extends MultiValueVariable {
   constructor(initialState) {
-    super(__spreadValues$h({
+    super({
       type: "custom",
       query: "",
       value: "",
       text: "",
       options: [],
-      name: ""
-    }, initialState));
+      name: "",
+      ...initialState
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["query"]
     });
   }
-  getValueOptions(args) {
+  // We expose this publicly as we also need it outside the variable
+  // The interpolate flag is needed since we don't always want to get the interpolated options
+  transformCsvStringToOptions(str, interpolate = true) {
     var _a;
-    const interpolated = sceneGraph.interpolate(this, this.state.query);
-    const match = (_a = interpolated.match(/(?:\\,|[^,])+/g)) != null ? _a : [];
-    const options = match.map((text) => {
+    str = interpolate ? sceneGraph.interpolate(this, str) : str;
+    const match = (_a = str.match(/(?:\\,|[^,])+/g)) != null ? _a : [];
+    return match.map((text) => {
       var _a2;
       text = text.replace(/\\,/g, ",");
-      const textMatch = (_a2 = /^(.+)\s:\s(.+)$/g.exec(text)) != null ? _a2 : [];
+      const textMatch = (_a2 = /^\s*(.+)\s:\s(.+)$/g.exec(text)) != null ? _a2 : [];
       if (textMatch.length === 3) {
         const [, key, value] = textMatch;
         return { label: key.trim(), value: value.trim() };
@@ -9491,40 +11885,129 @@ class CustomVariable extends MultiValueVariable {
         return { label: text.trim(), value: text.trim() };
       }
     });
+  }
+  getValueOptions(args) {
+    const options = this.transformCsvStringToOptions(this.state.query);
+    if (!options.length) {
+      this.skipNextValidation = true;
+    }
     return rxjs.of(options);
   }
 }
 CustomVariable.Component = ({ model }) => {
-  return renderSelectForVariable(model);
+  return /* @__PURE__ */ React__default.default.createElement(MultiOrSingleValueSelect, { model });
 };
 
-var __defProp$g = Object.defineProperty;
-var __getOwnPropSymbols$g = Object.getOwnPropertySymbols;
-var __hasOwnProp$g = Object.prototype.hasOwnProperty;
-var __propIsEnum$g = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$g = (obj, key, value) => key in obj ? __defProp$g(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$g = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$g.call(b, prop))
-      __defNormalProp$g(a, prop, b[prop]);
-  if (__getOwnPropSymbols$g)
-    for (var prop of __getOwnPropSymbols$g(b)) {
-      if (__propIsEnum$g.call(b, prop))
-        __defNormalProp$g(a, prop, b[prop]);
+class SwitchVariable extends SceneObjectBase {
+  constructor(initialState) {
+    super({
+      // TODO: remove this once switch is in the schema @leventebalogh
+      // @ts-expect-error - switch is a valid variable type, but not in the schema yet
+      type: "switch",
+      value: "false",
+      enabledValue: "true",
+      disabledValue: "false",
+      name: "",
+      ...initialState
+    });
+    this._prevValue = "";
+    this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: () => this.getKeys() });
+  }
+  /**
+   * This function is called on when SceneVariableSet is activated or when a dependency changes.
+   */
+  validateAndUpdate() {
+    const newValue = this.getValue();
+    if (this._prevValue !== newValue) {
+      this._prevValue = newValue;
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
     }
-  return a;
-};
+    return rxjs.of({});
+  }
+  setValue(newValue) {
+    if (this.getValue() === newValue) {
+      return;
+    }
+    if ([this.state.enabledValue, this.state.disabledValue].includes(newValue)) {
+      this.setState({ value: newValue });
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    } else {
+      console.error(
+        `Invalid value for switch variable: "${newValue}". Valid values are: "${this.state.enabledValue}" and "${this.state.disabledValue}".`
+      );
+    }
+  }
+  getValue() {
+    return this.state.value;
+  }
+  isEnabled() {
+    return this.state.value === this.state.enabledValue;
+  }
+  isDisabled() {
+    return this.state.value === this.state.disabledValue;
+  }
+  getKey() {
+    return `var-${this.state.name}`;
+  }
+  getKeys() {
+    if (this.state.skipUrlSync) {
+      return [];
+    }
+    return [this.getKey()];
+  }
+  getUrlState() {
+    if (this.state.skipUrlSync) {
+      return {};
+    }
+    return { [this.getKey()]: this.state.value };
+  }
+  updateFromUrl(values) {
+    const val = values[this.getKey()];
+    if (typeof val === "string") {
+      this.setValue(val);
+    }
+  }
+}
+SwitchVariable.Component = SwitchVariableRenderer;
+function SwitchVariableRenderer({ model }) {
+  const state = model.useState();
+  const styles = ui.useStyles2(getStyles$7);
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.container }, /* @__PURE__ */ React__default.default.createElement(
+    ui.Switch,
+    {
+      value: state.value === state.enabledValue,
+      onChange: (event) => {
+        model.setValue(event.currentTarget.checked ? state.enabledValue : state.disabledValue);
+      }
+    }
+  ));
+}
+function getStyles$7(theme) {
+  return {
+    container: css.css({
+      display: "flex",
+      alignItems: "center",
+      padding: theme.spacing(0, 1),
+      height: theme.spacing(theme.components.height.md),
+      borderRadius: theme.shape.radius.default,
+      border: `1px solid ${theme.components.input.borderColor}`,
+      background: theme.colors.background.primary
+    })
+  };
+}
+
 class DataSourceVariable extends MultiValueVariable {
   constructor(initialState) {
-    super(__spreadValues$g({
+    super({
       type: "datasource",
       value: "",
       text: "",
       options: [],
       name: "",
       regex: "",
-      pluginId: ""
-    }, initialState));
+      pluginId: "",
+      ...initialState
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["regex"]
     });
@@ -9546,7 +12029,10 @@ class DataSourceVariable extends MultiValueVariable {
         options.push({ label: source.name, value: source.uid });
       }
       if (this.state.defaultOptionEnabled && isDefault(source, regex)) {
-        options.push({ label: "default", value: "default" });
+        options.push({
+          label: i18n.t("grafana-scenes.variables.data-source-variable.label.default", "default"),
+          value: "default"
+        });
       }
     }
     if (options.length === 0) {
@@ -9558,7 +12044,7 @@ class DataSourceVariable extends MultiValueVariable {
   }
 }
 DataSourceVariable.Component = ({ model }) => {
-  return renderSelectForVariable(model);
+  return /* @__PURE__ */ React__default.default.createElement(MultiOrSingleValueSelect, { model });
 };
 function isValid(source, regex) {
   if (!regex) {
@@ -9627,34 +12113,19 @@ function queryMetricTree(query) {
   return queryTree(children, query.split("."), 0);
 }
 
-var __defProp$f = Object.defineProperty;
-var __getOwnPropSymbols$f = Object.getOwnPropertySymbols;
-var __hasOwnProp$f = Object.prototype.hasOwnProperty;
-var __propIsEnum$f = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$f = (obj, key, value) => key in obj ? __defProp$f(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$f = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$f.call(b, prop))
-      __defNormalProp$f(a, prop, b[prop]);
-  if (__getOwnPropSymbols$f)
-    for (var prop of __getOwnPropSymbols$f(b)) {
-      if (__propIsEnum$f.call(b, prop))
-        __defNormalProp$f(a, prop, b[prop]);
-    }
-  return a;
-};
 class TestVariable extends MultiValueVariable {
   constructor(initialState, isLazy = false) {
-    super(__spreadValues$f({
+    super({
       type: "custom",
       name: "Test",
       value: "Value",
-      text: "Text",
+      text: i18n.t("grafana-scenes.variables.test-variable.text.text", "Text"),
       query: "Query",
       options: [],
       refresh: data.VariableRefresh.onDashboardLoad,
-      updateOptions: true
-    }, initialState));
+      updateOptions: true,
+      ...initialState
+    });
     this.completeUpdate = new rxjs.Subject();
     this.isGettingValues = true;
     this.getValueOptionsCount = 0;
@@ -9724,12 +12195,13 @@ class TestVariable extends MultiValueVariable {
     }
     return queryMetricTree(interpolatedQuery).map((x) => ({ label: x.name, value: x.name }));
   }
+  /** Useful from tests */
   signalUpdateCompleted() {
     this.completeUpdate.next(1);
   }
 }
 TestVariable.Component = ({ model }) => {
-  return renderSelectForVariable(model);
+  return /* @__PURE__ */ React__default.default.createElement(MultiOrSingleValueSelect, { model });
 };
 
 function VariableValueInput({ model }) {
@@ -9748,42 +12220,30 @@ function VariableValueInput({ model }) {
     },
     [model]
   );
-  return /* @__PURE__ */ React__default["default"].createElement(ui.AutoSizeInput, {
-    id: key,
-    placeholder: "Enter value",
-    minWidth: 15,
-    maxWidth: 30,
-    value,
-    loading,
-    onBlur,
-    onKeyDown
-  });
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.AutoSizeInput,
+    {
+      id: key,
+      placeholder: i18n.t("grafana-scenes.variables.variable-value-input.placeholder-enter-value", "Enter value"),
+      minWidth: 15,
+      maxWidth: 30,
+      value,
+      loading,
+      onBlur,
+      onKeyDown
+    }
+  );
 }
 
-var __defProp$e = Object.defineProperty;
-var __getOwnPropSymbols$e = Object.getOwnPropertySymbols;
-var __hasOwnProp$e = Object.prototype.hasOwnProperty;
-var __propIsEnum$e = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$e = (obj, key, value) => key in obj ? __defProp$e(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$e = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$e.call(b, prop))
-      __defNormalProp$e(a, prop, b[prop]);
-  if (__getOwnPropSymbols$e)
-    for (var prop of __getOwnPropSymbols$e(b)) {
-      if (__propIsEnum$e.call(b, prop))
-        __defNormalProp$e(a, prop, b[prop]);
-    }
-  return a;
-};
 class TextBoxVariable extends SceneObjectBase {
   constructor(initialState) {
-    super(__spreadValues$e({
+    super({
       type: "textbox",
       value: "",
-      name: ""
-    }, initialState));
-    this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: () => [this.getKey()] });
+      name: "",
+      ...initialState
+    });
+    this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: () => this.getKeys() });
   }
   getValue() {
     return this.state.value;
@@ -9797,7 +12257,16 @@ class TextBoxVariable extends SceneObjectBase {
   getKey() {
     return `var-${this.state.name}`;
   }
+  getKeys() {
+    if (this.state.skipUrlSync) {
+      return [];
+    }
+    return [this.getKey()];
+  }
   getUrlState() {
+    if (this.state.skipUrlSync) {
+      return {};
+    }
     return { [this.getKey()]: this.state.value };
   }
   updateFromUrl(values) {
@@ -9808,81 +12277,12 @@ class TextBoxVariable extends SceneObjectBase {
   }
 }
 TextBoxVariable.Component = ({ model }) => {
-  return /* @__PURE__ */ React__default["default"].createElement(VariableValueInput, {
-    model
-  });
+  return /* @__PURE__ */ React__default.default.createElement(VariableValueInput, { model });
 };
 
-var __defProp$d = Object.defineProperty;
-var __defProps$8 = Object.defineProperties;
-var __getOwnPropDescs$8 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$d = Object.getOwnPropertySymbols;
-var __hasOwnProp$d = Object.prototype.hasOwnProperty;
-var __propIsEnum$d = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$d = (obj, key, value) => key in obj ? __defProp$d(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$d = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$d.call(b, prop))
-      __defNormalProp$d(a, prop, b[prop]);
-  if (__getOwnPropSymbols$d)
-    for (var prop of __getOwnPropSymbols$d(b)) {
-      if (__propIsEnum$d.call(b, prop))
-        __defNormalProp$d(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$8 = (a, b) => __defProps$8(a, __getOwnPropDescs$8(b));
-class LocalValueVariable extends SceneObjectBase {
-  constructor(initialState) {
-    super(__spreadProps$8(__spreadValues$d({
-      type: "system",
-      value: "",
-      text: "",
-      name: ""
-    }, initialState), {
-      skipUrlSync: true
-    }));
-  }
-  getValue() {
-    return this.state.value;
-  }
-  getValueText() {
-    return this.state.text.toString();
-  }
-  isAncestorLoading() {
-    var _a, _b;
-    const ancestorScope = (_b = (_a = this.parent) == null ? void 0 : _a.parent) == null ? void 0 : _b.parent;
-    if (!ancestorScope) {
-      throw new Error("LocalValueVariable requires a parent SceneVariableSet that has an ancestor SceneVariableSet");
-    }
-    const set = sceneGraph.getVariables(ancestorScope);
-    const parentVar = sceneGraph.lookupVariable(this.state.name, ancestorScope);
-    if (set && parentVar) {
-      return set.isVariableLoadingOrWaitingToUpdate(parentVar);
-    }
-    return false;
-  }
-}
-
-var __defProp$c = Object.defineProperty;
-var __getOwnPropSymbols$c = Object.getOwnPropertySymbols;
-var __hasOwnProp$c = Object.prototype.hasOwnProperty;
-var __propIsEnum$c = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$c = (obj, key, value) => key in obj ? __defProp$c(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$c = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$c.call(b, prop))
-      __defNormalProp$c(a, prop, b[prop]);
-  if (__getOwnPropSymbols$c)
-    for (var prop of __getOwnPropSymbols$c(b)) {
-      if (__propIsEnum$c.call(b, prop))
-        __defNormalProp$c(a, prop, b[prop]);
-    }
-  return a;
-};
 class IntervalVariable extends SceneObjectBase {
   constructor(initialState) {
-    super(__spreadValues$c({
+    super({
       type: "interval",
       value: "",
       intervals: ["1m", "10m", "30m", "1h", "6h", "12h", "1d", "7d", "14d", "30d"],
@@ -9890,8 +12290,9 @@ class IntervalVariable extends SceneObjectBase {
       autoStepCount: 30,
       autoMinInterval: "10s",
       autoEnabled: false,
-      refresh: schema.VariableRefresh.onTimeRangeChanged
-    }, initialState));
+      refresh: schema.VariableRefresh.onTimeRangeChanged,
+      ...initialState
+    });
     this._onChange = (value) => {
       this.setState({ value: value.value });
       this.publishEvent(new SceneVariableValueChangedEvent(this), true);
@@ -9957,46 +12358,44 @@ class IntervalVariable extends SceneObjectBase {
 }
 IntervalVariable.Component = ({ model }) => {
   const { key, value } = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(ui.Select, {
-    id: key,
-    placeholder: "Select value",
-    width: "auto",
-    value,
-    tabSelectsValue: false,
-    options: model.getOptionsForSelect(),
-    onChange: model._onChange
-  });
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.Select,
+    {
+      id: key,
+      placeholder: i18n.t("grafana-scenes.variables.interval-variable.placeholder-select-value", "Select value"),
+      width: "auto",
+      value,
+      tabSelectsValue: false,
+      options: model.getOptionsForSelect(),
+      onChange: model._onChange
+    }
+  );
 };
 
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
+var __typeError = (msg) => {
+  throw TypeError(msg);
 };
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
+var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
+var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), member.set(obj, value), value);
 var _cache, _location;
 class NewSceneObjectAddedEvent extends data.BusEventWithPayload {
 }
 NewSceneObjectAddedEvent.type = "new-scene-object-added";
 class UrlSyncManager {
   constructor(_options = {}, locationService = runtime.locationService) {
-    this._urlKeyMapper = new UniqueUrlKeyMapper();
     this._options = _options;
     this._locationService = locationService;
     this._paramsCache = new UrlParamsCache(locationService);
+    this._urlKeyMapper = new UniqueUrlKeyMapper({
+      namespace: _options.namespace,
+      excludeFromNamespace: _options.excludeFromNamespace
+    });
   }
+  /**
+   * Updates the current scene state to match URL state.
+   */
   initSync(root) {
     var _a;
     if (this._subs) {
@@ -10020,7 +12419,7 @@ class UrlSyncManager {
     this._lastLocation = this._locationService.getLocation();
     this.handleNewObject(this._sceneRoot);
     if (this._options.updateUrlOnInit) {
-      const urlState = getUrlState(root);
+      const urlState = getUrlState(root, this._urlKeyMapper.getOptions());
       if (isUrlStateDifferent(urlState, this._paramsCache.getParams())) {
         this._locationService.partial(urlState, true);
       }
@@ -10082,14 +12481,14 @@ class UrlSyncManager {
     }
   }
   getUrlState(root) {
-    return getUrlState(root);
+    return getUrlState(root, this._urlKeyMapper.getOptions());
   }
 }
 class UrlParamsCache {
   constructor(locationService) {
     this.locationService = locationService;
-    __privateAdd(this, _cache, void 0);
-    __privateAdd(this, _location, void 0);
+    __privateAdd(this, _cache);
+    __privateAdd(this, _location);
   }
   getParams() {
     const location = this.locationService.getLocation();
@@ -10116,11 +12515,19 @@ function useUrlSyncManager(options, locationService) {
     () => new UrlSyncManager(
       {
         updateUrlOnInit: options.updateUrlOnInit,
-        createBrowserHistorySteps: options.createBrowserHistorySteps
+        createBrowserHistorySteps: options.createBrowserHistorySteps,
+        namespace: options.namespace,
+        excludeFromNamespace: options.excludeFromNamespace
       },
       locationService
     ),
-    [options.updateUrlOnInit, options.createBrowserHistorySteps, locationService]
+    [
+      options.updateUrlOnInit,
+      options.createBrowserHistorySteps,
+      options.namespace,
+      options.excludeFromNamespace,
+      locationService
+    ]
   );
 }
 
@@ -10149,9 +12556,16 @@ function UrlSyncContextProvider({
   children,
   scene,
   updateUrlOnInit,
-  createBrowserHistorySteps
+  createBrowserHistorySteps,
+  namespace,
+  excludeFromNamespace
 }) {
-  const isInitialized = useUrlSync(scene, { updateUrlOnInit, createBrowserHistorySteps });
+  const isInitialized = useUrlSync(scene, {
+    updateUrlOnInit,
+    createBrowserHistorySteps,
+    namespace,
+    excludeFromNamespace
+  });
   if (!isInitialized) {
     return null;
   }
@@ -10184,21 +12598,10 @@ class EmbeddedScene extends SceneObjectBase {
 EmbeddedScene.Component = EmbeddedSceneRenderer;
 function EmbeddedSceneRenderer({ model }) {
   const { body, controls } = model.useState();
-  const styles = ui.useStyles2(getStyles$7);
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.container
-  }, controls && /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.controls
-  }, controls.map((control) => /* @__PURE__ */ React__default["default"].createElement(control.Component, {
-    key: control.state.key,
-    model: control
-  }))), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.body
-  }, /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  })));
+  const styles = ui.useStyles2(getStyles$6);
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.container }, controls && /* @__PURE__ */ React__default.default.createElement("div", { className: styles.controls }, controls.map((control) => /* @__PURE__ */ React__default.default.createElement(control.Component, { key: control.state.key, model: control }))), /* @__PURE__ */ React__default.default.createElement("div", { className: styles.body }, /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body })));
 }
-const getStyles$7 = (theme) => {
+const getStyles$6 = (theme) => {
   return {
     container: css.css({
       flexGrow: 1,
@@ -10222,11 +12625,13 @@ const getStyles$7 = (theme) => {
 };
 
 class VizPanelMenu extends SceneObjectBase {
+  // Allows adding menu items dynamically
   addItem(item) {
     this.setState({
       items: this.state.items ? [...this.state.items, item] : [item]
     });
   }
+  // Allows replacing all menu items
   setItems(items) {
     this.setState({
       items
@@ -10236,7 +12641,7 @@ class VizPanelMenu extends SceneObjectBase {
 VizPanelMenu.Component = VizPanelMenuRenderer;
 function VizPanelMenuRenderer({ model }) {
   const { items = [] } = model.useState();
-  const ref = React__default["default"].useRef(null);
+  const ref = React__default.default.useRef(null);
   React.useEffect(() => {
     if (ref.current) {
       ref.current.focus();
@@ -10246,31 +12651,28 @@ function VizPanelMenuRenderer({ model }) {
     return items2.map((item) => {
       switch (item.type) {
         case "divider":
-          return /* @__PURE__ */ React__default["default"].createElement(ui.Menu.Divider, {
-            key: item.text
-          });
+          return /* @__PURE__ */ React__default.default.createElement(ui.Menu.Divider, { key: item.text });
         case "group":
-          return /* @__PURE__ */ React__default["default"].createElement(ui.Menu.Group, {
-            key: item.text,
-            label: item.text
-          }, item.subMenu ? renderItems(item.subMenu) : void 0);
+          return /* @__PURE__ */ React__default.default.createElement(ui.Menu.Group, { key: item.text, label: item.text }, item.subMenu ? renderItems(item.subMenu) : void 0);
         default:
-          return /* @__PURE__ */ React__default["default"].createElement(ui.Menu.Item, {
-            key: item.text,
-            label: item.text,
-            icon: item.iconClassName,
-            childItems: item.subMenu ? renderItems(item.subMenu) : void 0,
-            url: item.href,
-            onClick: item.onClick,
-            shortcut: item.shortcut,
-            testId: e2eSelectors.selectors.components.Panels.Panel.menuItems(item.text)
-          });
+          return /* @__PURE__ */ React__default.default.createElement(
+            ui.Menu.Item,
+            {
+              key: item.text,
+              role: "menuitem",
+              label: item.text,
+              icon: item.iconClassName,
+              childItems: item.subMenu ? renderItems(item.subMenu) : void 0,
+              url: item.href,
+              onClick: item.onClick,
+              shortcut: item.shortcut,
+              testId: e2eSelectors.selectors.components.Panels.Panel.menuItems(item.text)
+            }
+          );
       }
     });
   };
-  return /* @__PURE__ */ React__default["default"].createElement(ui.Menu, {
-    ref
-  }, renderItems(items));
+  return /* @__PURE__ */ React__default.default.createElement(ui.Menu, { ref }, renderItems(items));
 }
 
 async function getExploreURL(data, model, timeRange, transform) {
@@ -10295,7 +12697,11 @@ async function getExploreURL(data, model, timeRange, transform) {
     return (_a2 = transform == null ? void 0 : transform(q)) != null ? _a2 : q;
   });
   const queries = interpolatedQueries != null ? interpolatedQueries : [];
-  const datasource = (_d = (_c = queries.find((query) => {
+  const hasMixedDatasources = new Set(queries.map((q) => {
+    var _a2;
+    return (_a2 = q.datasource) == null ? void 0 : _a2.uid;
+  })).size > 1;
+  let datasource = hasMixedDatasources ? "-- Mixed --" : (_d = (_c = queries.find((query) => {
     var _a2;
     return !!((_a2 = query.datasource) == null ? void 0 : _a2.uid);
   })) == null ? void 0 : _c.datasource) == null ? void 0 : _d.uid;
@@ -10325,26 +12731,32 @@ function VizPanelExploreButtonComponent({ model }) {
   const { options } = model.useState();
   const { data } = sceneGraph.getData(model).useState();
   const { from, to } = sceneGraph.getTimeRange(model).useState();
-  const { value: exploreLink } = reactUse.useAsync(
-    async () => data ? getExploreURL(data, model, { from, to }, options.transform) : "",
-    [data, model, from, to]
-  );
+  const { value: exploreLink } = reactUse.useAsync(async () => {
+    if (!data) {
+      return "";
+    }
+    return getExploreURL(data, model, { from, to }, options.transform);
+  }, [data, model, from, to]);
   const returnToPrevious = runtime.useReturnToPrevious();
   if (exploreLink) {
-    return /* @__PURE__ */ React__default["default"].createElement(ui.LinkButton, {
-      key: "explore",
-      icon: "compass",
-      size: "sm",
-      variant: "secondary",
-      href: exploreLink,
-      onClick: () => {
-        var _a;
-        if (options.returnToPrevious) {
-          returnToPrevious(options.returnToPrevious.title, options.returnToPrevious.href);
+    return /* @__PURE__ */ React__default.default.createElement(
+      ui.LinkButton,
+      {
+        key: "explore",
+        icon: "compass",
+        size: "sm",
+        variant: "secondary",
+        href: exploreLink,
+        onClick: () => {
+          var _a;
+          if (options.returnToPrevious) {
+            returnToPrevious(options.returnToPrevious.title, options.returnToPrevious.href);
+          }
+          (_a = options.onClick) == null ? void 0 : _a.call(options);
         }
-        (_a = options.onClick) == null ? void 0 : _a.call(options);
-      }
-    }, "Explore");
+      },
+      /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.viz-panel-explore-button.explore" }, "Explore")
+    );
   }
   return null;
 }
@@ -10366,9 +12778,7 @@ function SceneGridItemRenderer({ model }) {
   if (!body) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  });
+  return /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body });
 }
 function isSceneGridRow(child) {
   return child instanceof SceneGridRow;
@@ -10377,132 +12787,6 @@ function isSceneGridLayout(child) {
   return child instanceof SceneGridLayout;
 }
 
-var __defProp$b = Object.defineProperty;
-var __getOwnPropSymbols$b = Object.getOwnPropertySymbols;
-var __hasOwnProp$b = Object.prototype.hasOwnProperty;
-var __propIsEnum$b = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$b = (obj, key, value) => key in obj ? __defProp$b(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$b = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$b.call(b, prop))
-      __defNormalProp$b(a, prop, b[prop]);
-  if (__getOwnPropSymbols$b)
-    for (var prop of __getOwnPropSymbols$b(b)) {
-      if (__propIsEnum$b.call(b, prop))
-        __defNormalProp$b(a, prop, b[prop]);
-    }
-  return a;
-};
-var __objRest$1 = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp$b.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols$b)
-    for (var prop of __getOwnPropSymbols$b(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum$b.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
-function useUniqueId() {
-  var _a;
-  const idRefLazy = React.useRef(void 0);
-  (_a = idRefLazy.current) != null ? _a : idRefLazy.current = lodash.uniqueId();
-  return idRefLazy.current;
-}
-const LazyLoader = React__default["default"].forwardRef(
-  (_a, ref) => {
-    var _b = _a, { children, onLoad, onChange, className } = _b, rest = __objRest$1(_b, ["children", "onLoad", "onChange", "className"]);
-    const id = useUniqueId();
-    const { hideEmpty } = ui.useStyles2(getStyles$6);
-    const [loaded, setLoaded] = React.useState(false);
-    const [isInView, setIsInView] = React.useState(false);
-    const innerRef = React.useRef(null);
-    React.useImperativeHandle(ref, () => innerRef.current);
-    reactUse.useEffectOnce(() => {
-      LazyLoader.addCallback(id, (entry) => {
-        if (!loaded && entry.isIntersecting) {
-          setLoaded(true);
-          onLoad == null ? void 0 : onLoad();
-        }
-        setIsInView(entry.isIntersecting);
-        onChange == null ? void 0 : onChange(entry.isIntersecting);
-      });
-      const wrapperEl = innerRef.current;
-      if (wrapperEl) {
-        LazyLoader.observer.observe(wrapperEl);
-      }
-      return () => {
-        wrapperEl && LazyLoader.observer.unobserve(wrapperEl);
-        delete LazyLoader.callbacks[id];
-        if (Object.keys(LazyLoader.callbacks).length === 0) {
-          LazyLoader.observer.disconnect();
-        }
-      };
-    });
-    const classes = `${loaded ? hideEmpty : ""} ${className}`;
-    return /* @__PURE__ */ React__default["default"].createElement("div", __spreadValues$b({
-      id,
-      ref: innerRef,
-      className: classes
-    }, rest), loaded && (typeof children === "function" ? children({ isInView }) : children));
-  }
-);
-function getStyles$6() {
-  return {
-    hideEmpty: css.css({
-      "&:empty": {
-        display: "none"
-      }
-    })
-  };
-}
-LazyLoader.displayName = "LazyLoader";
-LazyLoader.callbacks = {};
-LazyLoader.addCallback = (id, c) => LazyLoader.callbacks[id] = c;
-LazyLoader.observer = new IntersectionObserver(
-  (entries) => {
-    for (const entry of entries) {
-      if (typeof LazyLoader.callbacks[entry.target.id] === "function") {
-        LazyLoader.callbacks[entry.target.id](entry);
-      }
-    }
-  },
-  { rootMargin: "100px" }
-);
-
-var __defProp$a = Object.defineProperty;
-var __defProps$7 = Object.defineProperties;
-var __getOwnPropDescs$7 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$a = Object.getOwnPropertySymbols;
-var __hasOwnProp$a = Object.prototype.hasOwnProperty;
-var __propIsEnum$a = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$a = (obj, key, value) => key in obj ? __defProp$a(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$a = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$a.call(b, prop))
-      __defNormalProp$a(a, prop, b[prop]);
-  if (__getOwnPropSymbols$a)
-    for (var prop of __getOwnPropSymbols$a(b)) {
-      if (__propIsEnum$a.call(b, prop))
-        __defNormalProp$a(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$7 = (a, b) => __defProps$7(a, __getOwnPropDescs$7(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp$a.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols$a)
-    for (var prop of __getOwnPropSymbols$a(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum$a.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 function SceneGridLayoutRenderer({ model }) {
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = reactUse.useMeasure();
@@ -10516,68 +12800,89 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
-    const children2 = React__default["default"].useMemo(() => layout.map((gridItem, index) => /* @__PURE__ */ React__default["default"].createElement(GridItemWrapper, {
-      key: gridItem.i,
-      grid: model,
-      layoutItem: gridItem,
-      index,
-      isLazy,
-      totalCount: layout.length
-    })), [layout, model, isLazy]);
-    return /* @__PURE__ */ React__default["default"].createElement("div", {
-      ref,
-      style: { width: `${width2}px`, height: "100%" },
-      className: "react-grid-layout"
-    }, /* @__PURE__ */ React__default["default"].createElement(ReactGridLayout__default["default"], {
-      width: width2,
-      isDraggable: isDraggable && width2 > 768,
-      isResizable: isResizable != null ? isResizable : false,
-      containerPadding: [0, 0],
-      useCSSTransforms: true,
-      margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
-      cols: GRID_COLUMN_COUNT,
-      rowHeight: GRID_CELL_HEIGHT,
-      draggableHandle: `.grid-drag-handle-${model.state.key}`,
-      draggableCancel: ".grid-drag-cancel",
-      layout,
-      onDragStart: model.onDragStart,
-      onDragStop: model.onDragStop,
-      onResizeStop: model.onResizeStop,
-      onLayoutChange: model.onLayoutChange,
-      isBounded: false,
-      resizeHandle: /* @__PURE__ */ React__default["default"].createElement(ResizeHandle, null)
-    }, children2));
+    return (
+      /**
+       * The children is using a width of 100% so we need to guarantee that it is wrapped
+       * in an element that has the calculated size given by the AutoSizer. The AutoSizer
+       * has a width of 0 and will let its content overflow its div.
+       */
+      /* @__PURE__ */ React__default.default.createElement("div", { ref, style: { width: `${width2}px`, height: "100%" }, className: "react-grid-layout" }, /* @__PURE__ */ React__default.default.createElement(
+        ReactGridLayout__default.default,
+        {
+          width: width2,
+          isDraggable: isDraggable && width2 > 768,
+          isResizable: isResizable != null ? isResizable : false,
+          containerPadding: [0, 0],
+          useCSSTransforms: true,
+          margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
+          cols: GRID_COLUMN_COUNT,
+          rowHeight: GRID_CELL_HEIGHT,
+          draggableHandle: `.grid-drag-handle-${model.state.key}`,
+          draggableCancel: ".grid-drag-cancel",
+          layout,
+          onDragStart: model.onDragStart,
+          onDragStop: model.onDragStop,
+          onResizeStop: model.onResizeStop,
+          onLayoutChange: model.onLayoutChange,
+          isBounded: false,
+          resizeHandle: /* @__PURE__ */ React__default.default.createElement(ResizeHandle, null)
+        },
+        layout.map((gridItem, index) => /* @__PURE__ */ React__default.default.createElement(
+          GridItemWrapper,
+          {
+            key: gridItem.i,
+            grid: model,
+            layoutItem: gridItem,
+            index,
+            isLazy,
+            totalCount: layout.length
+          }
+        ))
+      ))
+    );
   };
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref: outerDivRef,
-    style: { flex: "1 1 auto", position: "relative", zIndex: 1, width: "100%" }
-  }, renderGrid(width, height));
+  return /* @__PURE__ */ React__default.default.createElement("div", { ref: outerDivRef, className: gridWrapperClass }, renderGrid(width, height));
 }
-const GridItemWrapper = React__default["default"].forwardRef((props, ref) => {
-  var _b;
-  const _a = props, { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children } = _a, divProps = __objRest(_a, ["grid", "layoutItem", "index", "totalCount", "isLazy", "style", "onLoad", "onChange", "children"]);
+const gridWrapperClass = css.css({
+  flex: "1 1 auto",
+  position: "relative",
+  zIndex: 1,
+  width: "100%"
+});
+const GridItemWrapper = React__default.default.forwardRef((props, ref) => {
+  var _a;
+  const { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children, ...divProps } = props;
   const sceneChild = grid.getSceneLayoutChild(layoutItem.i);
-  const className = (_b = sceneChild.getClassName) == null ? void 0 : _b.call(sceneChild);
-  const innerContent = /* @__PURE__ */ React__default["default"].createElement(sceneChild.Component, {
-    model: sceneChild,
-    key: sceneChild.state.key
-  });
+  const className = (_a = sceneChild.getClassName) == null ? void 0 : _a.call(sceneChild);
+  const innerContent = /* @__PURE__ */ React__default.default.createElement(sceneChild.Component, { model: sceneChild, key: sceneChild.state.key });
   if (isLazy) {
-    return /* @__PURE__ */ React__default["default"].createElement(LazyLoader, __spreadProps$7(__spreadValues$a({}, divProps), {
+    return /* @__PURE__ */ React__default.default.createElement(
+      LazyLoader,
+      {
+        ...divProps,
+        key: sceneChild.state.key,
+        "data-griditem-key": sceneChild.state.key,
+        className: css.cx(className, props.className),
+        style,
+        ref
+      },
+      innerContent,
+      children
+    );
+  }
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      ...divProps,
+      ref,
       key: sceneChild.state.key,
       "data-griditem-key": sceneChild.state.key,
       className: css.cx(className, props.className),
-      style,
-      ref
-    }), innerContent, children);
-  }
-  return /* @__PURE__ */ React__default["default"].createElement("div", __spreadProps$7(__spreadValues$a({}, divProps), {
-    ref,
-    key: sceneChild.state.key,
-    "data-griditem-key": sceneChild.state.key,
-    className: css.cx(className, props.className),
-    style
-  }), innerContent, children);
+      style
+    },
+    innerContent,
+    children
+  );
 });
 GridItemWrapper.displayName = "GridItemWrapper";
 function validateChildrenSize(children) {
@@ -10598,26 +12903,18 @@ function updateAnimationClass(ref, isDraggable, retry) {
     setTimeout(() => updateAnimationClass(ref, isDraggable, true), 50);
   }
 }
-const ResizeHandle = React__default["default"].forwardRef((_a, ref) => {
-  var _b = _a, divProps = __objRest(_b, ["handleAxis"]);
+const ResizeHandle = React__default.default.forwardRef(({ handleAxis, ...divProps }, ref) => {
   const customCssClass = ui.useStyles2(getResizeHandleStyles);
-  return /* @__PURE__ */ React__default["default"].createElement("div", __spreadProps$7(__spreadValues$a({
-    ref
-  }, divProps), {
-    className: `${customCssClass} scene-resize-handle`
-  }), /* @__PURE__ */ React__default["default"].createElement("svg", {
-    width: "16px",
-    height: "16px",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    xmlns: "http://www.w3.org/2000/svg"
-  }, /* @__PURE__ */ React__default["default"].createElement("path", {
-    d: "M21 15L15 21M21 8L8 21",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })));
+  return /* @__PURE__ */ React__default.default.createElement("div", { ref, ...divProps, className: `${customCssClass} scene-resize-handle` }, /* @__PURE__ */ React__default.default.createElement("svg", { width: "16px", height: "16px", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React__default.default.createElement(
+    "path",
+    {
+      d: "M21 15L15 21M21 8L8 21",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }
+  )));
 });
 ResizeHandle.displayName = "ResizeHandle";
 function getResizeHandleStyles(theme) {
@@ -10641,62 +12938,30 @@ function getResizeHandleStyles(theme) {
   });
 }
 
-var __defProp$9 = Object.defineProperty;
-var __defProps$6 = Object.defineProperties;
-var __getOwnPropDescs$6 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$9 = Object.getOwnPropertySymbols;
-var __hasOwnProp$9 = Object.prototype.hasOwnProperty;
-var __propIsEnum$9 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$9 = (obj, key, value) => key in obj ? __defProp$9(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$9 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$9.call(b, prop))
-      __defNormalProp$9(a, prop, b[prop]);
-  if (__getOwnPropSymbols$9)
-    for (var prop of __getOwnPropSymbols$9(b)) {
-      if (__propIsEnum$9.call(b, prop))
-        __defNormalProp$9(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$6 = (a, b) => __defProps$6(a, __getOwnPropDescs$6(b));
+class SceneGridLayoutDragStartEvent extends data.BusEventWithPayload {
+}
+SceneGridLayoutDragStartEvent.type = "scene-grid-layout-drag-start";
+
 function fitPanelsInHeight(cells, height) {
   const visibleHeight = height - GRID_CELL_VMARGIN * 4;
   const currentGridHeight = Math.max(...cells.map((cell) => cell.h + cell.y));
   const visibleGridHeight = Math.floor(visibleHeight / (GRID_CELL_HEIGHT + GRID_CELL_VMARGIN));
   const scaleFactor = currentGridHeight / visibleGridHeight;
   return cells.map((cell) => {
-    return __spreadProps$6(__spreadValues$9({}, cell), {
+    return {
+      ...cell,
       y: Math.round(cell.y / scaleFactor) || 0,
       h: Math.round(cell.h / scaleFactor) || 1
-    });
+    };
   });
 }
 
-var __defProp$8 = Object.defineProperty;
-var __defProps$5 = Object.defineProperties;
-var __getOwnPropDescs$5 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$8 = Object.getOwnPropertySymbols;
-var __hasOwnProp$8 = Object.prototype.hasOwnProperty;
-var __propIsEnum$8 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$8 = (obj, key, value) => key in obj ? __defProp$8(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$8 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$8.call(b, prop))
-      __defNormalProp$8(a, prop, b[prop]);
-  if (__getOwnPropSymbols$8)
-    for (var prop of __getOwnPropSymbols$8(b)) {
-      if (__propIsEnum$8.call(b, prop))
-        __defNormalProp$8(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$5 = (a, b) => __defProps$5(a, __getOwnPropDescs$5(b));
-const _SceneGridLayout = class extends SceneObjectBase {
+const _SceneGridLayout = class _SceneGridLayout extends SceneObjectBase {
   constructor(state) {
-    super(__spreadProps$5(__spreadValues$8({}, state), {
+    super({
+      ...state,
       children: sortChildrenByPosition(state.children)
-    }));
+    });
     this._skipOnLayoutChange = false;
     this._oldLayout = [];
     this._loadOldLayout = false;
@@ -10718,7 +12983,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
           height: item.h
         };
         if (!isItemSizeEqual(child.state, nextSize)) {
-          child.setState(__spreadValues$8({}, nextSize));
+          child.setState({
+            ...nextSize
+          });
         }
       }
       this.setState({ children: sortChildrenByPosition(this.state.children) });
@@ -10736,6 +13003,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     this.onDragStop = (gridLayout, o, updatedItem) => {
       const sceneChild = this.getSceneLayoutChild(updatedItem.i);
       gridLayout = sortGridLayout(gridLayout);
+      const indexOfUpdatedItem = gridLayout.findIndex((item) => item.i === updatedItem.i);
+      let newParent = this.findGridItemSceneParent(gridLayout, indexOfUpdatedItem - 1);
+      let newChildren = this.state.children;
       for (let i = 0; i < gridLayout.length; i++) {
         const gridItem = gridLayout[i];
         const child = this.getSceneLayoutChild(gridItem.i);
@@ -10747,22 +13017,25 @@ const _SceneGridLayout = class extends SceneObjectBase {
           });
         }
       }
-      const indexOfUpdatedItem = gridLayout.findIndex((item) => item.i === updatedItem.i);
-      let newParent = this.findGridItemSceneParent(gridLayout, indexOfUpdatedItem - 1);
-      let newChildren = this.state.children;
+      if (newParent instanceof SceneGridRow && isRepeatCloneOrChildOf(newParent)) {
+        this._loadOldLayout = true;
+      }
       if (sceneChild instanceof SceneGridRow && newParent instanceof SceneGridRow) {
         if (!this.isRowDropValid(gridLayout, updatedItem, indexOfUpdatedItem)) {
           this._loadOldLayout = true;
         }
         newParent = this;
       }
-      if (newParent !== sceneChild.parent) {
+      if (newParent !== sceneChild.parent && !this._loadOldLayout) {
         newChildren = this.moveChildTo(sceneChild, newParent);
       }
       this.setState({ children: sortChildrenByPosition(newChildren) });
       this._skipOnLayoutChange = true;
     };
   }
+  /**
+   * SceneLayout interface. Used for example by VizPanelRenderer
+   */
   isDraggable() {
     var _a;
     return (_a = this.state.isDraggable) != null ? _a : false;
@@ -10772,6 +13045,27 @@ const _SceneGridLayout = class extends SceneObjectBase {
   }
   getDragClassCancel() {
     return `grid-drag-cancel`;
+  }
+  getDragHooks() {
+    return {
+      onDragStart: (evt, panel) => {
+        this.publishEvent(new SceneGridLayoutDragStartEvent({ evt, panel }), true);
+      }
+    };
+  }
+  adjustYPositions(after, amount) {
+    for (const child of this.state.children) {
+      if (child.state.y > after) {
+        child.setState({ y: child.state.y + amount });
+      }
+      if (child instanceof SceneGridRow) {
+        for (const rowChild of child.state.children) {
+          if (rowChild.state.y > after) {
+            rowChild.setState({ y: rowChild.state.y + amount });
+          }
+        }
+      }
+    }
   }
   toggleRow(row) {
     var _a, _b;
@@ -10792,7 +13086,7 @@ const _SceneGridLayout = class extends SceneObjectBase {
     const yDiff = firstPanelYPos - (rowY + 1);
     let yMax = rowY;
     for (const panel of rowChildren) {
-      const newSize = __spreadValues$8({}, panel.state);
+      const newSize = { ...panel.state };
       newSize.y = (_b = newSize.y) != null ? _b : rowY;
       newSize.y -= yDiff;
       if (newSize.y !== panel.state.y) {
@@ -10819,6 +13113,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
   ignoreLayoutChange(shouldIgnore) {
     this._skipOnLayoutChange = shouldIgnore;
   }
+  /**
+   * Will also scan row children and return child of the row
+   */
   getSceneLayoutChild(key) {
     for (const child of this.state.children) {
       if (child.state.key === key) {
@@ -10839,6 +13136,10 @@ const _SceneGridLayout = class extends SceneObjectBase {
       y: child.state.y + amount
     });
   }
+  /**
+   *  We assume the layout array is sorted according to y pos, and walk upwards until we find a row.
+   *  If it is collapsed there is no row to add it to. The default is then to return the SceneGridLayout itself
+   */
   findGridItemSceneParent(layout, startAt) {
     for (let i = startAt; i >= 0; i--) {
       const gridItem = layout[i];
@@ -10852,6 +13153,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     return this;
   }
+  /**
+   * Helper func to check if we are dropping a row in between panels of another row
+   */
   isRowDropValid(gridLayout, updatedItem, indexOfUpdatedItem) {
     if (gridLayout[gridLayout.length - 1].i === updatedItem.i) {
       return true;
@@ -10864,6 +13168,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     return false;
   }
+  /**
+   * This likely needs a slightly different approach. Where we clone or deactivate or and re-activate the moved child
+   */
   moveChildTo(child, target) {
     const currentParent = child.parent;
     let rootChildren = this.state.children;
@@ -10892,16 +13199,19 @@ const _SceneGridLayout = class extends SceneObjectBase {
     return rootChildren;
   }
   toGridCell(child) {
-    var _a, _b;
     const size = child.state;
-    let x = (_a = size.x) != null ? _a : 0;
-    let y = (_b = size.y) != null ? _b : 0;
-    const w = Number.isInteger(Number(size.width)) ? Number(size.width) : DEFAULT_PANEL_SPAN;
-    const h = Number.isInteger(Number(size.height)) ? Number(size.height) : DEFAULT_PANEL_SPAN;
+    let x = Number.isFinite(Number(size.x)) ? Number(size.x) : 0;
+    let y = Number.isFinite(Number(size.y)) ? Number(size.y) : 0;
+    const w = Number.isFinite(Number(size.width)) ? Number(size.width) : DEFAULT_PANEL_SPAN;
+    const h = Number.isFinite(Number(size.height)) ? Number(size.height) : DEFAULT_PANEL_SPAN;
     let isDraggable = child.state.isDraggable;
     let isResizable = child.state.isResizable;
     if (child instanceof SceneGridRow) {
       isDraggable = child.state.isCollapsed ? true : false;
+      isResizable = false;
+    }
+    if (isRepeatCloneOrChildOf(child)) {
+      isDraggable = false;
       isResizable = false;
     }
     return { i: child.state.key, x, y, h, w, isResizable, isDraggable };
@@ -10922,14 +13232,14 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     if (width < 768) {
       this._skipOnLayoutChange = true;
-      return cells.map((cell) => __spreadProps$5(__spreadValues$8({}, cell), { w: 24 }));
+      return cells.map((cell) => ({ ...cell, w: 24 }));
     }
     this._skipOnLayoutChange = false;
     return cells;
   }
 };
+_SceneGridLayout.Component = SceneGridLayoutRenderer;
 let SceneGridLayout = _SceneGridLayout;
-SceneGridLayout.Component = SceneGridLayoutRenderer;
 function isItemSizeEqual(a, b) {
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }
@@ -10947,36 +13257,17 @@ function sortGridLayout(layout) {
   return [...layout].sort((a, b) => a.y - b.y || a.x - b.x);
 }
 
-var __defProp$7 = Object.defineProperty;
-var __defProps$4 = Object.defineProperties;
-var __getOwnPropDescs$4 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$7 = Object.getOwnPropertySymbols;
-var __hasOwnProp$7 = Object.prototype.hasOwnProperty;
-var __propIsEnum$7 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$7 = (obj, key, value) => key in obj ? __defProp$7(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$7 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$7.call(b, prop))
-      __defNormalProp$7(a, prop, b[prop]);
-  if (__getOwnPropSymbols$7)
-    for (var prop of __getOwnPropSymbols$7(b)) {
-      if (__propIsEnum$7.call(b, prop))
-        __defNormalProp$7(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$4 = (a, b) => __defProps$4(a, __getOwnPropDescs$4(b));
 class SceneGridRow extends SceneObjectBase {
   constructor(state) {
-    super(__spreadProps$4(__spreadValues$7({
+    super({
       children: state.children || [],
       isCollapsible: state.isCollapsible || true,
-      title: state.title || ""
-    }, state), {
+      title: state.title || "",
+      ...state,
       x: 0,
       height: 1,
       width: GRID_COLUMN_COUNT
-    }));
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["title"],
       handleTimeMacros: true
@@ -11006,6 +13297,14 @@ class SceneGridRow extends SceneObjectBase {
       this.onCollapseToggle();
     }
   }
+  getPanelCount(children) {
+    var _a;
+    let count = 0;
+    for (const child of children) {
+      count += ((_a = child.getChildCount) == null ? void 0 : _a.call(child)) || 1;
+    }
+    return count;
+  }
 }
 SceneGridRow.Component = SceneGridRowRenderer;
 function SceneGridRowRenderer({ model }) {
@@ -11013,34 +13312,20 @@ function SceneGridRowRenderer({ model }) {
   const { isCollapsible, isCollapsed, title, actions, children } = model.useState();
   const layout = model.getGridLayout();
   const layoutDragClass = layout.getDragClass();
-  const isDraggable = layout.isDraggable();
-  const count = children ? children.length : 0;
+  const isDraggable = layout.isDraggable() && !isRepeatCloneOrChildOf(model);
+  const count = model.getPanelCount(children);
   const panels = count === 1 ? "panel" : "panels";
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.row, isCollapsed && styles.rowCollapsed) + " oodle-panel-row oodle-panel-row-" + (isCollapsed ? "closed" : "open")
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.rowTitleAndActionsGroup
-  }, /* @__PURE__ */ React__default["default"].createElement("button", {
-    onClick: model.onCollapseToggle,
-    className: styles.rowTitleButton,
-    "aria-label": isCollapsed ? "Expand row" : "Collapse row",
-    "data-testid": e2eSelectors.selectors.components.DashboardRow.title(sceneGraph.interpolate(model, title, void 0, "text"))
-  }, isCollapsible && /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    name: isCollapsed ? "angle-right" : "angle-down"
-  }), /* @__PURE__ */ React__default["default"].createElement("span", {
-    className: styles.rowTitle,
-    role: "heading"
-  }, sceneGraph.interpolate(model, title, void 0, "text"))), /* @__PURE__ */ React__default["default"].createElement("span", {
-    className: css.cx(styles.panelCount, isCollapsed && styles.panelCountCollapsed)
-  }, "(", count, " ", panels, ")"), actions && /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.rowActions
-  }, /* @__PURE__ */ React__default["default"].createElement(actions.Component, {
-    model: actions
-  }))), isDraggable && isCollapsed && /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.dragHandle, layoutDragClass)
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    name: "draggabledots"
-  })));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: css.cx(styles.row, isCollapsed && styles.rowCollapsed) + " oodle-panel-row oodle-panel-row-" + (isCollapsed ? "closed" : "open") }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.rowTitleAndActionsGroup }, /* @__PURE__ */ React__default.default.createElement(
+    "button",
+    {
+      onClick: model.onCollapseToggle,
+      className: styles.rowTitleButton,
+      "aria-label": isCollapsed ? i18n.t("grafana-scenes.components.scene-grid-row.expand-row", "Expand row") : i18n.t("grafana-scenes.components.scene-grid-row.collapse-row", "Collapse row"),
+      "data-testid": e2eSelectors.selectors.components.DashboardRow.title(sceneGraph.interpolate(model, title, void 0, "text"))
+    },
+    isCollapsible && /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: isCollapsed ? "angle-right" : "angle-down" }),
+    /* @__PURE__ */ React__default.default.createElement("span", { className: styles.rowTitle, role: "heading" }, sceneGraph.interpolate(model, title, void 0, "text"))
+  ), /* @__PURE__ */ React__default.default.createElement("span", { className: css.cx(styles.panelCount, isCollapsed && styles.panelCountCollapsed) }, "(", count, " ", panels, ")"), actions && /* @__PURE__ */ React__default.default.createElement("div", { className: styles.rowActions }, /* @__PURE__ */ React__default.default.createElement(actions.Component, { model: actions }))), isDraggable && isCollapsed && /* @__PURE__ */ React__default.default.createElement("div", { className: css.cx(styles.dragHandle, layoutDragClass) }, /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: "draggabledots" })));
 }
 const getSceneGridRowStyles = (theme) => {
   return {
@@ -11133,6 +13418,7 @@ class NestedScene extends SceneObjectBase {
         isCollapsed: !this.state.isCollapsed
       });
     };
+    /** Removes itself from its parent's children array */
     this.onRemove = () => {
       const parent = this.parent;
       if (isSceneLayoutItem(parent)) {
@@ -11148,39 +13434,31 @@ function NestedSceneRenderer({ model }) {
   const { title, isCollapsed, canCollapse, canRemove, body, controls } = model.useState();
   const gridRow = ui.useStyles2(getSceneGridRowStyles);
   const styles = ui.useStyles2(getStyles$5);
-  const toolbarControls = (controls != null ? controls : []).map((action) => /* @__PURE__ */ React__default["default"].createElement(action.Component, {
-    key: action.state.key,
-    model: action
-  }));
+  const toolbarControls = (controls != null ? controls : []).map((action) => /* @__PURE__ */ React__default.default.createElement(action.Component, { key: action.state.key, model: action }));
   if (canRemove) {
     toolbarControls.push(
-      /* @__PURE__ */ React__default["default"].createElement(ui.ToolbarButton, {
-        icon: "times",
-        variant: "default",
-        onClick: model.onRemove,
-        key: "remove-button",
-        "aria-label": "Remove scene"
-      })
+      /* @__PURE__ */ React__default.default.createElement(
+        ui.ToolbarButton,
+        {
+          icon: "times",
+          variant: "default",
+          onClick: model.onRemove,
+          key: "remove-button",
+          "aria-label": i18n.t("grafana-scenes.components.nested-scene-renderer.remove-button-label", "Remove scene")
+        }
+      )
     );
   }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.wrapper
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.row, isCollapsed && styles.rowCollapsed)
-  }, /* @__PURE__ */ React__default["default"].createElement("button", {
-    onClick: model.onToggle,
-    className: gridRow.rowTitleButton,
-    "aria-label": isCollapsed ? "Expand scene" : "Collapse scene"
-  }, canCollapse && /* @__PURE__ */ React__default["default"].createElement(ui.Icon, {
-    name: isCollapsed ? "angle-right" : "angle-down"
-  }), /* @__PURE__ */ React__default["default"].createElement("span", {
-    className: gridRow.rowTitle,
-    role: "heading"
-  }, sceneGraph.interpolate(model, title, void 0, "text"))), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.actions
-  }, toolbarControls)), !isCollapsed && /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  }));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.wrapper }, /* @__PURE__ */ React__default.default.createElement("div", { className: css.cx(styles.row, isCollapsed && styles.rowCollapsed) }, /* @__PURE__ */ React__default.default.createElement(
+    "button",
+    {
+      onClick: model.onToggle,
+      className: gridRow.rowTitleButton,
+      "aria-label": isCollapsed ? i18n.t("grafana-scenes.components.nested-scene-renderer.expand-button-label", "Expand scene") : i18n.t("grafana-scenes.components.nested-scene-renderer.collapse-button-label", "Collapse scene")
+    },
+    canCollapse && /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: isCollapsed ? "angle-right" : "angle-down" }),
+    /* @__PURE__ */ React__default.default.createElement("span", { className: gridRow.rowTitle, role: "heading" }, sceneGraph.interpolate(model, title, void 0, "text"))
+  ), /* @__PURE__ */ React__default.default.createElement("div", { className: styles.actions }, toolbarControls)), !isCollapsed && /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body }));
 }
 const getStyles$5 = (theme) => ({
   wrapper: css.css({
@@ -11217,7 +13495,8 @@ class SceneCanvasText extends SceneObjectBase {
     this._variableDependency = new VariableDependencyConfig(this, { statePaths: ["text"] });
   }
 }
-SceneCanvasText.Component = ({ model }) => {
+SceneCanvasText.Component = SceneCanvasTextRenderer;
+function SceneCanvasTextRenderer({ model }) {
   const { text, fontSize = 20, align = "left", key, spacing } = model.useState();
   const theme = ui.useTheme2();
   const style = css.css({
@@ -11228,36 +13507,29 @@ SceneCanvasText.Component = ({ model }) => {
     padding: spacing ? theme.spacing(spacing, 0) : void 0,
     justifyContent: align
   });
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: style,
-    "data-testid": key
-  }, sceneGraph.interpolate(model, text));
-};
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: style, "data-testid": key }, sceneGraph.interpolate(model, text));
+}
 
 class SceneToolbarButton extends SceneObjectBase {
 }
 SceneToolbarButton.Component = ({ model }) => {
   const state = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(ui.ToolbarButton, {
-    onClick: state.onClick,
-    icon: state.icon
-  });
+  return /* @__PURE__ */ React__default.default.createElement(ui.ToolbarButton, { onClick: state.onClick, icon: state.icon });
 };
 class SceneToolbarInput extends SceneObjectBase {
 }
 SceneToolbarInput.Component = ({ model }) => {
   const state = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    style: { display: "flex" }
-  }, state.label && /* @__PURE__ */ React__default["default"].createElement(ControlsLabel, {
-    label: state.label
-  }), /* @__PURE__ */ React__default["default"].createElement(ui.Input, {
-    defaultValue: state.value,
-    width: 8,
-    onBlur: (evt) => {
-      model.state.onChange(parseInt(evt.currentTarget.value, 10));
+  return /* @__PURE__ */ React__default.default.createElement("div", { style: { display: "flex" } }, state.label && /* @__PURE__ */ React__default.default.createElement(ControlsLabel, { label: state.label }), /* @__PURE__ */ React__default.default.createElement(
+    ui.Input,
+    {
+      defaultValue: state.value,
+      width: 8,
+      onBlur: (evt) => {
+        model.state.onChange(parseInt(evt.currentTarget.value, 10));
+      }
     }
-  }));
+  ));
 };
 
 class SceneTimePicker extends SceneObjectBase {
@@ -11284,20 +13556,20 @@ class SceneTimePicker extends SceneObjectBase {
       const {
         state: { value: range }
       } = timeRange;
-      timeRange.onTimeRangeChange(getShiftedTimeRange(TimeRangeDirection.Backward, range, Date.now()));
+      timeRange.onTimeRangeChange(getShiftedTimeRange(0 /* Backward */, range));
     };
     this.onMoveForward = () => {
       const timeRange = sceneGraph.getTimeRange(this);
       const {
         state: { value: range }
       } = timeRange;
-      timeRange.onTimeRangeChange(getShiftedTimeRange(TimeRangeDirection.Forward, range, Date.now()));
+      timeRange.onTimeRangeChange(getShiftedTimeRange(1 /* Forward */, range, Date.now()));
     };
   }
 }
 SceneTimePicker.Component = SceneTimePickerRenderer;
 function SceneTimePickerRenderer({ model }) {
-  const { hidePicker, isOnCanvas } = model.useState();
+  const { hidePicker, isOnCanvas, quickRanges, defaultQuickRanges } = model.useState();
   const timeRange = sceneGraph.getTimeRange(model);
   const timeZone = timeRange.getTimeZone();
   const timeRangeState = timeRange.useState();
@@ -11309,25 +13581,45 @@ function SceneTimePickerRenderer({ model }) {
   if (hidePicker) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement(ui.TimeRangePicker, {
-    isOnCanvas: isOnCanvas != null ? isOnCanvas : true,
-    value: timeRangeState.value,
-    onChange: (range) => {
-      if (isAbsolute(range)) {
-        setTimeRangeHistory([range, ...timeRangeHistory != null ? timeRangeHistory : []]);
-      }
-      timeRange.onTimeRangeChange(range);
-    },
-    timeZone,
-    fiscalYearStartMonth: timeRangeState.fiscalYearStartMonth,
-    onMoveBackward: model.onMoveBackward,
-    onMoveForward: model.onMoveForward,
-    onZoom: model.onZoom,
-    onChangeTimeZone: timeRange.onTimeZoneChange,
-    onChangeFiscalYearStartMonth: model.onChangeFiscalYearStartMonth,
-    weekStart: timeRangeState.weekStart,
-    history: timeRangeHistory
+  const rangesToUse = quickRanges || defaultQuickRanges;
+  const halfSpanMs = (timeRangeState.value.to.valueOf() - timeRangeState.value.from.valueOf()) / 2;
+  const moveBackwardDuration = data.intervalToAbbreviatedDurationString({
+    start: new Date(timeRangeState.value.from.valueOf()),
+    end: new Date(timeRangeState.value.from.valueOf() + halfSpanMs)
   });
+  const canMoveForward = timeRangeState.value.to.valueOf() + halfSpanMs <= Date.now();
+  const moveForwardDuration = canMoveForward ? moveBackwardDuration : void 0;
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.TimeRangePicker,
+    {
+      isOnCanvas: isOnCanvas != null ? isOnCanvas : true,
+      value: timeRangeState.value,
+      onChange: (range) => {
+        if (isAbsolute(range)) {
+          setTimeRangeHistory([range, ...timeRangeHistory != null ? timeRangeHistory : []]);
+        }
+        timeRange.onTimeRangeChange(range);
+      },
+      timeZone,
+      fiscalYearStartMonth: timeRangeState.fiscalYearStartMonth,
+      onMoveBackward: model.onMoveBackward,
+      onMoveForward: model.onMoveForward,
+      moveForwardTooltip: moveForwardDuration ? i18n.t("grafana-scenes.components.time-picker.move-forward-tooltip", "Move {{moveForwardDuration}} forward", {
+        moveForwardDuration
+      }) : void 0,
+      moveBackwardTooltip: i18n.t(
+        "grafana-scenes.components.time-picker.move-backward-tooltip",
+        "Move {{moveBackwardDuration}} backward",
+        { moveBackwardDuration }
+      ),
+      onZoom: model.onZoom,
+      onChangeTimeZone: timeRange.onTimeZoneChange,
+      onChangeFiscalYearStartMonth: model.onChangeFiscalYearStartMonth,
+      weekStart: timeRangeState.weekStart,
+      history: timeRangeHistory,
+      quickRanges: rangesToUse
+    }
+  );
 }
 function getZoomedTimeRange(timeRange, factor) {
   const timespan = timeRange.to.valueOf() - timeRange.from.valueOf();
@@ -11337,11 +13629,6 @@ function getZoomedTimeRange(timeRange, factor) {
   const from = center - newTimespan / 2;
   return { from: data.toUtc(from), to: data.toUtc(to), raw: { from: data.toUtc(from), to: data.toUtc(to) } };
 }
-var TimeRangeDirection = /* @__PURE__ */ ((TimeRangeDirection2) => {
-  TimeRangeDirection2[TimeRangeDirection2["Backward"] = 0] = "Backward";
-  TimeRangeDirection2[TimeRangeDirection2["Forward"] = 1] = "Forward";
-  return TimeRangeDirection2;
-})(TimeRangeDirection || {});
 function getShiftedTimeRange(dir, timeRange, upperLimit) {
   const oldTo = timeRange.to.valueOf();
   const oldFrom = timeRange.from.valueOf();
@@ -11354,7 +13641,7 @@ function getShiftedTimeRange(dir, timeRange, upperLimit) {
   } else {
     fromRaw = oldFrom + halfSpan;
     toRaw = oldTo + halfSpan;
-    if (toRaw > upperLimit && oldTo < upperLimit) {
+    if (upperLimit !== void 0 && toRaw > upperLimit && oldTo < upperLimit) {
       toRaw = upperLimit;
       fromRaw = oldFrom;
     }
@@ -11389,25 +13676,6 @@ function isAbsolute(value) {
   return data.isDateTime(value.raw.from) || data.isDateTime(value.raw.to);
 }
 
-var __defProp$6 = Object.defineProperty;
-var __defProps$3 = Object.defineProperties;
-var __getOwnPropDescs$3 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$6 = Object.getOwnPropertySymbols;
-var __hasOwnProp$6 = Object.prototype.hasOwnProperty;
-var __propIsEnum$6 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$6 = (obj, key, value) => key in obj ? __defProp$6(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$6 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$6.call(b, prop))
-      __defNormalProp$6(a, prop, b[prop]);
-  if (__getOwnPropSymbols$6)
-    for (var prop of __getOwnPropSymbols$6(b)) {
-      if (__propIsEnum$6.call(b, prop))
-        __defNormalProp$6(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$3 = (a, b) => __defProps$3(a, __getOwnPropDescs$3(b));
 const DEFAULT_INTERVALS = ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"];
 class SceneRefreshPicker extends SceneObjectBase {
   constructor(state) {
@@ -11421,22 +13689,24 @@ class SceneRefreshPicker extends SceneObjectBase {
         return false;
       }
     };
-    super(__spreadProps$3(__spreadValues$6({
-      refresh: ""
-    }, state), {
+    super({
+      refresh: "",
+      ...state,
       autoValue: void 0,
       autoEnabled: (_a = state.autoEnabled) != null ? _a : true,
       autoMinInterval: (_b = state.autoMinInterval) != null ? _b : runtime.config.minRefreshInterval,
       intervals: ((_c = state.intervals) != null ? _c : DEFAULT_INTERVALS).filter(filterDissalowedIntervals)
-    }));
+    });
     this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: ["refresh"] });
     this._autoRefreshBlocked = false;
     this.onRefresh = () => {
       const queryController = sceneGraph.getQueryController(this);
       if (queryController == null ? void 0 : queryController.state.isRunning) {
         queryController.cancelAll();
+        queryController.cancelProfile();
         return;
       }
+      queryController == null ? void 0 : queryController.startProfile(REFRESH_INTERACTION);
       const timeRange = sceneGraph.getTimeRange(this);
       if (this._intervalTimer) {
         clearInterval(this._intervalTimer);
@@ -11488,6 +13758,11 @@ class SceneRefreshPicker extends SceneObjectBase {
       }
       this._intervalTimer = setInterval(() => {
         if (this.isTabVisible()) {
+          const queryController = sceneGraph.getQueryController(this);
+          if (queryController == null ? void 0 : queryController.state.isRunning) {
+            queryController.cancelProfile();
+          }
+          queryController == null ? void 0 : queryController.startProfile(REFRESH_INTERACTION);
           timeRange.onRefresh();
         } else {
           this._autoRefreshBlocked = true;
@@ -11528,6 +13803,7 @@ class SceneRefreshPicker extends SceneObjectBase {
         this.setState({ refresh });
       } else {
         this.setState({
+          // Default to the first refresh interval if the interval from the URL is not allowed, just like in the old architecture.
           refresh: intervals ? intervals[0] : void 0
         });
       }
@@ -11542,31 +13818,36 @@ function SceneRefreshPickerRenderer({ model }) {
   var _a;
   const { refresh, intervals, autoEnabled, autoValue, isOnCanvas, primary, withText } = model.useState();
   const isRunning = useQueryControllerState(model);
-  let text = refresh === ((_a = ui.RefreshPicker.autoOption) == null ? void 0 : _a.value) ? autoValue : withText ? "Refresh" : void 0;
+  let text = refresh === ((_a = ui.RefreshPicker.autoOption) == null ? void 0 : _a.value) ? autoValue : withText ? i18n.t("grafana-scenes.components.scene-refresh-picker.text-refresh", "Refresh") : void 0;
   let tooltip;
   let width;
   if (isRunning) {
-    tooltip = "Cancel all queries";
+    tooltip = i18n.t("grafana-scenes.components.scene-refresh-picker.tooltip-cancel", "Cancel all queries");
     if (withText) {
-      text = "Cancel";
+      text = i18n.t("grafana-scenes.components.scene-refresh-picker.text-cancel", "Cancel");
     }
   }
   if (withText) {
     width = "96px";
   }
-  return /* @__PURE__ */ React__default["default"].createElement(ui.RefreshPicker, {
-    showAutoInterval: autoEnabled,
-    value: refresh,
-    intervals,
-    tooltip,
-    width,
-    text,
-    onRefresh: model.onRefresh,
-    primary,
-    onIntervalChanged: model.onIntervalChanged,
-    isLoading: isRunning,
-    isOnCanvas: isOnCanvas != null ? isOnCanvas : true
-  });
+  return /* @__PURE__ */ React__default.default.createElement(
+    ui.RefreshPicker,
+    {
+      showAutoInterval: autoEnabled,
+      value: refresh,
+      intervals,
+      tooltip,
+      width,
+      text,
+      onRefresh: () => {
+        model.onRefresh();
+      },
+      primary,
+      onIntervalChanged: model.onIntervalChanged,
+      isLoading: isRunning,
+      isOnCanvas: isOnCanvas != null ? isOnCanvas : true
+    }
+  );
 }
 function useQueryControllerState(model) {
   const queryController = sceneGraph.getQueryController(model);
@@ -11586,25 +13867,6 @@ function isIntervalString(str) {
 
 const getCompareSeriesRefId = (refId) => `${refId}-compare`;
 
-var __defProp$5 = Object.defineProperty;
-var __defProps$2 = Object.defineProperties;
-var __getOwnPropDescs$2 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$5 = Object.getOwnPropertySymbols;
-var __hasOwnProp$5 = Object.prototype.hasOwnProperty;
-var __propIsEnum$5 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$5 = (obj, key, value) => key in obj ? __defProp$5(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$5 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$5.call(b, prop))
-      __defNormalProp$5(a, prop, b[prop]);
-  if (__getOwnPropSymbols$5)
-    for (var prop of __getOwnPropSymbols$5(b)) {
-      if (__propIsEnum$5.call(b, prop))
-        __defNormalProp$5(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$2 = (a, b) => __defProps$2(a, __getOwnPropDescs$2(b));
 const PREVIOUS_PERIOD_VALUE = "__previousPeriod";
 const NO_PERIOD_VALUE = "__noPeriod";
 const PREVIOUS_PERIOD_COMPARE_OPTION = {
@@ -11612,7 +13874,7 @@ const PREVIOUS_PERIOD_COMPARE_OPTION = {
   value: PREVIOUS_PERIOD_VALUE
 };
 const NO_COMPARE_OPTION = {
-  label: "No comparison",
+  label: "None",
   value: NO_PERIOD_VALUE
 };
 const DEFAULT_COMPARE_OPTIONS = [
@@ -11622,7 +13884,7 @@ const DEFAULT_COMPARE_OPTIONS = [
 ];
 class SceneTimeRangeCompare extends SceneObjectBase {
   constructor(state) {
-    super(__spreadValues$5({ compareOptions: DEFAULT_COMPARE_OPTIONS }, state));
+    super({ compareOptions: DEFAULT_COMPARE_OPTIONS, ...state });
     this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: ["compareWith"] });
     this._onActivate = () => {
       const sceneTimeRange = sceneGraph.getTimeRange(this);
@@ -11662,6 +13924,7 @@ class SceneTimeRangeCompare extends SceneObjectBase {
     };
     this.addActivationHandler(this._onActivate);
   }
+  // Get a time shifted request to compare with the primary request.
   getExtraQueries(request) {
     const extraQueries = [];
     const compareRange = this.getCompareTimeRange(request.range);
@@ -11671,15 +13934,17 @@ class SceneTimeRangeCompare extends SceneObjectBase {
     const targets = request.targets.filter((query) => query.timeRangeCompare !== false);
     if (targets.length) {
       extraQueries.push({
-        req: __spreadProps$2(__spreadValues$5({}, request), {
+        req: {
+          ...request,
           targets,
           range: compareRange
-        }),
+        },
         processor: timeShiftAlignmentProcessor
       });
     }
     return extraQueries;
   }
+  // The query runner should rerun the comparison query if the compareWith value has changed and there are queries that haven't opted out of TWC
   shouldRerun(prev, next, queries) {
     return prev.compareWith !== next.compareWith && queries.find((query) => query.timeRangeCompare !== false) !== void 0;
   }
@@ -11735,34 +14000,22 @@ const timeShiftAlignmentProcessor = (primary, secondary) => {
   const diff = secondary.timeRange.from.diff(primary.timeRange.from);
   secondary.series.forEach((series) => {
     series.refId = getCompareSeriesRefId(series.refId || "");
-    series.meta = __spreadProps$2(__spreadValues$5({}, series.meta), {
+    series.meta = {
+      ...series.meta,
+      // @ts-ignore Remove when https://github.com/grafana/grafana/pull/71129 is released
       timeCompare: {
         diffMs: diff,
         isTimeShiftQuery: true
       }
-    });
-    series.fields.forEach((field) => {
-      if (field.type === data.FieldType.time) {
-        field.values = field.values.map((v) => {
-          return diff < 0 ? v - diff : v + diff;
-        });
-      }
-      field.config = __spreadProps$2(__spreadValues$5({}, field.config), {
-        color: {
-          mode: "fixed",
-          fixedColor: runtime.config.theme.palette.gray60
-        }
-      });
-      return field;
-    });
+    };
   });
   return rxjs.of(secondary);
 };
 function SceneTimeRangeCompareRenderer({ model }) {
   var _a;
   const styles = ui.useStyles2(getStyles$4);
-  const { compareWith, compareOptions } = model.useState();
-  const [previousCompare, setPreviousCompare] = React__default["default"].useState(compareWith);
+  const { compareWith, compareOptions, hideCheckbox } = model.useState();
+  const [previousCompare, setPreviousCompare] = React__default.default.useState(compareWith);
   const previousValue = (_a = compareOptions.find(({ value: value2 }) => value2 === previousCompare)) != null ? _a : PREVIOUS_PERIOD_COMPARE_OPTION;
   const value = compareOptions.find(({ value: value2 }) => value2 === compareWith);
   const enabled = Boolean(value);
@@ -11774,31 +14027,39 @@ function SceneTimeRangeCompareRenderer({ model }) {
       model.onCompareWithChanged(previousValue.value);
     }
   };
-  return /* @__PURE__ */ React__default["default"].createElement(ui.ButtonGroup, null, /* @__PURE__ */ React__default["default"].createElement(ui.ToolbarButton, {
-    variant: "canvas",
-    tooltip: "Enable time frame comparison",
-    onClick: (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      onClick();
+  const selectValue = hideCheckbox && !compareWith ? NO_COMPARE_OPTION : value;
+  const showSelect = hideCheckbox || enabled;
+  const displayValue = hideCheckbox && selectValue ? {
+    ...selectValue,
+    label: `Comparison: ${selectValue.label}`
+  } : selectValue;
+  return /* @__PURE__ */ React__default.default.createElement(ui.ButtonGroup, null, !hideCheckbox && /* @__PURE__ */ React__default.default.createElement(
+    ui.ToolbarButton,
+    {
+      variant: "canvas",
+      tooltip: i18n.t(
+        "grafana-scenes.components.scene-time-range-compare-renderer.button-tooltip",
+        "Enable time frame comparison"
+      ),
+      onClick: (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+      }
+    },
+    /* @__PURE__ */ React__default.default.createElement(ui.Checkbox, { label: " ", value: enabled, onClick }),
+    /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.scene-time-range-compare-renderer.button-label" }, "Comparison")
+  ), showSelect ? /* @__PURE__ */ React__default.default.createElement(
+    ui.ButtonSelect,
+    {
+      variant: "canvas",
+      value: displayValue,
+      options: compareOptions,
+      onChange: (v) => {
+        model.onCompareWithChanged(v.value);
+      }
     }
-  }, /* @__PURE__ */ React__default["default"].createElement(ui.Checkbox, {
-    label: " ",
-    value: enabled,
-    onClick
-  }), "Comparison"), enabled ? /* @__PURE__ */ React__default["default"].createElement(ui.ButtonSelect, {
-    variant: "canvas",
-    value,
-    options: compareOptions,
-    onChange: (v) => {
-      model.onCompareWithChanged(v.value);
-    }
-  }) : /* @__PURE__ */ React__default["default"].createElement(ui.ToolbarButton, {
-    className: styles.previewButton,
-    disabled: true,
-    variant: "canvas",
-    isOpen: false
-  }, previousValue.label));
+  ) : /* @__PURE__ */ React__default.default.createElement(ui.ToolbarButton, { className: styles.previewButton, disabled: true, variant: "canvas", isOpen: false }, previousValue.label));
 }
 function getStyles$4(theme) {
   return {
@@ -11841,9 +14102,7 @@ class SceneByFrameRepeater extends SceneObjectBase {
 }
 SceneByFrameRepeater.Component = ({ model }) => {
   const { body } = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  });
+  return /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body });
 };
 
 class SceneByVariableRepeater extends SceneObjectBase {
@@ -11878,9 +14137,7 @@ class SceneByVariableRepeater extends SceneObjectBase {
 }
 SceneByVariableRepeater.Component = ({ model }) => {
   const { body } = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  });
+  return /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body });
 };
 function getMultiVariableValues(variable) {
   const { value, text, options } = variable.state;
@@ -11900,9 +14157,7 @@ class SceneControlsSpacer extends SceneObjectBase {
   }
 }
 SceneControlsSpacer.Component = (_props) => {
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    style: { flexGrow: 1 }
-  });
+  return /* @__PURE__ */ React__default.default.createElement("div", { style: { flexGrow: 1 } });
 };
 
 class SceneFlexLayout extends SceneObjectBase {
@@ -11922,15 +14177,9 @@ function SceneFlexLayoutRenderer({ model, parentState }) {
   if (isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: style
-  }, children.map((item) => {
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: style }, children.map((item) => {
     const Component = item.Component;
-    return /* @__PURE__ */ React__default["default"].createElement(Component, {
-      key: item.state.key,
-      model: item,
-      parentState: model.state
-    });
+    return /* @__PURE__ */ React__default.default.createElement(Component, { key: item.state.key, model: item, parentState: model.state });
   }));
 }
 class SceneFlexItem extends SceneObjectBase {
@@ -11945,11 +14194,7 @@ function SceneFlexItemRenderer({ model, parentState }) {
   if (!body || isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: style
-  }, /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  }));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: style }, /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body }));
 }
 function applyItemStyles(style, state, parentState) {
   var _a, _b, _c;
@@ -11979,6 +14224,16 @@ function applyItemStyles(style, state, parentState) {
       style.width = state.width;
     } else {
       style.flexGrow = xSizing === "fill" ? 1 : 0;
+    }
+    if (state.wrap) {
+      style.flexWrap = state.wrap;
+      if (state.wrap !== "nowrap") {
+        if (parentDirection === "row") {
+          style.rowGap = "8px";
+        } else {
+          style.columnGap = "8px";
+        }
+      }
     }
   }
   style.minWidth = state.minWidth;
@@ -12033,32 +14288,17 @@ function useLayoutStyle$1(state, parentState) {
   }, [parentState, state]);
 }
 
-var __defProp$4 = Object.defineProperty;
-var __getOwnPropSymbols$4 = Object.getOwnPropertySymbols;
-var __hasOwnProp$4 = Object.prototype.hasOwnProperty;
-var __propIsEnum$4 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$4 = (obj, key, value) => key in obj ? __defProp$4(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$4 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$4.call(b, prop))
-      __defNormalProp$4(a, prop, b[prop]);
-  if (__getOwnPropSymbols$4)
-    for (var prop of __getOwnPropSymbols$4(b)) {
-      if (__propIsEnum$4.call(b, prop))
-        __defNormalProp$4(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneCSSGridLayout extends SceneObjectBase {
   constructor(state) {
     var _a, _b;
-    super(__spreadValues$4({
+    super({
       rowGap: 1,
       columnGap: 1,
       templateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
       autoRows: (_a = state.autoRows) != null ? _a : `320px`,
-      children: (_b = state.children) != null ? _b : []
-    }, state));
+      children: (_b = state.children) != null ? _b : [],
+      ...state
+    });
   }
   isDraggable() {
     return false;
@@ -12071,25 +14311,12 @@ function SceneCSSGridLayoutRenderer({ model }) {
   if (isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: style
-  }, children.map((item) => {
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: style }, children.map((item) => {
     const Component = item.Component;
     if (isLazy) {
-      return /* @__PURE__ */ React__default["default"].createElement(LazyLoader, {
-        key: item.state.key,
-        className: style
-      }, /* @__PURE__ */ React__default["default"].createElement(Component, {
-        key: item.state.key,
-        model: item,
-        parentState: model.state
-      }));
+      return /* @__PURE__ */ React__default.default.createElement(LazyLoader, { key: item.state.key, className: style }, /* @__PURE__ */ React__default.default.createElement(Component, { key: item.state.key, model: item, parentState: model.state }));
     }
-    return /* @__PURE__ */ React__default["default"].createElement(Component, {
-      key: item.state.key,
-      model: item,
-      parentState: model.state
-    });
+    return /* @__PURE__ */ React__default.default.createElement(Component, { key: item.state.key, model: item, parentState: model.state });
   }));
 }
 class SceneCSSGridItem extends SceneObjectBase {
@@ -12104,11 +14331,7 @@ function SceneCSSGridItemRenderer({ model, parentState }) {
   if (!body || isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: style
-  }, /* @__PURE__ */ React__default["default"].createElement(body.Component, {
-    model: body
-  }));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: style }, /* @__PURE__ */ React__default.default.createElement(body.Component, { model: body }));
 }
 function useLayoutStyle(state) {
   return React.useMemo(() => {
@@ -12149,22 +14372,6 @@ function useItemStyle(state) {
   }, [state]);
 }
 
-var __defProp$3 = Object.defineProperty;
-var __getOwnPropSymbols$3 = Object.getOwnPropertySymbols;
-var __hasOwnProp$3 = Object.prototype.hasOwnProperty;
-var __propIsEnum$3 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$3 = (obj, key, value) => key in obj ? __defProp$3(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$3 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$3.call(b, prop))
-      __defNormalProp$3(a, prop, b[prop]);
-  if (__getOwnPropSymbols$3)
-    for (var prop of __getOwnPropSymbols$3(b)) {
-      if (__propIsEnum$3.call(b, prop))
-        __defNormalProp$3(a, prop, b[prop]);
-    }
-  return a;
-};
 const PIXELS_PER_MS = 0.3;
 const VERTICAL_KEYS = /* @__PURE__ */ new Set(["ArrowUp", "ArrowDown"]);
 const HORIZONTAL_KEYS = /* @__PURE__ */ new Set(["ArrowLeft", "ArrowRight"]);
@@ -12191,7 +14398,7 @@ function Splitter({
   onDragFinished,
   children
 }) {
-  const kids = React__default["default"].Children.toArray(children);
+  const kids = React__default.default.Children.toArray(children);
   const splitterRef = React.useRef(null);
   const firstPaneRef = React.useRef(null);
   const secondPaneRef = React.useRef(null);
@@ -12386,48 +14593,66 @@ function Splitter({
   const id = useUniqueId();
   const secondAvailable = kids.length === 2;
   const visibilitySecond = secondAvailable ? "visible" : "hidden";
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref: containerRef,
-    className: styles.container,
-    style: {
-      flexDirection: direction
-    }
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref: firstPaneRef,
-    className: styles.panel,
-    style: __spreadValues$3({
-      flexGrow: initialSize === "auto" ? 0.5 : lodash.clamp(initialSize, 0, 1),
-      [minDimProp]: "min-content"
-    }, primaryPaneStyles),
-    id: `start-panel-${id}`
-  }, kids[0]), kids[1] && /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref: splitterRef,
-    style: { [measurementProp]: `${handleSize}px` },
-    className: css.cx(styles.handle, { [styles.handleHorizontal]: direction === "column" }),
-    onPointerUp,
-    onPointerDown,
-    onPointerMove,
-    onKeyDown,
-    onKeyUp,
-    onDoubleClick,
-    onBlur,
-    role: "separator",
-    "aria-valuemin": 0,
-    "aria-valuemax": 100,
-    "aria-valuenow": 50,
-    "aria-controls": `start-panel-${id}`,
-    "aria-label": "Pane resize widget",
-    tabIndex: 0
-  }), /* @__PURE__ */ React__default["default"].createElement("div", {
-    ref: secondPaneRef,
-    className: styles.panel,
-    style: __spreadValues$3({
-      flexGrow: initialSize === "auto" ? 0.5 : lodash.clamp(1 - initialSize, 0, 1),
-      [minDimProp]: "min-content",
-      visibility: `${visibilitySecond}`
-    }, secondaryPaneStyles),
-    id: `end-panel-${id}`
-  }, kids[1])));
+  return /* @__PURE__ */ React__default.default.createElement(
+    "div",
+    {
+      ref: containerRef,
+      className: styles.container,
+      style: {
+        flexDirection: direction
+      }
+    },
+    /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        ref: firstPaneRef,
+        className: styles.panel,
+        style: {
+          flexGrow: initialSize === "auto" ? 0.5 : lodash.clamp(initialSize, 0, 1),
+          [minDimProp]: "min-content",
+          ...primaryPaneStyles
+        },
+        id: `start-panel-${id}`
+      },
+      kids[0]
+    ),
+    kids[1] && /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        ref: splitterRef,
+        style: { [measurementProp]: `${handleSize}px` },
+        className: css.cx(styles.handle, { [styles.handleHorizontal]: direction === "column" }),
+        onPointerUp,
+        onPointerDown,
+        onPointerMove,
+        onKeyDown,
+        onKeyUp,
+        onDoubleClick,
+        onBlur,
+        role: "separator",
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+        "aria-valuenow": 50,
+        "aria-controls": `start-panel-${id}`,
+        "aria-label": i18n.t("grafana-scenes.components.splitter.aria-label-pane-resize-widget", "Pane resize widget"),
+        tabIndex: 0
+      }
+    ), /* @__PURE__ */ React__default.default.createElement(
+      "div",
+      {
+        ref: secondPaneRef,
+        className: styles.panel,
+        style: {
+          flexGrow: initialSize === "auto" ? 0.5 : lodash.clamp(1 - initialSize, 0, 1),
+          [minDimProp]: "min-content",
+          visibility: `${visibilitySecond}`,
+          ...secondaryPaneStyles
+        },
+        id: `end-panel-${id}`
+      },
+      kids[1]
+    ))
+  );
 }
 function getStyles$3(theme) {
   return {
@@ -12535,20 +14760,17 @@ function SplitLayoutRenderer({ model }) {
   const Prim = primary.Component;
   const Sec = secondary == null ? void 0 : secondary.Component;
   let startSize = secondary ? initialSize : 1;
-  return /* @__PURE__ */ React__default["default"].createElement(Splitter, {
-    direction,
-    initialSize: startSize != null ? startSize : 0.5,
-    primaryPaneStyles,
-    secondaryPaneStyles
-  }, /* @__PURE__ */ React__default["default"].createElement(Prim, {
-    key: primary.state.key,
-    model: primary,
-    parentState: model.state
-  }), Sec && secondary && /* @__PURE__ */ React__default["default"].createElement(Sec, {
-    key: secondary.state.key,
-    model: secondary,
-    parentState: model.state
-  }));
+  return /* @__PURE__ */ React__default.default.createElement(
+    Splitter,
+    {
+      direction,
+      initialSize: startSize != null ? startSize : 0.5,
+      primaryPaneStyles,
+      secondaryPaneStyles
+    },
+    /* @__PURE__ */ React__default.default.createElement(Prim, { key: primary.state.key, model: primary, parentState: model.state }),
+    Sec && secondary && /* @__PURE__ */ React__default.default.createElement(Sec, { key: secondary.state.key, model: secondary, parentState: model.state })
+  );
 }
 
 class SplitLayout extends SceneObjectBase {
@@ -12564,6 +14786,10 @@ class SplitLayout extends SceneObjectBase {
 SplitLayout.Component = SplitLayoutRenderer;
 
 class SceneApp extends SceneObjectBase {
+  constructor() {
+    super(...arguments);
+    this._renderBeforeActivation = true;
+  }
   enrichDataRequest() {
     return {
       app: this.state.name || "app"
@@ -12572,14 +14798,7 @@ class SceneApp extends SceneObjectBase {
 }
 SceneApp.Component = ({ model }) => {
   const { pages } = model.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(SceneAppContext.Provider, {
-    value: model
-  }, /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Switch, null, pages.map((page) => /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Route, {
-    key: page.state.url,
-    exact: false,
-    path: page.state.url,
-    render: (props) => renderSceneComponentWithRouteProps(page, props)
-  }))));
+  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, /* @__PURE__ */ React__default.default.createElement(SceneAppContext.Provider, { value: model }, /* @__PURE__ */ React__default.default.createElement(reactRouterDom.Routes, null, pages.map((page) => /* @__PURE__ */ React__default.default.createElement(reactRouterDom.Route, { key: page.state.url, path: page.state.routePath, element: /* @__PURE__ */ React__default.default.createElement(page.Component, { model: page }) })))));
 };
 const SceneAppContext = React.createContext(null);
 const sceneAppCache = /* @__PURE__ */ new Map();
@@ -12593,28 +14812,12 @@ function useSceneApp(factory) {
   return newApp;
 }
 
-var __defProp$2 = Object.defineProperty;
-var __getOwnPropSymbols$2 = Object.getOwnPropertySymbols;
-var __hasOwnProp$2 = Object.prototype.hasOwnProperty;
-var __propIsEnum$2 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$2 = (obj, key, value) => key in obj ? __defProp$2(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$2 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$2.call(b, prop))
-      __defNormalProp$2(a, prop, b[prop]);
-  if (__getOwnPropSymbols$2)
-    for (var prop of __getOwnPropSymbols$2(b)) {
-      if (__propIsEnum$2.call(b, prop))
-        __defNormalProp$2(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneReactObject extends SceneObjectBase {
 }
 SceneReactObject.Component = ({ model }) => {
   const { component: Component, props, reactNode } = model.useState();
   if (Component) {
-    return /* @__PURE__ */ React__default["default"].createElement(Component, __spreadValues$2({}, props));
+    return /* @__PURE__ */ React__default.default.createElement(Component, { ...props });
   }
   if (reactNode) {
     return reactNode;
@@ -12625,16 +14828,7 @@ SceneReactObject.Component = ({ model }) => {
 function DebugDetails({ node }) {
   const state = node.useState();
   const styles = ui.useStyles2(getStyles$2);
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.container
-  }, Object.keys(state).map((key) => /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.row,
-    key
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.keyName
-  }, key), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.value
-  }, renderValue(key, state[key], node)))));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.container }, Object.keys(state).map((key) => /* @__PURE__ */ React__default.default.createElement("div", { className: styles.row, key }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.keyName }, key), /* @__PURE__ */ React__default.default.createElement("div", { className: styles.value }, renderValue(key, state[key], node)))));
 }
 function renderValue(key, value, node) {
   if (value === null) {
@@ -12642,26 +14836,22 @@ function renderValue(key, value, node) {
   }
   switch (typeof value) {
     case "number":
-      return /* @__PURE__ */ React__default["default"].createElement(ui.Input, {
-        type: "number",
-        defaultValue: value,
-        onBlur: (evt) => node.setState({ [key]: evt.currentTarget.valueAsNumber })
-      });
+      return /* @__PURE__ */ React__default.default.createElement(
+        ui.Input,
+        {
+          type: "number",
+          defaultValue: value,
+          onBlur: (evt) => node.setState({ [key]: evt.currentTarget.valueAsNumber })
+        }
+      );
     case "string":
-      return /* @__PURE__ */ React__default["default"].createElement(ui.Input, {
-        type: "text",
-        defaultValue: value,
-        onBlur: (evt) => node.setState({ [key]: evt.currentTarget.value })
-      });
+      return /* @__PURE__ */ React__default.default.createElement(ui.Input, { type: "text", defaultValue: value, onBlur: (evt) => node.setState({ [key]: evt.currentTarget.value }) });
     case "object":
       if (isSceneObject(value)) {
         return value.constructor.name;
       }
       if (lodash.isPlainObject(value) || lodash.isArray(value)) {
-        return /* @__PURE__ */ React__default["default"].createElement(ui.JSONFormatter, {
-          json: value,
-          open: 0
-        });
+        return /* @__PURE__ */ React__default.default.createElement(ui.JSONFormatter, { json: value, open: 0 });
       }
       return String(value);
     default:
@@ -12702,22 +14892,10 @@ function DebugTreeNode({ node, selectedObject, onSelect }) {
   const isSelected = node === selectedObject;
   node.forEachChild((child) => {
     children.push(
-      /* @__PURE__ */ React__default["default"].createElement(DebugTreeNode, {
-        node: child,
-        key: child.state.key,
-        selectedObject,
-        onSelect
-      })
+      /* @__PURE__ */ React__default.default.createElement(DebugTreeNode, { node: child, key: child.state.key, selectedObject, onSelect })
     );
   });
-  return /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.container
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: css.cx(styles.name, isSelected && styles.selected),
-    onClick: () => onSelect(node)
-  }, node.constructor.name), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.children
-  }, children));
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: styles.container }, /* @__PURE__ */ React__default.default.createElement("div", { className: css.cx(styles.name, isSelected && styles.selected), onClick: () => onSelect(node) }, node.constructor.name), /* @__PURE__ */ React__default.default.createElement("div", { className: styles.children }, children));
 }
 function getStyles$1(theme) {
   return {
@@ -12766,35 +14944,15 @@ function SceneDebugger({ scene }) {
   const styles = ui.useStyles2(getStyles);
   const [isOpen, setIsOpen] = React.useState(false);
   const [selectedObject, setSelectedObject] = React.useState();
-  return /* @__PURE__ */ React__default["default"].createElement(React__default["default"].Fragment, null, /* @__PURE__ */ React__default["default"].createElement(ui.ToolbarButton, {
-    variant: "canvas",
-    icon: "bug",
-    onClick: () => setIsOpen(true)
-  }), isOpen && /* @__PURE__ */ React__default["default"].createElement(ui.Drawer, {
-    title: "Scene debugger",
-    onClose: () => setIsOpen(false),
-    size: "lg"
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.panes
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.pane1
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.paneHeading
-  }, "Scene graph"), /* @__PURE__ */ React__default["default"].createElement(ui.CustomScrollbar, {
-    autoHeightMin: "100%"
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.treeWrapper
-  }, /* @__PURE__ */ React__default["default"].createElement(DebugTreeNode, {
-    node: scene,
-    selectedObject,
-    onSelect: setSelectedObject
-  })))), /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.pane2
-  }, /* @__PURE__ */ React__default["default"].createElement("div", {
-    className: styles.paneHeading
-  }, "Object details"), selectedObject && /* @__PURE__ */ React__default["default"].createElement(DebugDetails, {
-    node: selectedObject
-  })))));
+  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, /* @__PURE__ */ React__default.default.createElement(ui.ToolbarButton, { variant: "canvas", icon: "bug", onClick: () => setIsOpen(true) }), isOpen && /* @__PURE__ */ React__default.default.createElement(
+    ui.Drawer,
+    {
+      title: i18n.t("grafana-scenes.components.scene-debugger.title-scene-debugger", "Scene debugger"),
+      onClose: () => setIsOpen(false),
+      size: "lg"
+    },
+    /* @__PURE__ */ React__default.default.createElement("div", { className: styles.panes }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.pane1 }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.paneHeading }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.scene-debugger.scene-graph" }, "Scene graph")), /* @__PURE__ */ React__default.default.createElement(ui.CustomScrollbar, { autoHeightMin: "100%" }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.treeWrapper }, /* @__PURE__ */ React__default.default.createElement(DebugTreeNode, { node: scene, selectedObject, onSelect: setSelectedObject })))), /* @__PURE__ */ React__default.default.createElement("div", { className: styles.pane2 }, /* @__PURE__ */ React__default.default.createElement("div", { className: styles.paneHeading }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.scene-debugger.object-details" }, "Object details")), selectedObject && /* @__PURE__ */ React__default.default.createElement(DebugDetails, { node: selectedObject })))
+  ));
 }
 function getStyles(theme) {
   return {
@@ -12831,11 +14989,12 @@ function getStyles(theme) {
   };
 }
 
-function SceneAppPageView({ page, routeProps }) {
+function SceneAppPageView({ page }) {
+  const routeMatch = useSceneRouteMatch(page.state.url);
   const containerPage = getParentPageIfTab(page);
   const containerState = containerPage.useState();
   const params = useAppQueryParams();
-  const scene = page.getScene(routeProps.match);
+  const scene = page.getScene(routeMatch);
   const appContext = React.useContext(SceneAppContext);
   const isInitialized = containerState.initializedScene === scene;
   const { layout } = page.state;
@@ -12878,26 +15037,22 @@ function SceneAppPageView({ page, routeProps }) {
   }
   let pageActions = [];
   if (containerState.controls) {
-    pageActions = containerState.controls.map((control) => /* @__PURE__ */ React__default["default"].createElement(control.Component, {
-      model: control,
-      key: control.state.key
-    }));
+    pageActions = containerState.controls.map((control) => /* @__PURE__ */ React__default.default.createElement(control.Component, { model: control, key: control.state.key }));
   }
   if (params["scene-debugger"]) {
-    pageActions.push(/* @__PURE__ */ React__default["default"].createElement(SceneDebugger, {
-      scene: containerPage,
-      key: "scene-debugger"
-    }));
+    pageActions.push(/* @__PURE__ */ React__default.default.createElement(SceneDebugger, { scene: containerPage, key: "scene-debugger" }));
   }
-  return /* @__PURE__ */ React__default["default"].createElement(runtime.PluginPage, {
-    layout,
-    pageNav,
-    actions: pageActions,
-    renderTitle: containerState.renderTitle,
-    subTitle: containerState.subTitle
-  }, /* @__PURE__ */ React__default["default"].createElement(scene.Component, {
-    model: scene
-  }));
+  return /* @__PURE__ */ React__default.default.createElement(
+    runtime.PluginPage,
+    {
+      layout,
+      pageNav,
+      actions: pageActions,
+      renderTitle: containerState.renderTitle,
+      subTitle: containerState.subTitle
+    },
+    /* @__PURE__ */ React__default.default.createElement(scene.Component, { model: scene })
+  );
 }
 function getParentPageIfTab(page) {
   if (page.parent instanceof SceneAppPage) {
@@ -12920,13 +15075,15 @@ function getParentBreadcrumbs(parent, params, searchObject) {
   }
   return void 0;
 }
-function SceneAppDrilldownViewRender({ drilldown, parent, routeProps }) {
-  return renderSceneComponentWithRouteProps(parent.getDrilldownPage(drilldown, routeProps.match), routeProps);
+function SceneAppDrilldownViewRender({ drilldown, parent }) {
+  const routeMatch = useSceneRouteMatch(drilldown.routePath);
+  const page = parent.getDrilldownPage(drilldown, routeMatch);
+  return /* @__PURE__ */ React__default.default.createElement(page.Component, { model: page });
 }
 
 class SceneAppPage extends SceneObjectBase {
-  constructor(state) {
-    super(state);
+  constructor() {
+    super(...arguments);
     this._sceneCache = /* @__PURE__ */ new Map();
     this._drilldownCache = /* @__PURE__ */ new Map();
   }
@@ -12969,44 +15126,30 @@ class SceneAppPage extends SceneObjectBase {
   }
 }
 SceneAppPage.Component = SceneAppPageRenderer;
-function SceneAppPageRenderer({ model, routeProps }) {
-  var _a, _b;
+function SceneAppPageRenderer({ model }) {
   const { tabs, drilldowns } = model.useState();
   const routes = [];
+  routes.push(getFallbackRoute(model));
   if (tabs && tabs.length > 0) {
     for (let tabIndex = 0; tabIndex < tabs.length; tabIndex++) {
       const tab = tabs[tabIndex];
       if (tabIndex === 0) {
-        routes.push(
-          /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Route, {
-            exact: true,
-            key: model.state.url,
-            path: (_a = model.state.routePath) != null ? _a : model.state.url,
-            render: (props) => renderSceneComponentWithRouteProps(tab, props)
-          })
-        );
+        routes.push(/* @__PURE__ */ React__default.default.createElement(reactRouterDom.Route, { key: model.state.routePath, path: "", element: /* @__PURE__ */ React__default.default.createElement(tab.Component, { model: tab }) }));
       }
       routes.push(
-        /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Route, {
-          exact: true,
-          key: tab.state.url,
-          path: (_b = tab.state.routePath) != null ? _b : tab.state.url,
-          render: (props) => renderSceneComponentWithRouteProps(tab, props)
-        })
+        /* @__PURE__ */ React__default.default.createElement(reactRouterDom.Route, { key: tab.state.url, path: tab.state.routePath, element: /* @__PURE__ */ React__default.default.createElement(tab.Component, { model: tab }) })
       );
       if (tab.state.drilldowns) {
         for (const drilldown of tab.state.drilldowns) {
           routes.push(
-            /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Route, {
-              exact: false,
-              key: drilldown.routePath,
-              path: drilldown.routePath,
-              render: (props) => /* @__PURE__ */ React__default["default"].createElement(SceneAppDrilldownViewRender, {
-                drilldown,
-                parent: tab,
-                routeProps: props
-              })
-            })
+            /* @__PURE__ */ React__default.default.createElement(
+              reactRouterDom.Route,
+              {
+                key: drilldown.routePath,
+                path: drilldown.routePath,
+                element: /* @__PURE__ */ React__default.default.createElement(SceneAppDrilldownViewRender, { drilldown, parent: tab })
+              }
+            )
           );
         }
       }
@@ -13015,58 +15158,39 @@ function SceneAppPageRenderer({ model, routeProps }) {
   if (drilldowns) {
     for (const drilldown of drilldowns) {
       routes.push(
-        /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Route, {
-          key: drilldown.routePath,
-          exact: false,
-          path: drilldown.routePath,
-          render: (props) => /* @__PURE__ */ React__default["default"].createElement(SceneAppDrilldownViewRender, {
-            drilldown,
-            parent: model,
-            routeProps: props
-          })
-        })
+        /* @__PURE__ */ React__default.default.createElement(
+          reactRouterDom.Route,
+          {
+            key: drilldown.routePath,
+            path: drilldown.routePath,
+            Component: () => /* @__PURE__ */ React__default.default.createElement(SceneAppDrilldownViewRender, { drilldown, parent: model })
+          }
+        )
       );
     }
   }
-  if (!tabs && isCurrentPageRouteMatch(model, routeProps.match)) {
-    return /* @__PURE__ */ React__default["default"].createElement(SceneAppPageView, {
-      page: model,
-      routeProps
-    });
+  if (!tabs) {
+    routes.push(/* @__PURE__ */ React__default.default.createElement(reactRouterDom.Route, { key: "home route", path: "/", element: /* @__PURE__ */ React__default.default.createElement(SceneAppPageView, { page: model }) }));
   }
-  routes.push(getFallbackRoute(model, routeProps));
-  return /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Switch, null, routes);
+  return /* @__PURE__ */ React__default.default.createElement(reactRouterDom.Routes, null, routes);
 }
-function getFallbackRoute(page, routeProps) {
-  return /* @__PURE__ */ React__default["default"].createElement(reactRouterDom.Route, {
-    key: "fallback route",
-    render: (props) => {
-      var _a, _b, _c;
-      const fallbackPage = (_c = (_b = (_a = page.state).getFallbackPage) == null ? void 0 : _b.call(_a)) != null ? _c : getDefaultFallbackPage();
-      return /* @__PURE__ */ React__default["default"].createElement(SceneAppPageView, {
-        page: fallbackPage,
-        routeProps
-      });
+function getFallbackRoute(page) {
+  var _a, _b, _c;
+  return /* @__PURE__ */ React__default.default.createElement(
+    reactRouterDom.Route,
+    {
+      key: "fallback route",
+      path: "*",
+      element: /* @__PURE__ */ React__default.default.createElement(SceneAppPageView, { page: (_c = (_b = (_a = page.state).getFallbackPage) == null ? void 0 : _b.call(_a)) != null ? _c : getDefaultFallbackPage() })
     }
-  });
-}
-function isCurrentPageRouteMatch(page, match) {
-  if (!match.isExact) {
-    return false;
-  }
-  if (match.url === page.state.url) {
-    return true;
-  }
-  if (page.parent instanceof SceneAppPage && page.parent.state.tabs[0] === page && page.parent.state.url === match.url) {
-    return true;
-  }
-  return false;
+  );
 }
 function getDefaultFallbackPage() {
   return new SceneAppPage({
     url: "",
-    title: "Not found",
-    subTitle: "The url did not match any page",
+    title: i18n.t("grafana-scenes.components.fallback-page.title", "Not found"),
+    subTitle: i18n.t("grafana-scenes.components.fallback-page.subTitle", "The url did not match any page"),
+    routePath: "*",
     getScene: () => {
       return new EmbeddedScene({
         body: new SceneFlexLayout({
@@ -13075,9 +15199,7 @@ function getDefaultFallbackPage() {
             new SceneFlexItem({
               body: new SceneReactObject({
                 component: () => {
-                  return /* @__PURE__ */ React__default["default"].createElement("div", {
-                    "data-testid": "default-fallback-content"
-                  }, "If you found your way here using a link then there might be a bug in this application.");
+                  return /* @__PURE__ */ React__default.default.createElement("div", { "data-testid": "default-fallback-content" }, /* @__PURE__ */ React__default.default.createElement(i18n.Trans, { i18nKey: "grafana-scenes.components.fallback-page.content" }, "If you found your way here using a link then there might be a bug in this application."));
                 }
               })
             })
@@ -13207,25 +15329,6 @@ class FieldConfigOverridesBuilder extends StandardFieldConfigOverridesBuilder {
   }
 }
 
-var __defProp$1 = Object.defineProperty;
-var __defProps$1 = Object.defineProperties;
-var __getOwnPropDescs$1 = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols$1 = Object.getOwnPropertySymbols;
-var __hasOwnProp$1 = Object.prototype.hasOwnProperty;
-var __propIsEnum$1 = Object.prototype.propertyIsEnumerable;
-var __defNormalProp$1 = (obj, key, value) => key in obj ? __defProp$1(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues$1 = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp$1.call(b, prop))
-      __defNormalProp$1(a, prop, b[prop]);
-  if (__getOwnPropSymbols$1)
-    for (var prop of __getOwnPropSymbols$1(b)) {
-      if (__propIsEnum$1.call(b, prop))
-        __defNormalProp$1(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps$1 = (a, b) => __defProps$1(a, __getOwnPropDescs$1(b));
 class FieldConfigBuilder {
   constructor(defaultFieldConfig) {
     this.defaultFieldConfig = defaultFieldConfig;
@@ -13241,57 +15344,99 @@ class FieldConfigBuilder {
       defaults: {
         custom: this.defaultFieldConfig ? lodash.cloneDeep(this.defaultFieldConfig()) : {}
       },
+      // use field config factory that will provide default field config
       overrides: []
     };
     this._fieldConfig = fieldConfig;
   }
+  /**
+   * Set color.
+   */
   setColor(color) {
     return this.setFieldConfigDefaults("color", color);
   }
+  /**
+   * Set number of decimals to show.
+   */
   setDecimals(decimals) {
     return this.setFieldConfigDefaults("decimals", decimals);
   }
+  /**
+   * Set field display name.
+   */
   setDisplayName(displayName) {
     return this.setFieldConfigDefaults("displayName", displayName);
   }
+  /**
+   * Set the standard field config property filterable.
+   */
   setFilterable(filterable) {
     return this.setFieldConfigDefaults("filterable", filterable);
   }
+  /**
+   * Set data links.
+   */
   setLinks(links) {
     return this.setFieldConfigDefaults("links", links);
   }
+  /**
+   * Set value mappings.
+   */
   setMappings(mappings) {
     return this.setFieldConfigDefaults("mappings", mappings);
   }
+  /**
+   * Set the standard field config property max.
+   */
   setMax(max) {
     return this.setFieldConfigDefaults("max", max);
   }
+  /**
+   * Set the standard field config property min.
+   */
   setMin(min) {
     return this.setFieldConfigDefaults("min", min);
   }
+  /**
+   * Set the standard field config property noValue.
+   */
   setNoValue(noValue) {
     return this.setFieldConfigDefaults("noValue", noValue);
   }
+  /**
+   * Set the standard field config property thresholds.
+   */
   setThresholds(thresholds) {
     return this.setFieldConfigDefaults("thresholds", thresholds);
   }
+  /**
+   * Set the standard field config property unit.
+   */
   setUnit(unit) {
     return this.setFieldConfigDefaults("unit", unit);
   }
+  /**
+   * Set an individual custom field config value. This will merge the value with the existing custom field config.
+   */
   setCustomFieldConfig(id, value) {
-    this._fieldConfig.defaults = __spreadProps$1(__spreadValues$1({}, this._fieldConfig.defaults), {
+    this._fieldConfig.defaults = {
+      ...this._fieldConfig.defaults,
       custom: lodash.merge(this._fieldConfig.defaults.custom, { [id]: value })
-    });
+    };
     return this;
   }
+  /**
+   * Configure overrides for the field config. This will merge the overrides with the existing overrides.
+   */
   setOverrides(builder) {
     builder(this._overridesBuilder);
     return this;
   }
   setFieldConfigDefaults(key, value) {
-    this._fieldConfig.defaults = __spreadProps$1(__spreadValues$1({}, this._fieldConfig.defaults), {
+    this._fieldConfig.defaults = {
+      ...this._fieldConfig.defaults,
       [key]: value
-    });
+    };
     return this;
   }
   build() {
@@ -13311,6 +15456,9 @@ class PanelOptionsBuilder {
   setDefaults() {
     this._options = this.defaultOptions ? lodash.cloneDeep(this.defaultOptions()) : {};
   }
+  /**
+   * Set an individual panel option. This will merge the value with the existing options.
+   */
   setOption(id, value) {
     this._options = lodash.merge(this._options, { [id]: value });
     return this;
@@ -13320,25 +15468,6 @@ class PanelOptionsBuilder {
   }
 }
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class VizPanelBuilder {
   constructor(pluginId, pluginVersion, defaultOptions, defaultFieldConfig) {
     this._state = {};
@@ -13351,30 +15480,52 @@ class VizPanelBuilder {
     this._fieldConfigBuilder = new FieldConfigBuilder(defaultFieldConfig);
     this._panelOptionsBuilder = new PanelOptionsBuilder(defaultOptions);
   }
+  /**
+   * Set panel title.
+   */
   setTitle(title) {
     this._state.title = title;
     return this;
   }
+  /**
+   * Set panel description.
+   */
   setDescription(description) {
     this._state.description = description;
     return this;
   }
+  /**
+   * Set panel display mode.
+   */
   setDisplayMode(displayMode) {
     this._state.displayMode = displayMode;
     return this;
   }
+  /**
+   * Set if panel header should be shown on hover.
+   */
   setHoverHeader(hoverHeader) {
     this._state.hoverHeader = hoverHeader;
     return this;
   }
+  /**
+   * Set if VizPanelMenu "kebab" icon is shown on panel hover for desktop devices. Set true to always show menu icon.
+   * @param showMenuAlways
+   */
   setShowMenuAlways(showMenuAlways) {
     this._state.showMenuAlways = showMenuAlways;
     return this;
   }
+  /**
+   * Set panel menu scene object.
+   */
   setMenu(menu) {
     this._state.menu = menu;
     return this;
   }
+  /**
+   * Set scene object or react component to use as panel header actions.
+   */
   setHeaderActions(headerActions) {
     this._state.headerActions = headerActions;
     return this;
@@ -13387,46 +15538,79 @@ class VizPanelBuilder {
     this._state.collapsed = collapsed;
     return this;
   }
+  /**
+   * Set color.
+   */
   setColor(color) {
     this._fieldConfigBuilder.setColor(color);
     return this;
   }
+  /**
+   * Set number of decimals to show.
+   */
   setDecimals(decimals) {
     this._fieldConfigBuilder.setDecimals(decimals);
     return this;
   }
+  /**
+   * Set field display name.
+   */
   setDisplayName(displayName) {
     this._fieldConfigBuilder.setDisplayName(displayName);
     return this;
   }
+  /**
+   * Set the standard field config property filterable.
+   */
   setFilterable(filterable) {
     this._fieldConfigBuilder.setFilterable(filterable);
     return this;
   }
+  /**
+   * Set data links.
+   */
   setLinks(links) {
     this._fieldConfigBuilder.setLinks(links);
     return this;
   }
+  /**
+   * Set value mappings.
+   */
   setMappings(mappings) {
     this._fieldConfigBuilder.setMappings(mappings);
     return this;
   }
+  /**
+   * Set the standard field config property max.
+   */
   setMax(max) {
     this._fieldConfigBuilder.setMax(max);
     return this;
   }
+  /**
+   * Set the standard field config property min.
+   */
   setMin(min) {
     this._fieldConfigBuilder.setMin(min);
     return this;
   }
+  /**
+   * Set the standard field config property noValue.
+   */
   setNoValue(noValue) {
     this._fieldConfigBuilder.setNoValue(noValue);
     return this;
   }
+  /**
+   * Set the standard field config property thresholds.
+   */
   setThresholds(thresholds) {
     this._fieldConfigBuilder.setThresholds(thresholds);
     return this;
   }
+  /**
+   * Set the standard field config property unit.
+   */
   setUnit(unit) {
     this._fieldConfigBuilder.setUnit(unit);
     return this;
@@ -13439,39 +15623,64 @@ class VizPanelBuilder {
     this._fieldConfigBuilder.setOverrides(builder);
     return this;
   }
+  /**
+   * Set an individual panel option. This will merge the value with the existing options.
+   */
   setOption(id, value) {
     this._panelOptionsBuilder.setOption(id, value);
     return this;
   }
+  /**
+   * Set data provider for the panel.
+   */
   setData(data) {
     this._state.$data = data;
     return this;
   }
+  /**
+   * Set time range for the panel.
+   */
   setTimeRange(timeRange) {
     this._state.$timeRange = timeRange;
     return this;
   }
+  /**
+   * Set variables for the panel.
+   */
   setVariables(variables) {
     this._state.$variables = variables;
     return this;
   }
+  /**
+   * Set behaviors for the panel.
+   */
   setBehaviors(behaviors) {
     this._state.$behaviors = behaviors;
     return this;
   }
+  /**
+   * Sets the default series limit for the panel.
+   */
   setSeriesLimit(seriesLimit) {
     this._state.seriesLimit = seriesLimit;
     return this;
   }
+  /**
+   * Makes it possible to shared config between different builders
+   */
   applyMixin(mixin) {
     mixin(this);
     return this;
   }
+  /**
+   * Build the panel.
+   */
   build() {
-    const panel = new VizPanel(__spreadProps(__spreadValues({}, this._state), {
+    const panel = new VizPanel({
+      ...this._state,
       options: this._panelOptionsBuilder.build(),
       fieldConfig: this._fieldConfigBuilder.build()
-    }));
+    });
     return panel;
   }
 }
@@ -13710,46 +15919,79 @@ class VizConfigBuilder {
     this._fieldConfigBuilder = new FieldConfigBuilder(defaultFieldConfig);
     this._panelOptionsBuilder = new PanelOptionsBuilder(defaultOptions);
   }
+  /**
+   * Set color.
+   */
   setColor(color) {
     this._fieldConfigBuilder.setColor(color);
     return this;
   }
+  /**
+   * Set number of decimals to show.
+   */
   setDecimals(decimals) {
     this._fieldConfigBuilder.setDecimals(decimals);
     return this;
   }
+  /**
+   * Set field display name.
+   */
   setDisplayName(displayName) {
     this._fieldConfigBuilder.setDisplayName(displayName);
     return this;
   }
+  /**
+   * Set the standard field config property filterable.
+   */
   setFilterable(filterable) {
     this._fieldConfigBuilder.setFilterable(filterable);
     return this;
   }
+  /**
+   * Set data links.
+   */
   setLinks(links) {
     this._fieldConfigBuilder.setLinks(links);
     return this;
   }
+  /**
+   * Set value mappings.
+   */
   setMappings(mappings) {
     this._fieldConfigBuilder.setMappings(mappings);
     return this;
   }
+  /**
+   * Set the standard field config property max.
+   */
   setMax(max) {
     this._fieldConfigBuilder.setMax(max);
     return this;
   }
+  /**
+   * Set the standard field config property min.
+   */
   setMin(min) {
     this._fieldConfigBuilder.setMin(min);
     return this;
   }
+  /**
+   * Set the standard field config property noValue.
+   */
   setNoValue(noValue) {
     this._fieldConfigBuilder.setNoValue(noValue);
     return this;
   }
+  /**
+   * Set the standard field config property thresholds.
+   */
   setThresholds(thresholds) {
     this._fieldConfigBuilder.setThresholds(thresholds);
     return this;
   }
+  /**
+   * Set the standard field config property unit.
+   */
   setUnit(unit) {
     this._fieldConfigBuilder.setUnit(unit);
     return this;
@@ -13762,10 +16004,16 @@ class VizConfigBuilder {
     this._fieldConfigBuilder.setOverrides(builder);
     return this;
   }
+  /**
+   * Set an individual panel option. This will merge the value with the existing options.
+   */
   setOption(id, value) {
     this._panelOptionsBuilder.setOption(id, value);
     return this;
   }
+  /**
+   * Build the panel.
+   */
   build() {
     return {
       pluginId: this._pluginId,
@@ -13871,6 +16119,43 @@ const VizConfigBuilders = {
   }
 };
 
+function __variableDynamicImportRuntime0__(path) {
+  switch (path) {
+    case '../locales/cs-CZ/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-DQDUiFgy.js'); });
+    case '../locales/de-DE/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-Dmwf_eJ5.js'); });
+    case '../locales/en-US/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-e_AZ1Oh2.js'); });
+    case '../locales/es-ES/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-2zS6WwcG.js'); });
+    case '../locales/fr-FR/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-5D_kgp5S.js'); });
+    case '../locales/hu-HU/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-BAJo7mZu.js'); });
+    case '../locales/id-ID/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-r_1S-tPI.js'); });
+    case '../locales/it-IT/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-Di0mD-iN.js'); });
+    case '../locales/ja-JP/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-L3DvBvA_.js'); });
+    case '../locales/ko-KR/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-DW_EK7z5.js'); });
+    case '../locales/nl-NL/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-DkNywY1s.js'); });
+    case '../locales/pl-PL/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-8z5eBgO0.js'); });
+    case '../locales/pt-BR/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-C4rsdf2J.js'); });
+    case '../locales/pt-PT/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-DarGXy_b.js'); });
+    case '../locales/ru-RU/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-BAvDcHPV.js'); });
+    case '../locales/sv-SE/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-fPery0i8.js'); });
+    case '../locales/tr-TR/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-tZ650dxC.js'); });
+    case '../locales/zh-Hans/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-D_7C5tUl.js'); });
+    case '../locales/zh-Hant/grafana-scenes.json': return Promise.resolve().then(function () { return require('./grafana-scenes-v_pWTyzx.js'); });
+    default: return new Promise(function(resolve, reject) {
+      (typeof queueMicrotask === 'function' ? queueMicrotask : setTimeout)(
+        reject.bind(null, new Error("Unknown variable dynamic import: " + path))
+      );
+    })
+   }
+ }
+const resources = i18n.LANGUAGES.reduce((acc, lang) => {
+  acc[lang.code] = async () => await __variableDynamicImportRuntime0__(`../locales/${lang.code}/grafana-scenes.json`);
+  return acc;
+}, {});
+const loadResources = async (resolvedLanguage) => {
+  const translation = await resources[resolvedLanguage]();
+  return translation.default;
+};
+
 const sceneUtils = {
   getUrlWithAppState,
   registerRuntimePanelPlugin,
@@ -13880,6 +16165,10 @@ const sceneUtils = {
   syncStateFromSearchParams,
   getUrlState,
   renderPrometheusLabelFilters,
+  escapeLabelValueInRegexSelector,
+  escapeLabelValueInExactSelector,
+  escapeURLDelimiters,
+  // Variable guards
   isAdHocVariable,
   isConstantVariable,
   isCustomVariable,
@@ -13887,10 +16176,15 @@ const sceneUtils = {
   isIntervalVariable,
   isQueryVariable,
   isTextBoxVariable,
-  isGroupByVariable
+  isGroupByVariable,
+  isSwitchVariable,
+  isRepeatCloneOrChildOf,
+  buildPathIdFor
 };
 
+exports.AdHocFiltersComboboxRenderer = AdHocFiltersComboboxRenderer;
 exports.AdHocFiltersVariable = AdHocFiltersVariable;
+exports.AdHocFiltersVariableController = AdHocFiltersVariableController;
 exports.ConstantVariable = ConstantVariable;
 exports.ControlsLabel = ControlsLabel;
 exports.CustomVariable = CustomVariable;
@@ -13902,10 +16196,13 @@ exports.FieldConfigBuilders = FieldConfigBuilders;
 exports.FieldConfigOverridesBuilder = FieldConfigOverridesBuilder;
 exports.GroupByVariable = GroupByVariable;
 exports.IntervalVariable = IntervalVariable;
+exports.LazyLoader = LazyLoader;
 exports.LocalValueVariable = LocalValueVariable;
+exports.MultiOrSingleValueSelect = MultiOrSingleValueSelect;
 exports.MultiValueVariable = MultiValueVariable;
 exports.NestedScene = NestedScene;
 exports.NewSceneObjectAddedEvent = NewSceneObjectAddedEvent;
+exports.PATH_ID_SEPARATOR = PATH_ID_SEPARATOR;
 exports.PanelBuilders = PanelBuilders;
 exports.PanelOptionsBuilders = PanelOptionsBuilders;
 exports.QueryVariable = QueryVariable;
@@ -13930,6 +16227,7 @@ exports.SceneFlexItem = SceneFlexItem;
 exports.SceneFlexLayout = SceneFlexLayout;
 exports.SceneGridItem = SceneGridItem;
 exports.SceneGridLayout = SceneGridLayout;
+exports.SceneGridLayoutDragStartEvent = SceneGridLayoutDragStartEvent;
 exports.SceneGridRow = SceneGridRow;
 exports.SceneObjectBase = SceneObjectBase;
 exports.SceneObjectRef = SceneObjectRef;
@@ -13947,7 +16245,9 @@ exports.SceneToolbarButton = SceneToolbarButton;
 exports.SceneToolbarInput = SceneToolbarInput;
 exports.SceneVariableSet = SceneVariableSet;
 exports.SceneVariableValueChangedEvent = SceneVariableValueChangedEvent;
+exports.ScopesVariable = ScopesVariable;
 exports.SplitLayout = SplitLayout;
+exports.SwitchVariable = SwitchVariable;
 exports.TestVariable = TestVariable;
 exports.TextBoxVariable = TextBoxVariable;
 exports.UrlSyncContextProvider = UrlSyncContextProvider;
@@ -13963,8 +16263,9 @@ exports.VizPanel = VizPanel;
 exports.VizPanelBuilder = VizPanelBuilder;
 exports.VizPanelExploreButton = VizPanelExploreButton;
 exports.VizPanelMenu = VizPanelMenu;
-exports.behaviors = index$1;
+exports.behaviors = index$2;
 exports.dataLayers = index;
+exports.escapeUrlPipeDelimiters = escapeUrlPipeDelimiters;
 exports.formatRegistry = formatRegistry;
 exports.getExploreURL = getExploreURL;
 exports.isCustomVariableValue = isCustomVariableValue;
@@ -13972,12 +16273,14 @@ exports.isDataLayer = isDataLayer;
 exports.isDataRequestEnricher = isDataRequestEnricher;
 exports.isFiltersRequestEnricher = isFiltersRequestEnricher;
 exports.isSceneObject = isSceneObject;
+exports.loadResources = loadResources;
+exports.performanceUtils = index$1;
 exports.registerQueryWithController = registerQueryWithController;
 exports.registerRuntimeDataSource = registerRuntimeDataSource;
-exports.renderSelectForVariable = renderSelectForVariable;
 exports.sceneGraph = sceneGraph;
 exports.sceneUtils = sceneUtils;
 exports.useSceneApp = useSceneApp;
 exports.useSceneObjectState = useSceneObjectState;
 exports.useUrlSync = useUrlSync;
+exports.writePerformanceLog = writePerformanceLog;
 //# sourceMappingURL=index.js.map

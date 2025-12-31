@@ -1,41 +1,28 @@
+import { t } from '@grafana/i18n';
 import { Subject, Observable } from 'rxjs';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
 import { queryMetricTree } from '../../utils/metricTree.js';
 import { VariableDependencyConfig } from '../VariableDependencyConfig.js';
-import { renderSelectForVariable } from '../components/VariableValueSelect.js';
+import { MultiOrSingleValueSelect } from '../components/VariableValueSelect.js';
 import { MultiValueVariable } from './MultiValueVariable.js';
 import { VariableRefresh } from '@grafana/data';
 import { getClosest } from '../../core/sceneGraph/utils.js';
 import { SceneVariableSet } from '../sets/SceneVariableSet.js';
+import React from 'react';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class TestVariable extends MultiValueVariable {
   constructor(initialState, isLazy = false) {
-    super(__spreadValues({
+    super({
       type: "custom",
       name: "Test",
       value: "Value",
-      text: "Text",
+      text: t("grafana-scenes.variables.test-variable.text.text", "Text"),
       query: "Query",
       options: [],
       refresh: VariableRefresh.onDashboardLoad,
-      updateOptions: true
-    }, initialState));
+      updateOptions: true,
+      ...initialState
+    });
     this.completeUpdate = new Subject();
     this.isGettingValues = true;
     this.getValueOptionsCount = 0;
@@ -105,12 +92,13 @@ class TestVariable extends MultiValueVariable {
     }
     return queryMetricTree(interpolatedQuery).map((x) => ({ label: x.name, value: x.name }));
   }
+  /** Useful from tests */
   signalUpdateCompleted() {
     this.completeUpdate.next(1);
   }
 }
 TestVariable.Component = ({ model }) => {
-  return renderSelectForVariable(model);
+  return /* @__PURE__ */ React.createElement(MultiOrSingleValueSelect, { model });
 };
 
 export { TestVariable };

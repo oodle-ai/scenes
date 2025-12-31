@@ -4,11 +4,13 @@ import { SceneObjectBase } from '../../core/SceneObjectBase.js';
 import { selectors } from '@grafana/e2e-selectors';
 
 class VizPanelMenu extends SceneObjectBase {
+  // Allows adding menu items dynamically
   addItem(item) {
     this.setState({
       items: this.state.items ? [...this.state.items, item] : [item]
     });
   }
+  // Allows replacing all menu items
   setItems(items) {
     this.setState({
       items
@@ -28,31 +30,28 @@ function VizPanelMenuRenderer({ model }) {
     return items2.map((item) => {
       switch (item.type) {
         case "divider":
-          return /* @__PURE__ */ React.createElement(Menu.Divider, {
-            key: item.text
-          });
+          return /* @__PURE__ */ React.createElement(Menu.Divider, { key: item.text });
         case "group":
-          return /* @__PURE__ */ React.createElement(Menu.Group, {
-            key: item.text,
-            label: item.text
-          }, item.subMenu ? renderItems(item.subMenu) : void 0);
+          return /* @__PURE__ */ React.createElement(Menu.Group, { key: item.text, label: item.text }, item.subMenu ? renderItems(item.subMenu) : void 0);
         default:
-          return /* @__PURE__ */ React.createElement(Menu.Item, {
-            key: item.text,
-            label: item.text,
-            icon: item.iconClassName,
-            childItems: item.subMenu ? renderItems(item.subMenu) : void 0,
-            url: item.href,
-            onClick: item.onClick,
-            shortcut: item.shortcut,
-            testId: selectors.components.Panels.Panel.menuItems(item.text)
-          });
+          return /* @__PURE__ */ React.createElement(
+            Menu.Item,
+            {
+              key: item.text,
+              role: "menuitem",
+              label: item.text,
+              icon: item.iconClassName,
+              childItems: item.subMenu ? renderItems(item.subMenu) : void 0,
+              url: item.href,
+              onClick: item.onClick,
+              shortcut: item.shortcut,
+              testId: selectors.components.Panels.Panel.menuItems(item.text)
+            }
+          );
       }
     });
   };
-  return /* @__PURE__ */ React.createElement(Menu, {
-    ref
-  }, renderItems(items));
+  return /* @__PURE__ */ React.createElement(Menu, { ref }, renderItems(items));
 }
 
 export { VizPanelMenu };

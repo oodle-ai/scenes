@@ -1,4 +1,5 @@
-import { cx, css } from '@emotion/css';
+import { t } from '@grafana/i18n';
+import { css, cx } from '@emotion/css';
 import React from 'react';
 import { useStyles2, ToolbarButton, Icon } from '@grafana/ui';
 import { SceneObjectBase } from '../core/SceneObjectBase.js';
@@ -13,6 +14,7 @@ class NestedScene extends SceneObjectBase {
         isCollapsed: !this.state.isCollapsed
       });
     };
+    /** Removes itself from its parent's children array */
     this.onRemove = () => {
       const parent = this.parent;
       if (isSceneLayoutItem(parent)) {
@@ -28,39 +30,31 @@ function NestedSceneRenderer({ model }) {
   const { title, isCollapsed, canCollapse, canRemove, body, controls } = model.useState();
   const gridRow = useStyles2(getSceneGridRowStyles);
   const styles = useStyles2(getStyles);
-  const toolbarControls = (controls != null ? controls : []).map((action) => /* @__PURE__ */ React.createElement(action.Component, {
-    key: action.state.key,
-    model: action
-  }));
+  const toolbarControls = (controls != null ? controls : []).map((action) => /* @__PURE__ */ React.createElement(action.Component, { key: action.state.key, model: action }));
   if (canRemove) {
     toolbarControls.push(
-      /* @__PURE__ */ React.createElement(ToolbarButton, {
-        icon: "times",
-        variant: "default",
-        onClick: model.onRemove,
-        key: "remove-button",
-        "aria-label": "Remove scene"
-      })
+      /* @__PURE__ */ React.createElement(
+        ToolbarButton,
+        {
+          icon: "times",
+          variant: "default",
+          onClick: model.onRemove,
+          key: "remove-button",
+          "aria-label": t("grafana-scenes.components.nested-scene-renderer.remove-button-label", "Remove scene")
+        }
+      )
     );
   }
-  return /* @__PURE__ */ React.createElement("div", {
-    className: styles.wrapper
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: cx(styles.row, isCollapsed && styles.rowCollapsed)
-  }, /* @__PURE__ */ React.createElement("button", {
-    onClick: model.onToggle,
-    className: gridRow.rowTitleButton,
-    "aria-label": isCollapsed ? "Expand scene" : "Collapse scene"
-  }, canCollapse && /* @__PURE__ */ React.createElement(Icon, {
-    name: isCollapsed ? "angle-right" : "angle-down"
-  }), /* @__PURE__ */ React.createElement("span", {
-    className: gridRow.rowTitle,
-    role: "heading"
-  }, sceneGraph.interpolate(model, title, void 0, "text"))), /* @__PURE__ */ React.createElement("div", {
-    className: styles.actions
-  }, toolbarControls)), !isCollapsed && /* @__PURE__ */ React.createElement(body.Component, {
-    model: body
-  }));
+  return /* @__PURE__ */ React.createElement("div", { className: styles.wrapper }, /* @__PURE__ */ React.createElement("div", { className: cx(styles.row, isCollapsed && styles.rowCollapsed) }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: model.onToggle,
+      className: gridRow.rowTitleButton,
+      "aria-label": isCollapsed ? t("grafana-scenes.components.nested-scene-renderer.expand-button-label", "Expand scene") : t("grafana-scenes.components.nested-scene-renderer.collapse-button-label", "Collapse scene")
+    },
+    canCollapse && /* @__PURE__ */ React.createElement(Icon, { name: isCollapsed ? "angle-right" : "angle-down" }),
+    /* @__PURE__ */ React.createElement("span", { className: gridRow.rowTitle, role: "heading" }, sceneGraph.interpolate(model, title, void 0, "text"))
+  ), /* @__PURE__ */ React.createElement("div", { className: styles.actions }, toolbarControls)), !isCollapsed && /* @__PURE__ */ React.createElement(body.Component, { model: body }));
 }
 const getStyles = (theme) => ({
   wrapper: css({

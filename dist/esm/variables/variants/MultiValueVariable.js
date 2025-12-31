@@ -6,12 +6,17 @@ import { SceneVariableValueChangedEvent } from '../types.js';
 import { formatRegistry } from '../interpolation/formatRegistry.js';
 import { VariableFormatID } from '@grafana/schema';
 import { setBaseClassState } from '../../utils/utils.js';
+import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants.js';
+import { getQueryController } from '../../core/sceneGraph/getQueryController.js';
 
 class MultiValueVariable extends SceneObjectBase {
   constructor() {
     super(...arguments);
     this._urlSync = new MultiValueUrlSyncHandler(this);
   }
+  /**
+   * This function is called on when SceneVariableSet is activated or when a dependency changes.
+   */
   validateAndUpdate() {
     return this.getValueOptions({}).pipe(
       map((options) => {
@@ -25,6 +30,9 @@ class MultiValueVariable extends SceneObjectBase {
     const sceneVarSet = this.parent;
     sceneVarSet == null ? void 0 : sceneVarSet.cancel(this);
   }
+  /**
+   * Check if current value is valid given new options. If not update the value.
+   */
   updateValueGivenNewOptions(options) {
     const { value: currentValue, text: currentText, options: oldOptions } = this.state;
     const stateUpdate = this.getStateUpdateGivenNewOptions(options, currentValue, currentText);
@@ -90,16 +98,16 @@ class MultiValueVariable extends SceneObjectBase {
       stateUpdate.text = matchingOption.label;
       stateUpdate.value = matchingOption.value;
     } else {
-      if (this.state.defaultToAll) {
-        stateUpdate.value = ALL_VARIABLE_VALUE;
-        stateUpdate.text = ALL_VARIABLE_TEXT;
-      } else {
-        stateUpdate.value = options[0].value;
-        stateUpdate.text = options[0].label;
-      }
+      const defaultState = this.getDefaultSingleState(options);
+      stateUpdate.value = defaultState.value;
+      stateUpdate.text = defaultState.text;
     }
     return stateUpdate;
   }
+  /**
+   * Values set by initial URL sync needs to survive the next validation and update.
+   * This function can intercept and make sure those values are preserved.
+   */
   interceptStateUpdateAfterValidation(stateUpdate) {
     const isAllValueFix = stateUpdate.value === ALL_VARIABLE_VALUE && this.state.text === ALL_VARIABLE_TEXT;
     if (this.skipNextValidation && stateUpdate.value !== this.state.value && stateUpdate.text !== this.state.text && !isAllValueFix) {
@@ -108,14 +116,22 @@ class MultiValueVariable extends SceneObjectBase {
     }
     this.skipNextValidation = false;
   }
-  getValue() {
+  getValue(fieldPath) {
+    let value = this.state.value;
     if (this.hasAllValue()) {
       if (this.state.allValue) {
         return new CustomAllValue(this.state.allValue, this);
       }
+      value = this.state.options.map((x) => x.value);
+    }
+    if (fieldPath != null && Array.isArray(value)) {
+      const index = parseInt(fieldPath, 10);
+      if (!isNaN(index) && index >= 0 && index < value.length) {
+        return value[index];
+      }
       return new CustomAllValue(".*", this);
     }
-    return this.state.value;
+    return value;
   }
   getValueText() {
     if (this.hasAllValue()) {
@@ -139,7 +155,20 @@ class MultiValueVariable extends SceneObjectBase {
       return { value: [], text: [] };
     }
   }
-  changeValueTo(value, text) {
+  getDefaultSingleState(options) {
+    if (this.state.defaultToAll) {
+      return { value: ALL_VARIABLE_VALUE, text: ALL_VARIABLE_TEXT };
+    } else if (options.length > 0) {
+      return { value: options[0].value, text: options[0].label };
+    } else {
+      return { value: "", text: "" };
+    }
+  }
+  /**
+   * Change the value and publish SceneVariableValueChangedEvent event.
+   */
+  changeValueTo(value, text, isUserAction = false) {
+    var _a, _b;
     if (value === this.state.value && text === this.state.text) {
       return;
     }
@@ -169,7 +198,14 @@ class MultiValueVariable extends SceneObjectBase {
     if (isEqual(value, this.state.value) && isEqual(text, this.state.text)) {
       return;
     }
-    this.setStateHelper({ value, text, loading: false });
+    const stateChangeAction = () => this.setStateHelper({ value, text, loading: false });
+    if (isUserAction) {
+      const queryController = getQueryController(this);
+      queryController == null ? void 0 : queryController.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
+      (_b = (_a = this._urlSync).performBrowserHistoryAction) == null ? void 0 : _b.call(_a, stateChangeAction);
+    } else {
+      stateChangeAction();
+    }
     this.publishEvent(new SceneVariableValueChangedEvent(this), true);
   }
   findLabelTextForValue(value) {
@@ -186,15 +222,18 @@ class MultiValueVariable extends SceneObjectBase {
     }
     return value;
   }
+  /**
+   * This helper function is to counter the contravariance of setState
+   */
   setStateHelper(state) {
     setBaseClassState(this, state);
   }
-  getOptionsForSelect() {
+  getOptionsForSelect(includeCurrentValue = true) {
     let options = this.state.options;
     if (this.state.includeAll) {
       options = [{ value: ALL_VARIABLE_VALUE, label: ALL_VARIABLE_TEXT }, ...options];
     }
-    if (!Array.isArray(this.state.value)) {
+    if (includeCurrentValue && !Array.isArray(this.state.value)) {
       const current = options.find((x) => x.value === this.state.value);
       if (!current) {
         options = [{ value: this.state.value, label: String(this.state.text) }, ...options];
@@ -223,6 +262,7 @@ function findOptionMatchingCurrent(currentValue, currentText, options) {
 class MultiValueUrlSyncHandler {
   constructor(_sceneObject) {
     this._sceneObject = _sceneObject;
+    this._nextChangeShouldAddHistoryStep = false;
   }
   getKey() {
     return `var-${this._sceneObject.state.name}`;
@@ -262,6 +302,14 @@ class MultiValueUrlSyncHandler {
       }
       this._sceneObject.changeValueTo(urlValue);
     }
+  }
+  performBrowserHistoryAction(callback) {
+    this._nextChangeShouldAddHistoryStep = true;
+    callback();
+    this._nextChangeShouldAddHistoryStep = false;
+  }
+  shouldCreateHistoryStep(values) {
+    return this._nextChangeShouldAddHistoryStep;
   }
 }
 function handleLegacyUrlAllValue(value) {

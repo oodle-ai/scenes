@@ -22,6 +22,9 @@ function isTextBoxVariable(variable) {
 function isGroupByVariable(variable) {
   return variable.state.type === "groupby";
 }
+function isSwitchVariable(variable) {
+  return variable.state.type === "switch";
+}
 
-export { isAdHocVariable, isConstantVariable, isCustomVariable, isDataSourceVariable, isGroupByVariable, isIntervalVariable, isQueryVariable, isTextBoxVariable };
+export { isAdHocVariable, isConstantVariable, isCustomVariable, isDataSourceVariable, isGroupByVariable, isIntervalVariable, isQueryVariable, isSwitchVariable, isTextBoxVariable };
 //# sourceMappingURL=guards.js.map

@@ -6,31 +6,13 @@ import { shouldUseLegacyRunner, standardAnnotationSupport } from './standardAnno
 import { LoadingState } from '@grafana/schema';
 import { getEnrichedDataRequest } from '../../getEnrichedDataRequest.js';
 import { wrapInSafeSerializableSceneObject } from '../../../utils/wrapInSafeSerializableSceneObject.js';
+import { sceneGraph } from '../../../core/sceneGraph/index.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 let counter = 100;
 function getNextRequestId() {
   return "AQ" + counter++;
 }
-function executeAnnotationQuery(datasource, timeRange, query, layer) {
+function executeAnnotationQuery(datasource, timeRange, query, layer, filters, groupByKeys) {
   var _a;
   if (datasource.annotationQuery && shouldUseLegacyRunner(datasource)) {
     console.warn("Using deprecated annotationQuery method, please upgrade your datasource");
@@ -50,8 +32,15 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
       }))
     );
   }
-  const processor = __spreadValues(__spreadValues({}, standardAnnotationSupport), datasource.annotations);
-  const annotationWithDefaults = __spreadValues(__spreadValues({}, (_a = processor.getDefaultQuery) == null ? void 0 : _a.call(processor)), query);
+  const processor = {
+    ...standardAnnotationSupport,
+    ...datasource.annotations
+  };
+  const annotationWithDefaults = {
+    // Default query provided by a data source
+    ...(_a = processor.getDefaultQuery) == null ? void 0 : _a.call(processor),
+    ...query
+  };
   const annotation = processor.prepareAnnotation(annotationWithDefaults);
   if (!annotation) {
     return of({
@@ -74,21 +63,26 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
     __annotation: { text: annotation.name, value: annotation },
     __sceneObject: wrapInSafeSerializableSceneObject(layer)
   };
-  const queryRequest = __spreadValues(__spreadProps(__spreadValues({
+  const queryRequest = {
     startTime: Date.now(),
     requestId: getNextRequestId(),
     range: timeRange.state.value,
     maxDataPoints,
-    scopedVars
-  }, interval), {
+    scopedVars,
+    ...interval,
     app: CoreApp.Dashboard,
     timezone: timeRange.getTimeZone(),
     targets: [
-      __spreadProps(__spreadValues({}, processedQuery), {
+      {
+        ...processedQuery,
         refId: "Anno"
-      })
-    ]
-  }), getEnrichedDataRequest(layer));
+      }
+    ],
+    scopes: sceneGraph.getScopes(layer),
+    filters,
+    groupByKeys,
+    ...getEnrichedDataRequest(layer)
+  };
   const runRequest = getRunRequest();
   return runRequest(datasource, queryRequest).pipe(
     mergeMap((panelData) => {
@@ -102,7 +96,7 @@ function executeAnnotationQuery(datasource, timeRange, query, layer) {
       data.forEach((frame) => {
         var _a2;
         if (!((_a2 = frame.meta) == null ? void 0 : _a2.dataTopic)) {
-          frame.meta = __spreadProps(__spreadValues({}, frame.meta || {}), { dataTopic: DataTopic.Annotations });
+          frame.meta = { ...frame.meta || {}, dataTopic: DataTopic.Annotations };
         }
       });
       return processor.processEvents(annotation, data).pipe(

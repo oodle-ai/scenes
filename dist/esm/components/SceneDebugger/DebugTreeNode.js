@@ -8,22 +8,10 @@ function DebugTreeNode({ node, selectedObject, onSelect }) {
   const isSelected = node === selectedObject;
   node.forEachChild((child) => {
     children.push(
-      /* @__PURE__ */ React.createElement(DebugTreeNode, {
-        node: child,
-        key: child.state.key,
-        selectedObject,
-        onSelect
-      })
+      /* @__PURE__ */ React.createElement(DebugTreeNode, { node: child, key: child.state.key, selectedObject, onSelect })
     );
   });
-  return /* @__PURE__ */ React.createElement("div", {
-    className: styles.container
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: cx(styles.name, isSelected && styles.selected),
-    onClick: () => onSelect(node)
-  }, node.constructor.name), /* @__PURE__ */ React.createElement("div", {
-    className: styles.children
-  }, children));
+  return /* @__PURE__ */ React.createElement("div", { className: styles.container }, /* @__PURE__ */ React.createElement("div", { className: cx(styles.name, isSelected && styles.selected), onClick: () => onSelect(node) }, node.constructor.name), /* @__PURE__ */ React.createElement("div", { className: styles.children }, children));
 }
 function getStyles(theme) {
   return {

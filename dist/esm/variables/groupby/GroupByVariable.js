@@ -1,40 +1,27 @@
+import { t } from '@grafana/i18n';
 import React, { useMemo, useState, useEffect } from 'react';
 import { allActiveGroupByVariables } from './findActiveGroupByVariablesByUid.js';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
+import { SceneVariableValueChangedEvent } from '../types.js';
 import { MultiValueVariable } from '../variants/MultiValueVariable.js';
-import { map, of, from, mergeMap, tap, take, lastValueFrom } from 'rxjs';
+import { lastValueFrom, map, of, from, mergeMap, tap, take } from 'rxjs';
 import { getDataSource } from '../../utils/getDataSource.js';
 import { MultiSelect, Select } from '@grafana/ui';
-import { isArray } from 'lodash';
-import { dataFromResponse, getQueriesForVariables, responseHasError, handleOptionGroups } from '../utils.js';
+import { isArray, isEqual } from 'lodash';
+import { handleOptionGroups, dataFromResponse, getQueriesForVariables, responseHasError } from '../utils.js';
 import { OptionWithCheckbox } from '../components/VariableValueSelect.js';
 import { GroupByVariableUrlSyncHandler } from './GroupByVariableUrlSyncHandler.js';
 import { getOptionSearcher } from '../components/getOptionSearcher.js';
 import { getEnrichedFiltersRequest } from '../getEnrichedFiltersRequest.js';
 import { wrapInSafeSerializableSceneObject } from '../../utils/wrapInSafeSerializableSceneObject.js';
+import { DefaultGroupByCustomIndicatorContainer } from './DefaultGroupByCustomIndicatorContainer.js';
+import { GroupByValueContainer } from './GroupByValueContainer.js';
+import { getInteractionTracker } from '../../core/sceneGraph/getInteractionTracker.js';
+import { GROUPBY_DIMENSIONS_INTERACTION } from '../../performance/interactionConstants.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class GroupByVariable extends MultiValueVariable {
   constructor(initialState) {
-    super(__spreadProps(__spreadValues({
+    super({
       isMulti: true,
       name: "",
       value: [],
@@ -44,12 +31,28 @@ class GroupByVariable extends MultiValueVariable {
       baseFilters: [],
       applyMode: "auto",
       layout: "horizontal",
-      type: "groupby"
-    }, initialState), {
+      type: "groupby",
+      ...initialState,
       noValueOnClear: true
-    }));
+    });
     this.isLazy = true;
     this._urlSync = new GroupByVariableUrlSyncHandler(this);
+    this._activationHandler = () => {
+      this._verifyApplicability();
+      if (this.state.defaultValue) {
+        if (this.checkIfRestorable(this.state.value)) {
+          this.setState({ restorable: true });
+        }
+      }
+      return () => {
+        if (this.state.defaultValue) {
+          this.restoreDefaultValues();
+        }
+      };
+    };
+    /**
+     * Get possible keys given current filters. Do not call from plugins directly
+     */
     this._getKeys = async (ds) => {
       var _a, _b, _c;
       const override = await ((_b = (_a = this.state).getTagKeysProvider) == null ? void 0 : _b.call(_a, this, null));
@@ -65,11 +68,13 @@ class GroupByVariable extends MultiValueVariable {
       const queries = getQueriesForVariables(this);
       const otherFilters = this.state.baseFilters || [];
       const timeRange = sceneGraph.getTimeRange(this).state.value;
-      const response = await ds.getTagKeys(__spreadValues({
+      const response = await ds.getTagKeys({
         filters: otherFilters,
         queries,
-        timeRange
-      }, getEnrichedFiltersRequest(this)));
+        timeRange,
+        scopes: sceneGraph.getScopes(this),
+        ...getEnrichedFiltersRequest(this)
+      });
       if (responseHasError(response)) {
         this.setState({ error: response.error.message });
       }
@@ -83,12 +88,16 @@ class GroupByVariable extends MultiValueVariable {
       }
       return keys;
     };
+    if (this.state.defaultValue) {
+      this.changeValueTo(this.state.defaultValue.value, this.state.defaultValue.text, false);
+    }
     if (this.state.applyMode === "auto") {
       this.addActivationHandler(() => {
         allActiveGroupByVariables.add(this);
         return () => allActiveGroupByVariables.delete(this);
       });
     }
+    this.addActivationHandler(this._activationHandler);
   }
   validateAndUpdate() {
     return this.getValueOptions({}).pipe(
@@ -147,6 +156,62 @@ class GroupByVariable extends MultiValueVariable {
       })
     );
   }
+  getApplicableKeys() {
+    const { value, keysApplicability } = this.state;
+    const valueArray = isArray(value) ? value : value ? [value] : [];
+    if (!keysApplicability || keysApplicability.length === 0) {
+      return valueArray;
+    }
+    const applicableValues = valueArray.filter((val) => {
+      const applicability = keysApplicability.find((item) => item.key === val);
+      return !applicability || applicability.applicable !== false;
+    });
+    return applicableValues;
+  }
+  async _verifyApplicability() {
+    const ds = await getDataSource(this.state.datasource, {
+      __sceneObject: wrapInSafeSerializableSceneObject(this)
+    });
+    if (!ds.getDrilldownsApplicability) {
+      return;
+    }
+    const queries = getQueriesForVariables(this);
+    const timeRange = sceneGraph.getTimeRange(this).state.value;
+    const value = this.state.value;
+    const response = await ds.getDrilldownsApplicability({
+      groupByKeys: Array.isArray(value) ? value.map((v) => String(v)) : value ? [String(value)] : [],
+      queries,
+      timeRange,
+      scopes: sceneGraph.getScopes(this),
+      ...getEnrichedFiltersRequest(this)
+    });
+    if (!isEqual(response, this.state.keysApplicability)) {
+      this.setState({ keysApplicability: response != null ? response : void 0 });
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    }
+  }
+  // This method is related to the defaultValue property. We check if the current value
+  // is different from the default value. If it is, the groupBy will show a button
+  // allowing the user to restore the default values.
+  checkIfRestorable(values) {
+    var _a, _b, _c, _d;
+    const originalValues = isArray((_a = this.state.defaultValue) == null ? void 0 : _a.value) ? (_b = this.state.defaultValue) == null ? void 0 : _b.value : ((_c = this.state.defaultValue) == null ? void 0 : _c.value) ? [(_d = this.state.defaultValue) == null ? void 0 : _d.value] : [];
+    const vals = isArray(values) ? values : [values];
+    if (vals.length !== originalValues.length) {
+      return true;
+    }
+    return !isEqual(vals, originalValues);
+  }
+  restoreDefaultValues() {
+    this.setState({ restorable: false });
+    if (!this.state.defaultValue) {
+      return;
+    }
+    this.changeValueTo(this.state.defaultValue.value, this.state.defaultValue.text, true);
+  }
+  /**
+   * Allows clearing the value of the variable to an empty value. Overrides default behavior of a MultiValueVariable
+   */
   getDefaultMultiState(options) {
     return { value: [], text: [] };
   }
@@ -162,7 +227,9 @@ function GroupByVariableRenderer({ model }) {
     noValueOnClear,
     options,
     includeAll,
-    allowCustomValue = true
+    allowCustomValue = true,
+    defaultValue,
+    keysApplicability
   } = model.useState();
   const values = useMemo(() => {
     const arrayValue = isArray(value) ? value : [value];
@@ -180,6 +247,7 @@ function GroupByVariableRenderer({ model }) {
   const [inputValue, setInputValue] = useState("");
   const [uncommittedValue, setUncommittedValue] = useState(values);
   const optionSearcher = useMemo(() => getOptionSearcher(options, includeAll), [options, includeAll]);
+  const hasDefaultValue = defaultValue !== void 0;
   useEffect(() => {
     setUncommittedValue(values);
   }, [values]);
@@ -201,95 +269,131 @@ function GroupByVariableRenderer({ model }) {
     () => handleOptionGroups(optionSearcher(inputValue).map(toSelectableValue)),
     [optionSearcher, inputValue]
   );
-  return isMulti ? /* @__PURE__ */ React.createElement(MultiSelect, {
-    "aria-label": "Group by selector",
-    "data-testid": `GroupBySelect-${key}`,
-    id: key,
-    placeholder: "Select value",
-    width: "auto",
-    allowCustomValue,
-    inputValue,
-    value: uncommittedValue,
-    noMultiValueWrap: true,
-    maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
-    tabSelectsValue: false,
-    virtualized: true,
-    options: filteredOptions,
-    filterOption: filterNoOp,
-    closeMenuOnSelect: false,
-    isOpen: isOptionsOpen,
-    isClearable: true,
-    hideSelectedOptions: false,
-    isLoading: isFetchingOptions,
-    components: { Option: OptionWithCheckbox },
-    onInputChange,
-    onBlur: () => {
-      model.changeValueTo(
-        uncommittedValue.map((x) => x.value),
-        uncommittedValue.map((x) => x.label)
-      );
-    },
-    onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
-      }
-      setUncommittedValue(newValue);
-    },
-    onOpenMenu: async () => {
-      setIsFetchingOptions(true);
-      await lastValueFrom(model.validateAndUpdate());
-      setIsFetchingOptions(false);
-      setIsOptionsOpen(true);
-    },
-    onCloseMenu: () => {
-      setIsOptionsOpen(false);
-    }
-  }) : /* @__PURE__ */ React.createElement(Select, {
-    "aria-label": "Group by selector",
-    "data-testid": `GroupBySelect-${key}`,
-    id: key,
-    placeholder: "Select value",
-    width: "auto",
-    inputValue,
-    value: uncommittedValue,
-    allowCustomValue,
-    createOptionPosition: "first",
-    noMultiValueWrap: true,
-    maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
-    tabSelectsValue: false,
-    virtualized: true,
-    options: filteredOptions,
-    filterOption: filterNoOp,
-    closeMenuOnSelect: true,
-    isOpen: isOptionsOpen,
-    isClearable: true,
-    hideSelectedOptions: false,
-    noValueOnClear: true,
-    isLoading: isFetchingOptions,
-    onInputChange,
-    onChange: (newValue, action) => {
-      if (action.action === "clear") {
-        setUncommittedValue([]);
-        if (noValueOnClear) {
-          model.changeValueTo([]);
+  return isMulti ? /* @__PURE__ */ React.createElement(
+    MultiSelect,
+    {
+      "aria-label": t(
+        "grafana-scenes.variables.group-by-variable-renderer.aria-label-group-by-selector",
+        "Group by selector"
+      ),
+      "data-testid": `GroupBySelect-${key}`,
+      id: key,
+      placeholder: t(
+        "grafana-scenes.variables.group-by-variable-renderer.placeholder-group-by-label",
+        "Group by label"
+      ),
+      width: "auto",
+      allowCustomValue,
+      inputValue,
+      value: uncommittedValue,
+      noMultiValueWrap: true,
+      maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
+      tabSelectsValue: false,
+      virtualized: true,
+      options: filteredOptions,
+      filterOption: filterNoOp,
+      closeMenuOnSelect: false,
+      isOpen: isOptionsOpen,
+      isClearable: true,
+      hideSelectedOptions: false,
+      isLoading: isFetchingOptions,
+      components: {
+        Option: OptionWithCheckbox,
+        ...hasDefaultValue ? {
+          IndicatorsContainer: () => /* @__PURE__ */ React.createElement(DefaultGroupByCustomIndicatorContainer, { model })
+        } : {},
+        MultiValueContainer: ({ innerProps, children }) => /* @__PURE__ */ React.createElement(GroupByValueContainer, { innerProps, keysApplicability }, children)
+      },
+      onInputChange,
+      onBlur: () => {
+        model.changeValueTo(
+          uncommittedValue.map((x) => x.value),
+          uncommittedValue.map((x) => x.label),
+          true
+        );
+        const restorable = model.checkIfRestorable(uncommittedValue.map((v) => v.value));
+        if (restorable !== model.state.restorable) {
+          model.setState({ restorable });
         }
-        return;
+        model._verifyApplicability();
+      },
+      onChange: (newValue, action) => {
+        if (action.action === "clear" && noValueOnClear) {
+          model.changeValueTo([], void 0, true);
+        }
+        setUncommittedValue(newValue);
+      },
+      onOpenMenu: async () => {
+        const profiler = getInteractionTracker(model);
+        profiler == null ? void 0 : profiler.startInteraction(GROUPBY_DIMENSIONS_INTERACTION);
+        setIsFetchingOptions(true);
+        await lastValueFrom(model.validateAndUpdate());
+        setIsFetchingOptions(false);
+        setIsOptionsOpen(true);
+        profiler == null ? void 0 : profiler.stopInteraction();
+      },
+      onCloseMenu: () => {
+        setIsOptionsOpen(false);
       }
-      if (newValue == null ? void 0 : newValue.value) {
-        setUncommittedValue([newValue]);
-        model.changeValueTo([newValue.value], newValue.label ? [newValue.label] : void 0);
-      }
-    },
-    onOpenMenu: async () => {
-      setIsFetchingOptions(true);
-      await lastValueFrom(model.validateAndUpdate());
-      setIsFetchingOptions(false);
-      setIsOptionsOpen(true);
-    },
-    onCloseMenu: () => {
-      setIsOptionsOpen(false);
     }
-  });
+  ) : /* @__PURE__ */ React.createElement(
+    Select,
+    {
+      "aria-label": t(
+        "grafana-scenes.variables.group-by-variable-renderer.aria-label-group-by-selector",
+        "Group by selector"
+      ),
+      "data-testid": `GroupBySelect-${key}`,
+      id: key,
+      placeholder: t(
+        "grafana-scenes.variables.group-by-variable-renderer.placeholder-group-by-label",
+        "Group by label"
+      ),
+      width: "auto",
+      inputValue,
+      value: uncommittedValue && uncommittedValue.length > 0 ? uncommittedValue : null,
+      allowCustomValue,
+      createOptionPosition: "first",
+      noMultiValueWrap: true,
+      maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
+      tabSelectsValue: false,
+      virtualized: true,
+      options: filteredOptions,
+      filterOption: filterNoOp,
+      closeMenuOnSelect: true,
+      isOpen: isOptionsOpen,
+      isClearable: true,
+      hideSelectedOptions: false,
+      noValueOnClear: true,
+      isLoading: isFetchingOptions,
+      onInputChange,
+      onChange: (newValue, action) => {
+        if (action.action === "clear") {
+          setUncommittedValue([]);
+          if (noValueOnClear) {
+            model.changeValueTo([]);
+          }
+          return;
+        }
+        if (newValue == null ? void 0 : newValue.value) {
+          setUncommittedValue([newValue]);
+          model.changeValueTo([newValue.value], newValue.label ? [newValue.label] : void 0);
+        }
+      },
+      onOpenMenu: async () => {
+        const profiler = getInteractionTracker(model);
+        profiler == null ? void 0 : profiler.startInteraction(GROUPBY_DIMENSIONS_INTERACTION);
+        setIsFetchingOptions(true);
+        await lastValueFrom(model.validateAndUpdate());
+        setIsFetchingOptions(false);
+        setIsOptionsOpen(true);
+        profiler == null ? void 0 : profiler.stopInteraction();
+      },
+      onCloseMenu: () => {
+        setIsOptionsOpen(false);
+      }
+    }
+  );
 }
 const filterNoOp = () => true;
 function toSelectableValue(input) {

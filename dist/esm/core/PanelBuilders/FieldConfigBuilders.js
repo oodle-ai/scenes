@@ -1,13 +1,13 @@
-import { defaultFieldConfig } from '@grafana/schema/dist/esm/raw/composable/barchart/panelcfg/x/BarChartPanelCfg_types.gen';
-import { defaultFieldConfig as defaultFieldConfig$1 } from '@grafana/schema/dist/esm/raw/composable/histogram/panelcfg/x/HistogramPanelCfg_types.gen';
+import { defaultFieldConfig as defaultFieldConfig$4 } from '@grafana/schema/dist/esm/raw/composable/barchart/panelcfg/x/BarChartPanelCfg_types.gen';
+import { defaultFieldConfig as defaultFieldConfig$3 } from '@grafana/schema/dist/esm/raw/composable/histogram/panelcfg/x/HistogramPanelCfg_types.gen';
 import { defaultFieldConfig as defaultFieldConfig$2 } from '@grafana/schema/dist/esm/raw/composable/statetimeline/panelcfg/x/StateTimelinePanelCfg_types.gen';
-import { defaultFieldConfig as defaultFieldConfig$3 } from '@grafana/schema/dist/esm/raw/composable/statushistory/panelcfg/x/StatusHistoryPanelCfg_types.gen';
-import { defaultFieldConfig as defaultFieldConfig$4 } from '@grafana/schema/dist/esm/raw/composable/xychart/panelcfg/x/XYChartPanelCfg_types.gen';
+import { defaultFieldConfig as defaultFieldConfig$1 } from '@grafana/schema/dist/esm/raw/composable/statushistory/panelcfg/x/StatusHistoryPanelCfg_types.gen';
+import { defaultFieldConfig } from '@grafana/schema/dist/esm/raw/composable/xychart/panelcfg/x/XYChartPanelCfg_types.gen';
 import { FieldConfigBuilder } from './FieldConfigBuilder.js';
 
 const FieldConfigBuilders = {
   barchart() {
-    return new FieldConfigBuilder(() => defaultFieldConfig);
+    return new FieldConfigBuilder(() => defaultFieldConfig$4);
   },
   bargauge() {
     return new FieldConfigBuilder();
@@ -28,7 +28,7 @@ const FieldConfigBuilders = {
     return new FieldConfigBuilder();
   },
   histogram() {
-    return new FieldConfigBuilder(() => defaultFieldConfig$1);
+    return new FieldConfigBuilder(() => defaultFieldConfig$3);
   },
   logs() {
     return new FieldConfigBuilder();
@@ -49,7 +49,7 @@ const FieldConfigBuilders = {
     return new FieldConfigBuilder(() => defaultFieldConfig$2);
   },
   statushistory() {
-    return new FieldConfigBuilder(() => defaultFieldConfig$3);
+    return new FieldConfigBuilder(() => defaultFieldConfig$1);
   },
   table() {
     return new FieldConfigBuilder();
@@ -67,7 +67,7 @@ const FieldConfigBuilders = {
     return new FieldConfigBuilder();
   },
   xychart() {
-    return new FieldConfigBuilder(() => defaultFieldConfig$4);
+    return new FieldConfigBuilder(() => defaultFieldConfig);
   }
 };
 

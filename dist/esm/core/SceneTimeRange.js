@@ -1,4 +1,5 @@
-import { getTimeZone, rangeUtil, setWeekStart, toUtc } from '@grafana/data';
+import { getTimeZone, rangeUtil, setWeekStart, getZone, toUtc } from '@grafana/data';
+import { defaultTimeZone } from '@grafana/schema';
 import { SceneObjectUrlSyncConfig } from '../services/SceneObjectUrlSyncConfig.js';
 import { SceneObjectBase } from './SceneObjectBase.js';
 import { getClosest } from './sceneGraph/utils.js';
@@ -6,29 +7,17 @@ import { parseUrlParam } from '../utils/parseUrlParam.js';
 import { evaluateTimeRange } from '../utils/evaluateTimeRange.js';
 import { RefreshEvent, config, locationService } from '@grafana/runtime';
 import { isValid } from '../utils/date.js';
+import { getQueryController } from './sceneGraph/getQueryController.js';
+import { writeSceneLog } from '../utils/writeSceneLog.js';
+import { isEmpty } from 'lodash';
+import { TIME_RANGE_CHANGE_INTERACTION } from '../performance/interactionConstants.js';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneTimeRange extends SceneObjectBase {
   constructor(state = {}) {
     var _a;
     const from = state.from && isValid(state.from) ? state.from : "now-6h";
     const to = state.to && isValid(state.to) ? state.to : "now";
-    const timeZone = state.timeZone;
+    const timeZone = getValidTimeZone(state.timeZone);
     const value = evaluateTimeRange(
       from,
       to,
@@ -38,7 +27,7 @@ class SceneTimeRange extends SceneObjectBase {
       state.weekStart
     );
     const refreshOnActivate = (_a = state.refreshOnActivate) != null ? _a : { percent: 10 };
-    super(__spreadValues({ from, to, timeZone, value, refreshOnActivate }, state));
+    super({ from, to, timeZone, value, refreshOnActivate, ...state });
     this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: ["from", "to", "timezone", "time", "time.window"] });
     this.onTimeRangeChange = (timeRange) => {
       const update = {};
@@ -61,6 +50,8 @@ class SceneTimeRange extends SceneObjectBase {
         this.state.weekStart
       );
       if (update.from !== this.state.from || update.to !== this.state.to) {
+        const queryController = getQueryController(this);
+        queryController == null ? void 0 : queryController.startProfile(TIME_RANGE_CHANGE_INTERACTION);
         this._urlSync.performBrowserHistoryAction(() => {
           this.setState(update);
         });
@@ -68,7 +59,17 @@ class SceneTimeRange extends SceneObjectBase {
     };
     this.onTimeZoneChange = (timeZone) => {
       this._urlSync.performBrowserHistoryAction(() => {
-        this.setState({ timeZone });
+        var _a;
+        const validTimeZone = (_a = getValidTimeZone(timeZone)) != null ? _a : defaultTimeZone;
+        const updatedValue = evaluateTimeRange(
+          this.state.from,
+          this.state.to,
+          validTimeZone,
+          this.state.fiscalYearStartMonth,
+          this.state.UNSAFE_nowDelay,
+          this.state.weekStart
+        );
+        this.setState({ timeZone: validTimeZone, value: updatedValue });
       });
     };
     this.onRefresh = () => {
@@ -112,6 +113,9 @@ class SceneTimeRange extends SceneObjectBase {
       this.refreshRange(ms);
     }
   }
+  /**
+   * Will traverse up the scene graph to find the closest SceneTimeRangeLike with time zone set
+   */
   getTimeZoneSource() {
     if (!this.parent || !this.parent.parent) {
       return this;
@@ -127,6 +131,11 @@ class SceneTimeRange extends SceneObjectBase {
     }
     return source;
   }
+  /**
+   * Refreshes time range if it is older than the invalidation interval
+   * @param refreshAfterMs invalidation interval (milliseconds)
+   * @private
+   */
   refreshRange(refreshAfterMs) {
     var _a;
     const value = evaluateTimeRange(
@@ -144,14 +153,14 @@ class SceneTimeRange extends SceneObjectBase {
   }
   calculatePercentOfInterval(percent) {
     const intervalMs = this.state.value.to.diff(this.state.value.from, "milliseconds");
-    return Math.ceil(intervalMs / percent);
+    return Math.ceil(intervalMs / 100 * percent);
   }
   getTimeZone() {
-    if (this.state.timeZone) {
+    if (this.state.timeZone && getValidTimeZone(this.state.timeZone)) {
       return this.state.timeZone;
     }
     const timeZoneSource = this.getTimeZoneSource();
-    if (timeZoneSource !== this) {
+    if (timeZoneSource !== this && getValidTimeZone(timeZoneSource.state.timeZone)) {
       return timeZoneSource.state.timeZone;
     }
     return getTimeZone();
@@ -216,6 +225,22 @@ function getTimeWindow(time, timeWindow) {
     from: toUtc(valueTime - timeWindowMs / 2).toISOString(),
     to: toUtc(valueTime + timeWindowMs / 2).toISOString()
   };
+}
+function getValidTimeZone(timeZone) {
+  if (timeZone === void 0) {
+    return void 0;
+  }
+  if (isEmpty(timeZone)) {
+    return config.bootData.user.timezone;
+  }
+  if (timeZone === defaultTimeZone) {
+    return timeZone;
+  }
+  if (getZone(timeZone)) {
+    return timeZone;
+  }
+  writeSceneLog("SceneTimeRange", `Invalid timeZone "${timeZone}" provided.`);
+  return;
 }
 
 export { SceneTimeRange };

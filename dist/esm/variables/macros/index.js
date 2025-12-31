@@ -21,13 +21,17 @@ const macrosIndex = /* @__PURE__ */ new Map([
   ["__interval", IntervalMacro],
   ["__interval_ms", IntervalMacro]
 ]);
-function registerVariableMacro(name, macro) {
-  if (macrosIndex.get(name)) {
+function registerVariableMacro(name, macro, replace = false) {
+  if (!replace && macrosIndex.get(name)) {
     throw new Error(`Macro already registered ${name}`);
   }
   macrosIndex.set(name, macro);
   return () => {
-    macrosIndex.delete(name);
+    if (replace) {
+      throw new Error(`Replaced macros can not be unregistered. They need to be restored manually.`);
+    } else {
+      macrosIndex.delete(name);
+    }
   };
 }
 

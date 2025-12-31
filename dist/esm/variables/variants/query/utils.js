@@ -62,28 +62,6 @@ const sortVariableValues = (options, sortOrder) => {
   if (sortOrder === VariableSort.disabled) {
     return options;
   }
-  const sortByNumeric = (opt) => {
-    if (!opt.text) {
-      return -1;
-    }
-    const matches = opt.text.match(/.*?(\d+).*/);
-    if (!matches || matches.length < 2) {
-      return -1;
-    } else {
-      return parseInt(matches[1], 10);
-    }
-  };
-  const sortByNaturalSort = (options2) => {
-    return options2.sort((a, b) => {
-      if (!a.text) {
-        return -1;
-      }
-      if (!b.text) {
-        return 1;
-      }
-      return a.text.localeCompare(b.text, void 0, { numeric: true });
-    });
-  };
   switch (sortOrder) {
     case VariableSort.alphabeticalAsc:
       options = sortBy(options, "label");
@@ -119,6 +97,23 @@ const sortVariableValues = (options, sortOrder) => {
   }
   return options;
 };
+function sortByNumeric(opt) {
+  if (!opt.label) {
+    return -1;
+  }
+  const matches = opt.label.match(/.*?(\d+).*/);
+  if (!matches || matches.length < 2) {
+    return -1;
+  } else {
+    return parseInt(matches[1], 10);
+  }
+}
+const collator = new Intl.Collator(void 0, { sensitivity: "accent", numeric: true });
+function sortByNaturalSort(options) {
+  return options.slice().sort((a, b) => {
+    return collator.compare(a.label, b.label);
+  });
+}
 
 export { metricNamesToVariableValues, sortVariableValues };
 //# sourceMappingURL=utils.js.map

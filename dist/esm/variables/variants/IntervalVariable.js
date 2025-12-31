@@ -1,3 +1,4 @@
+import { t } from '@grafana/i18n';
 import { rangeUtil } from '@grafana/data';
 import { VariableRefresh } from '@grafana/schema';
 import { Select } from '@grafana/ui';
@@ -6,28 +7,12 @@ import { of } from 'rxjs';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
 import { SceneObjectBase } from '../../core/SceneObjectBase.js';
 import { SceneObjectUrlSyncConfig } from '../../services/SceneObjectUrlSyncConfig.js';
-import { AUTO_VARIABLE_VALUE, AUTO_VARIABLE_TEXT } from '../constants.js';
+import { AUTO_VARIABLE_TEXT, AUTO_VARIABLE_VALUE } from '../constants.js';
 import { SceneVariableValueChangedEvent } from '../types.js';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class IntervalVariable extends SceneObjectBase {
   constructor(initialState) {
-    super(__spreadValues({
+    super({
       type: "interval",
       value: "",
       intervals: ["1m", "10m", "30m", "1h", "6h", "12h", "1d", "7d", "14d", "30d"],
@@ -35,8 +20,9 @@ class IntervalVariable extends SceneObjectBase {
       autoStepCount: 30,
       autoMinInterval: "10s",
       autoEnabled: false,
-      refresh: VariableRefresh.onTimeRangeChanged
-    }, initialState));
+      refresh: VariableRefresh.onTimeRangeChanged,
+      ...initialState
+    });
     this._onChange = (value) => {
       this.setState({ value: value.value });
       this.publishEvent(new SceneVariableValueChangedEvent(this), true);
@@ -102,15 +88,18 @@ class IntervalVariable extends SceneObjectBase {
 }
 IntervalVariable.Component = ({ model }) => {
   const { key, value } = model.useState();
-  return /* @__PURE__ */ React.createElement(Select, {
-    id: key,
-    placeholder: "Select value",
-    width: "auto",
-    value,
-    tabSelectsValue: false,
-    options: model.getOptionsForSelect(),
-    onChange: model._onChange
-  });
+  return /* @__PURE__ */ React.createElement(
+    Select,
+    {
+      id: key,
+      placeholder: t("grafana-scenes.variables.interval-variable.placeholder-select-value", "Select value"),
+      width: "auto",
+      value,
+      tabSelectsValue: false,
+      options: model.getOptionsForSelect(),
+      onChange: model._onChange
+    }
+  );
 };
 
 export { IntervalVariable };

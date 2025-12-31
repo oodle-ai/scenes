@@ -1,41 +1,13 @@
+import { t } from '@grafana/i18n';
 import { isArray } from 'lodash';
-import React, { useState, useMemo, useEffect } from 'react';
-import { Select, MultiSelect, useTheme2, getSelectStyles, useStyles2, Checkbox, ToggleAllState } from '@grafana/ui';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useTheme2, getSelectStyles, useStyles2, Checkbox, MultiSelect, Select, ToggleAllState } from '@grafana/ui';
 import { selectors } from '@grafana/e2e-selectors';
-import { cx, css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { getOptionSearcher } from './getOptionSearcher.js';
+import { sceneGraph } from '../../core/sceneGraph/index.js';
+import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 const filterNoOp = () => true;
 const filterAll = (v) => v.value !== "$__all";
 const determineToggleAllState = (selectedValues, options) => {
@@ -53,11 +25,12 @@ function toSelectableValue(value, label) {
     label: label != null ? label : String(value)
   };
 }
-function VariableValueSelect({ model }) {
-  const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = model.useState();
+function VariableValueSelect({ model, state }) {
+  const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = state;
   const [inputValue, setInputValue] = useState("");
   const [hasCustomValue, setHasCustomValue] = useState(false);
   const selectValue = toSelectableValue(value, String(text));
+  const queryController = sceneGraph.getQueryController(model);
   const optionSearcher = useMemo(() => getOptionSearcher(options, includeAll), [options, includeAll]);
   const onInputChange = (value2, { action }) => {
     if (action === "input-change") {
@@ -78,32 +51,39 @@ function VariableValueSelect({ model }) {
   const onCloseMenu = () => {
     setInputValue("");
   };
-  return /* @__PURE__ */ React.createElement(Select, {
-    id: key,
-    isValidNewOption: (inputValue2) => inputValue2.trim().length > 0,
-    placeholder: "Select value",
-    width: "auto",
-    disabled: isReadOnly,
-    value: selectValue,
-    inputValue,
-    allowCustomValue,
-    virtualized: true,
-    filterOption: filterNoOp,
-    tabSelectsValue: false,
-    onInputChange,
-    onOpenMenu,
-    onCloseMenu,
-    options: filteredOptions,
-    "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
-    onChange: (newValue) => {
-      model.changeValueTo(newValue.value, newValue.label);
-      if (hasCustomValue !== newValue.__isNew__) {
-        setHasCustomValue(newValue.__isNew__);
+  return /* @__PURE__ */ React.createElement(
+    Select,
+    {
+      id: key,
+      isValidNewOption: (inputValue2) => inputValue2.trim().length > 0,
+      placeholder: t("grafana-scenes.variables.variable-value-select.placeholder-select-value", "Select value"),
+      width: "auto",
+      disabled: isReadOnly,
+      value: selectValue,
+      inputValue,
+      allowCustomValue,
+      virtualized: true,
+      filterOption: filterNoOp,
+      tabSelectsValue: false,
+      onInputChange,
+      onOpenMenu,
+      onCloseMenu,
+      options: filteredOptions,
+      "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
+      onChange: (newValue) => {
+        model.changeValueTo(newValue.value, newValue.label, true);
+        queryController == null ? void 0 : queryController.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
+        if (hasCustomValue !== newValue.__isNew__) {
+          setHasCustomValue(newValue.__isNew__);
+        }
       }
     }
-  });
+  );
 }
-function VariableValueSelectMulti({ model }) {
+function VariableValueSelectMulti({
+  model,
+  state
+}) {
   const {
     value,
     options,
@@ -113,7 +93,7 @@ function VariableValueSelectMulti({ model }) {
     includeAll,
     isReadOnly,
     allowCustomValue = true
-  } = model.useState();
+  } = state;
   const arrayValue = useMemo(() => isArray(value) ? value : [value], [value]);
   const [uncommittedValue, setUncommittedValue] = useState(arrayValue);
   const [inputValue, setInputValue] = useState("");
@@ -137,41 +117,44 @@ function VariableValueSelectMulti({ model }) {
   };
   const placeholder = options.length > 0 ? "Select value" : "";
   const filteredOptions = optionSearcher(inputValue);
-  return /* @__PURE__ */ React.createElement(MultiSelect, {
-    id: key,
-    placeholder,
-    width: "auto",
-    inputValue,
-    disabled: isReadOnly,
-    value: uncommittedValue,
-    noMultiValueWrap: true,
-    maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
-    tabSelectsValue: false,
-    virtualized: true,
-    allowCustomValue,
-    toggleAllOptions: {
-      enabled: true,
-      optionsFilter: filterAll,
-      determineToggleAllState
-    },
-    options: filteredOptions,
-    closeMenuOnSelect: false,
-    components: { Option: OptionWithCheckbox },
-    isClearable: true,
-    hideSelectedOptions: false,
-    onInputChange,
-    onBlur: () => {
-      model.changeValueTo(uncommittedValue);
-    },
-    filterOption: filterNoOp,
-    "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
-    onChange: (newValue, action) => {
-      if (action.action === "clear" && noValueOnClear) {
-        model.changeValueTo([]);
+  return /* @__PURE__ */ React.createElement(
+    MultiSelect,
+    {
+      id: key,
+      placeholder,
+      width: "auto",
+      inputValue,
+      disabled: isReadOnly,
+      value: uncommittedValue,
+      noMultiValueWrap: true,
+      maxVisibleValues: maxVisibleValues != null ? maxVisibleValues : 5,
+      tabSelectsValue: false,
+      virtualized: true,
+      allowCustomValue,
+      toggleAllOptions: {
+        enabled: true,
+        optionsFilter: filterAll,
+        determineToggleAllState
+      },
+      options: filteredOptions,
+      closeMenuOnSelect: false,
+      components: { Option: OptionWithCheckbox },
+      isClearable: true,
+      hideSelectedOptions: false,
+      onInputChange,
+      onBlur: () => {
+        model.changeValueTo(uncommittedValue, void 0, true);
+      },
+      filterOption: filterNoOp,
+      "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`),
+      onChange: (newValue, action) => {
+        if (action.action === "clear" && noValueOnClear) {
+          model.changeValueTo([], void 0, true);
+        }
+        setUncommittedValue(newValue.map((x) => x.value));
       }
-      setUncommittedValue(newValue.map((x) => x.value));
     }
-  });
+  );
 }
 const OptionWithCheckbox = ({
   children,
@@ -183,28 +166,32 @@ const OptionWithCheckbox = ({
   indeterminate,
   renderOptionLabel
 }) => {
-  var _b;
-  const _a = innerProps, rest = __objRest(_a, ["onMouseMove", "onMouseOver"]);
+  var _a;
+  const { onMouseMove, onMouseOver, ...rest } = innerProps;
   const theme = useTheme2();
   const selectStyles = getSelectStyles(theme);
   const optionStyles = useStyles2(getOptionStyles);
-  return /* @__PURE__ */ React.createElement("div", __spreadProps(__spreadValues({
-    ref: innerRef,
-    className: cx(selectStyles.option, isFocused && selectStyles.optionFocused)
-  }, rest), {
-    "data-testid": "data-testid Select option",
-    title: data.title
-  }), /* @__PURE__ */ React.createElement("div", {
-    className: optionStyles.checkbox
-  }, /* @__PURE__ */ React.createElement(Checkbox, {
-    indeterminate,
-    value: isSelected
-  })), /* @__PURE__ */ React.createElement("div", {
-    className: selectStyles.optionBody,
-    "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownOptionTexts(
-      (_b = data.label) != null ? _b : String(data.value)
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      ref: innerRef,
+      className: cx(selectStyles.option, isFocused && selectStyles.optionFocused),
+      ...rest,
+      "data-testid": "data-testid Select option",
+      title: data.title
+    },
+    /* @__PURE__ */ React.createElement("div", { className: optionStyles.checkbox }, /* @__PURE__ */ React.createElement(Checkbox, { indeterminate, value: isSelected })),
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: selectStyles.optionBody,
+        "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownOptionTexts(
+          (_a = data.label) != null ? _a : String(data.value)
+        )
+      },
+      /* @__PURE__ */ React.createElement("span", null, children)
     )
-  }, /* @__PURE__ */ React.createElement("span", null, children)));
+  );
 };
 OptionWithCheckbox.displayName = "SelectMenuOptions";
 const getOptionStyles = (theme) => ({
@@ -212,17 +199,14 @@ const getOptionStyles = (theme) => ({
     marginRight: theme.spacing(2)
   })
 });
-function renderSelectForVariable(model) {
-  if (model.state.isMulti) {
-    return /* @__PURE__ */ React.createElement(VariableValueSelectMulti, {
-      model
-    });
+function MultiOrSingleValueSelect({ model }) {
+  const state = model.useState();
+  if (state.isMulti) {
+    return /* @__PURE__ */ React.createElement(VariableValueSelectMulti, { model, state });
   } else {
-    return /* @__PURE__ */ React.createElement(VariableValueSelect, {
-      model
-    });
+    return /* @__PURE__ */ React.createElement(VariableValueSelect, { model, state });
   }
 }
 
-export { OptionWithCheckbox, VariableValueSelect, VariableValueSelectMulti, renderSelectForVariable, toSelectableValue };
+export { MultiOrSingleValueSelect, OptionWithCheckbox, VariableValueSelect, VariableValueSelectMulti, toSelectableValue };
 //# sourceMappingURL=VariableValueSelect.js.map

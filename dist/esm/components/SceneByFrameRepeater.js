@@ -32,9 +32,7 @@ class SceneByFrameRepeater extends SceneObjectBase {
 }
 SceneByFrameRepeater.Component = ({ model }) => {
   const { body } = model.useState();
-  return /* @__PURE__ */ React.createElement(body.Component, {
-    model: body
-  });
+  return /* @__PURE__ */ React.createElement(body.Component, { model: body });
 };
 
 export { SceneByFrameRepeater };

@@ -6,32 +6,27 @@ import { writeSceneLog } from '../../utils/writeSceneLog.js';
 import { VariableDependencyConfig } from '../../variables/VariableDependencyConfig.js';
 import { VariableValueRecorder } from '../../variables/VariableValueRecorder.js';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneDataLayerBase extends SceneObjectBase {
+  /**
+   * For variables support in data layer provide variableDependencyStatePaths with keys of the state to be scanned for variables.
+   */
   constructor(initialState, variableDependencyStatePaths = []) {
-    super(__spreadValues({
-      isEnabled: true
-    }, initialState));
+    super({
+      isEnabled: true,
+      ...initialState
+    });
+    /**
+     * Subject to emit results to.
+     */
     this._results = new ReplaySubject(1);
+    /**
+     * Mark data provider as data layer
+     */
     this.isDataLayer = true;
     this._variableValueRecorder = new VariableValueRecorder();
     this._variableDependency = new VariableDependencyConfig(this, {
-      onVariableUpdateCompleted: this.onVariableUpdateCompleted.bind(this)
+      onVariableUpdateCompleted: this.onVariableUpdateCompleted.bind(this),
+      dependsOnScopes: true
     });
     this._variableDependency.setPaths(variableDependencyStatePaths);
     this.addActivationHandler(() => this.onActivate());
@@ -103,6 +98,9 @@ class SceneDataLayerBase extends SceneObjectBase {
     }
     return false;
   }
+  /**
+   * This helper function is to counter the contravariance of setState
+   */
   setStateHelper(state) {
     setBaseClassState(this, state);
   }

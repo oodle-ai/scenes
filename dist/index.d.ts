@@ -1,16 +1,15 @@
 import * as _grafana_data from '@grafana/data';
-import { BusEventWithPayload, PanelData, BusEvent, BusEventType, BusEventHandler, TimeRange, DataQueryRequest, DataSourceGetTagKeysOptions, DataSourceGetTagValuesOptions, DataTransformContext, DataFrame, UrlQueryMap, PanelPlugin, EventBus, DataQuery as DataQuery$1, DataSourceApi, Registry, RegistryItem, ScopedVars, AdHocVariableFilter, SelectableValue, MetricFindValue, GetTagResponse, VariableRefresh as VariableRefresh$1, VariableSort, EventFilterOptions, AnnotationEvent, AnnotationQuery, DataTransformerConfig, PanelMenuItem, FieldConfigSource, PanelModel, AbsoluteTimeRange, InterpolateFunction, IconName as IconName$1, PageLayoutType, FieldConfig, FieldType, FieldValueMatcherConfig, ScopedVar, RawTimeRange } from '@grafana/data';
-import * as React$1 from 'react';
-import React__default, { CSSProperties, ComponentType } from 'react';
-import * as rxjs from 'rxjs';
-import { Observable, Unsubscribable, MonoTypeOperatorFunction, Subscription, ReplaySubject } from 'rxjs';
+import { BusEventWithPayload, EventBus, BusEvent, BusEventType, BusEventHandler, PanelMenuItem, DataQueryRequest, FieldConfigSource, PanelPlugin, AbsoluteTimeRange, PanelData, InterpolateFunction, PanelModel, TimeRange, DataTransformContext, DataFrame, DataSourceGetTagKeysOptions, DataSourceGetTagValuesOptions, IconName, PageLayoutType, UrlQueryMap, DataQuery as DataQuery$1, DataSourceApi, Registry, RegistryItem, ScopedVars, AdHocVariableFilter, SelectableValue, GetTagResponse, MetricFindValue, VariableRefresh as VariableRefresh$1, VariableSort, DrilldownsApplicability, Scope, EventFilterOptions, AnnotationEvent, AnnotationQuery, DataTransformerConfig, TimeOption, FieldConfig, FieldType, FieldValueMatcherConfig, ScopedVar, RawTimeRange } from '@grafana/data';
 import * as _grafana_schema from '@grafana/schema';
-import { VariableType, VariableHide, TimeZone, DataTopic, DataQuery, DataSourceRef, VariableRefresh, LoadingState, DashboardCursorSync, MatcherConfig, TableFieldOptions } from '@grafana/schema';
-import { LocationService, VariableInterpolation } from '@grafana/runtime';
+import { VariableType, VariableHide, LoadingState, TimeZone, DataQuery, DataTopic, DataSourceRef, VariableRefresh, DashboardCursorSync, MatcherConfig, TableFieldOptions } from '@grafana/schema';
+import * as React$1 from 'react';
+import React__default, { ComponentType, CSSProperties, PointerEvent, ForwardRefExoticComponent } from 'react';
+import * as rxjs from 'rxjs';
+import { Observable, Subscription, Unsubscribable, MonoTypeOperatorFunction, ReplaySubject } from 'rxjs';
+import { PanelContext, WeekStart, IconName as IconName$1 } from '@grafana/ui';
+import { LocationService, VariableInterpolation, ScopesContextValue } from '@grafana/runtime';
 import { Location } from 'history';
-import { PanelContext, IconName } from '@grafana/ui';
 import ReactGridLayout from 'react-grid-layout';
-import { RouteComponentProps } from 'react-router-dom';
 import { Options, FieldConfig as FieldConfig$1 } from '@grafana/schema/dist/esm/raw/composable/barchart/panelcfg/x/BarChartPanelCfg_types.gen';
 import { Options as Options$1 } from '@grafana/schema/dist/esm/raw/composable/bargauge/panelcfg/x/BarGaugePanelCfg_types.gen';
 import { Options as Options$2 } from '@grafana/schema/dist/esm/raw/composable/datagrid/panelcfg/x/DatagridPanelCfg_types.gen';
@@ -30,6 +29,7 @@ import { Options as Options$f } from '@grafana/schema/dist/esm/raw/composable/te
 import { Options as Options$g, FieldConfig as FieldConfig$7 } from '@grafana/schema/dist/esm/raw/composable/timeseries/panelcfg/x/TimeSeriesPanelCfg_types.gen';
 import { Options as Options$h, FieldConfig as FieldConfig$8 } from '@grafana/schema/dist/esm/raw/composable/trend/panelcfg/x/TrendPanelCfg_types.gen';
 import { Options as Options$i } from '@grafana/schema/dist/esm/raw/composable/xychart/panelcfg/x/XYChartPanelCfg_types.gen';
+import { ResourceLoader } from '@grafana/i18n';
 
 interface SceneVariableState extends SceneObjectState {
     type: VariableType;
@@ -64,6 +64,10 @@ interface SceneVariable<TState extends SceneVariableState = SceneVariableState> 
      * Allows cancelling variable execution.
      */
     onCancel?(): void;
+    /**
+     * Edge case for variables that are hidden but wants to be render to access react contexts (ScopesVariable)
+     */
+    UNSAFE_renderAsHidden?: boolean;
     /**
      * @experimental
      * Indicates that a variable loads values lazily when user interacts with the variable dropdown.
@@ -133,246 +137,6 @@ declare class SceneObjectRef<T> {
     constructor(ref: T);
     resolve(): T;
 }
-
-interface SceneObjectState {
-    key?: string;
-    $timeRange?: SceneTimeRangeLike;
-    $data?: SceneDataProvider;
-    $variables?: SceneVariables;
-    /**
-     * @experimental
-     * Can be used to add extra behaviors to a scene object.
-     * These are activated when the their parent scene object is activated.
-     */
-    $behaviors?: Array<SceneObject | SceneStatelessBehavior>;
-}
-interface SceneLayoutChildOptions {
-    width?: number | string;
-    height?: number | string;
-    xSizing?: 'fill' | 'content';
-    ySizing?: 'fill' | 'content';
-    x?: number;
-    y?: number;
-    minWidth?: number | string;
-    minHeight?: number | string;
-    isDraggable?: boolean;
-    isResizable?: boolean;
-}
-interface SceneComponentProps<T> {
-    model: T;
-}
-type SceneComponent<TModel> = (props: SceneComponentProps<TModel>) => React__default.ReactElement | null;
-interface SceneDataState extends SceneObjectState {
-    data?: PanelData;
-}
-interface SceneObject<TState extends SceneObjectState = SceneObjectState> {
-    /** The current state */
-    readonly state: TState;
-    /** True when there is a React component mounted for this Object */
-    readonly isActive: boolean;
-    /** Controls if activation blocks rendering */
-    readonly renderBeforeActivation: boolean;
-    /** SceneObject parent */
-    readonly parent?: SceneObject;
-    /** This abtractions declares what variables the scene object depends on and how to handle when they change value. **/
-    readonly variableDependency?: SceneVariableDependencyConfigLike;
-    /** This abstraction declares URL sync dependencies of a scene object. **/
-    readonly urlSync?: SceneObjectUrlSyncHandler;
-    /** Subscribe to state changes */
-    subscribeToState(handler: SceneStateChangedHandler<TState>): Unsubscribable;
-    /** Subscribe to a scene event */
-    subscribeToEvent<T extends BusEvent>(typeFilter: BusEventType<T>, handler: BusEventHandler<T>): Unsubscribable;
-    /** Publish an event and optionally bubble it up the scene */
-    publishEvent(event: BusEvent, bubble?: boolean): void;
-    /** Utility hook that wraps useObservable. Used by React components to subscribes to state changes */
-    useState(): TState;
-    /** How to modify state */
-    setState(state: Partial<TState>): void;
-    /**
-     * Called when the Component is mounted. This will also activate any $data, $variables or $timeRange scene object on this level.
-     * Don't override this in your custom SceneObjects, instead use addActivationHandler from the constructor.
-     **/
-    activate(): CancelActivationHandler;
-    /** Get the scene root */
-    getRoot(): SceneObject;
-    /** Returns a deep clone this object and all its children */
-    clone(state?: Partial<TState>): this;
-    /** A React component to use for rendering the object */
-    Component(props: SceneComponentProps<SceneObject<TState>>): React__default.ReactElement | null;
-    /** Force a re-render, should only be needed when variable values change */
-    forceRender(): void;
-    /** Returns a SceneObjectRef that will resolve to this object */
-    getRef(): SceneObjectRef<this>;
-    /**
-     * Allows external code to register code that is executed on activate and deactivate. This allow you
-     * to wire up scene objects that need to respond to state changes in other objects from the outside.
-     **/
-    addActivationHandler(handler: SceneActivationHandler): void;
-    /**
-     * Loop through state and call callback for each direct child scene object.
-     * Checks 1 level deep properties and arrays. So a scene object hidden in a nested plain object will not be detected.
-     */
-    forEachChild(callback: (child: SceneObject) => void): void;
-    /**
-     * Useful for edge cases when you want to move a scene object to another parent.
-     */
-    clearParent(): void;
-}
-type SceneActivationHandler = () => SceneDeactivationHandler | void;
-type SceneDeactivationHandler = () => void;
-/**
- * Function returned by activate() that when called will deactivate the object if it's the last activator
- **/
-type CancelActivationHandler = () => void;
-interface SceneLayoutState extends SceneObjectState {
-    children: SceneObject[];
-}
-interface SceneLayout<T extends SceneLayoutState = SceneLayoutState> extends SceneObject<T> {
-    isDraggable(): boolean;
-    getDragClass?(): string;
-    getDragClassCancel?(): string;
-}
-interface SceneTimeRangeState extends SceneObjectState {
-    from: string;
-    to: string;
-    fiscalYearStartMonth?: number;
-    value: TimeRange;
-    timeZone?: TimeZone;
-    /** weekStart will change the global date locale so having multiple different weekStart values is not supported  */
-    weekStart?: string;
-    /**
-     * @internal
-     * To enable feature parity with the old time range picker, not sure if it will be kept.
-     * Override the now time by entering a time delay. Use this option to accommodate known delays in data aggregation to avoid null values.
-     * */
-    UNSAFE_nowDelay?: string;
-    refreshOnActivate?: {
-        /**
-         * When set, the time range will invalidate relative ranges after the specified interval has elapsed
-         */
-        afterMs?: number;
-        /**
-         * When set, the time range will invalidate relative ranges after the specified percentage of the current interval has elapsed.
-         * If both invalidate values are set, the smaller value will be used for the given interval.
-         */
-        percent?: number;
-    };
-}
-interface SceneTimeRangeLike extends SceneObject<SceneTimeRangeState> {
-    onTimeZoneChange(timeZone: TimeZone): void;
-    onTimeRangeChange(timeRange: TimeRange): void;
-    onRefresh(): void;
-    getTimeZone(): TimeZone;
-}
-declare function isSceneObject(obj: any): obj is SceneObject;
-interface SceneObjectWithUrlSync extends SceneObject {
-    getUrlState(): SceneObjectUrlValues;
-    updateFromUrl(values: SceneObjectUrlValues): void;
-    shouldCreateHistoryStep?(values: SceneObjectUrlValues): boolean;
-}
-interface SceneObjectUrlSyncHandler {
-    getKeys(): string[];
-    getUrlState(): SceneObjectUrlValues;
-    updateFromUrl(values: SceneObjectUrlValues): void;
-    shouldCreateHistoryStep?(values: SceneObjectUrlValues): boolean;
-}
-interface DataRequestEnricher {
-    enrichDataRequest(source: SceneObject): Partial<DataQueryRequest> | null;
-}
-interface FiltersRequestEnricher {
-    enrichFiltersRequest(source: SceneObject): Partial<DataSourceGetTagKeysOptions | DataSourceGetTagValuesOptions> | null;
-}
-declare function isDataRequestEnricher(obj: any): obj is DataRequestEnricher;
-declare function isFiltersRequestEnricher(obj: any): obj is FiltersRequestEnricher;
-type SceneObjectUrlValue = string | string[] | undefined | null;
-type SceneObjectUrlValues = Record<string, SceneObjectUrlValue>;
-type CustomTransformOperator = (context: DataTransformContext) => MonoTypeOperatorFunction<DataFrame[]>;
-type CustomTransformerDefinition = {
-    operator: CustomTransformOperator;
-    topic: DataTopic;
-} | CustomTransformOperator;
-type SceneStateChangedHandler<TState> = (newState: TState, prevState: TState) => void;
-type DeepPartial<T> = {
-    [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
-};
-interface SceneDataProviderResult {
-    data: PanelData;
-    origin: SceneDataProvider;
-}
-interface SceneDataProvider<T extends SceneObjectState = SceneDataState> extends SceneObject<T> {
-    setContainerWidth?: (width: number) => void;
-    isDataReadyToDisplay?: () => boolean;
-    cancelQuery?: () => void;
-    getResultsStream(): Observable<SceneDataProviderResult>;
-}
-interface SceneDataLayerProviderState extends SceneDataState {
-    name: string;
-    description?: string;
-    isEnabled?: boolean;
-    isHidden?: boolean;
-}
-interface SceneDataLayerProvider extends SceneDataProvider<SceneDataLayerProviderState> {
-    isDataLayer: true;
-}
-declare function isDataLayer(obj: SceneObject): obj is SceneDataLayerProvider;
-interface DataLayerFilter {
-    panelId: number;
-}
-interface SceneStatelessBehavior<T extends SceneObject = any> {
-    (sceneObject: T): CancelActivationHandler | void;
-}
-type ControlsLayout = 'horizontal' | 'vertical';
-interface UseStateHookOptions {
-    /**
-     * For some edge cases other scene objects want to subscribe to scene object state for objects
-     * that are not active, or whose main React Component can be un-mounted. Set this to true
-     * to keep the scene object active even if the React component is unmounted.
-     *
-     * Normally you would not need this but this can be useful in some edge cases.
-     *
-     * @experimental
-     */
-    shouldActivateOrKeepAlive?: boolean;
-}
-interface SceneDataQuery extends DataQuery {
-    [key: string]: any;
-    timeRangeCompare?: boolean;
-}
-interface SceneUrlSyncOptions {
-    /**
-     * This will update the url to contain all scene url state
-     * when the scene is initialized. Important for browser history "back" actions.
-     */
-    updateUrlOnInit?: boolean;
-    /**
-     * This is only supported by some objects if they implement
-     * shouldCreateHistoryStep where they can control what changes
-     * url changes should add a new browser history entry.
-     */
-    createBrowserHistorySteps?: boolean;
-}
-
-/**
- *
- * @param path Url to append query params to
- * @param searchObject Query params of the URL
- * @param preserveParams Query params to preserve
- * @returns Url with query params
- */
-declare function getUrlWithAppState(path: string, searchObject: UrlQueryMap, preserveParams?: string[]): string;
-
-interface RuntimePanelPluginOptions {
-    /**
-     * Please specify a pluginId that is unlikely to collide with other plugins.
-     */
-    pluginId: string;
-    plugin: PanelPlugin;
-}
-/**
- * Provides a way to register runtime panel plugins.
- * Please use a pluginId that is unlikely to collide with other plugins.
- */
-declare function registerRuntimePanelPlugin({ pluginId, plugin }: RuntimePanelPluginOptions): void;
 
 declare abstract class SceneObjectBase<TState extends SceneObjectState = SceneObjectState> implements SceneObject<TState> {
     private _isActive;
@@ -459,16 +223,693 @@ declare abstract class SceneObjectBase<TState extends SceneObjectState = SceneOb
     /**
      * Loop through state and call callback for each direct child scene object.
      * Checks 1 level deep properties and arrays. So a scene object hidden in a nested plain object will not be detected.
+     * Return false to exit loop early.
      */
     forEachChild(callback: (child: SceneObjectBase) => void): void;
     /** Returns a SceneObjectRef that will resolve to this object */
     getRef(): SceneObjectRef<this>;
+    toJSON(): {
+        type: any;
+        isActive: boolean;
+        state: TState;
+    };
 }
 /**
  * This hook is always returning model.state instead of a useState that remembers the last state emitted on the subject
  * The reason for this is so that if the model instance change this function will always return the latest state.
  */
 declare function useSceneObjectState<TState extends SceneObjectState>(model: SceneObject<TState>, options?: UseStateHookOptions): TState;
+
+declare function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>): React__default.JSX.Element;
+
+interface VizPanelMenuState extends SceneObjectState {
+    items?: PanelMenuItem[];
+}
+declare class VizPanelMenu extends SceneObjectBase<VizPanelMenuState> {
+    static Component: typeof VizPanelMenuRenderer;
+    addItem(item: PanelMenuItem): void;
+    setItems(items: PanelMenuItem[]): void;
+}
+declare function VizPanelMenuRenderer({ model }: SceneComponentProps<VizPanelMenu>): React__default.JSX.Element;
+
+interface VariableDependencyConfigOptions<TState extends SceneObjectState> {
+    /**
+     * State paths to scan / extract variable dependencies from. Leave empty to scan all paths.
+     */
+    statePaths?: Array<keyof TState | '*'>;
+    /**
+     * Explicit list of variable names to depend on. Leave empty to scan state for dependencies.
+     */
+    variableNames?: string[];
+    /**
+     * Optional way to customize how to handle when a dependent variable changes
+     * If not specified the default behavior is to trigger a re-render
+     */
+    onReferencedVariableValueChanged?: (variable: SceneVariable) => void;
+    /**
+     * Two scenarios trigger this callback to be called.
+     * 1. When any direct dependency changed value
+     * 2. In case hasDependencyInLoadingState was called and returned true we really care about any variable update. So in this scenario this callback is called
+     *    after any variable update completes. This is to cover scenarios where an object is waiting for indirect dependencies to complete.
+     */
+    onVariableUpdateCompleted?: () => void;
+    /**
+     * Optional way to subscribe to all variable value changes, even to variables that are not dependencies.
+     */
+    onAnyVariableChanged?: (variable: SceneVariable) => void;
+    /**
+     * Handle time macros.
+     */
+    handleTimeMacros?: boolean;
+    /**
+     * Will add ScopesVariable as a dependency which will cause updates when the scopes change.
+     */
+    dependsOnScopes?: boolean;
+}
+declare class VariableDependencyConfig<TState extends SceneObjectState> implements SceneVariableDependencyConfigLike {
+    private _sceneObject;
+    private _options;
+    private _state;
+    private _dependencies;
+    private _statePaths?;
+    private _isWaitingForVariables;
+    scanCount: number;
+    constructor(_sceneObject: SceneObject<TState>, _options: VariableDependencyConfigOptions<TState>);
+    /**
+     * Used to check for dependency on a specific variable
+     */
+    hasDependencyOn(name: string): boolean;
+    /**
+     * This is called whenever any set of variables have new values. It is up to this implementation to check if it's relevant given the current dependencies.
+     */
+    variableUpdateCompleted(variable: SceneVariable, hasChanged: boolean): void;
+    hasDependencyInLoadingState(): boolean;
+    getNames(): Set<string>;
+    /**
+     * Update variableNames
+     */
+    setVariableNames(varNames: string[]): void;
+    setPaths(paths: Array<keyof TState | '*'>): void;
+    private scanStateForDependencies;
+    private extractVariablesFrom;
+    private handleTimeMacros;
+}
+
+interface LongFrameEvent {
+    duration: number;
+    timestamp: number;
+    method: 'manual' | 'loaf';
+}
+type LongFrameCallback = (event: LongFrameEvent) => void;
+
+interface QueryResultWithState {
+    state: LoadingState;
+}
+interface SceneQueryControllerEntry {
+    request?: DataQueryRequest;
+    type: SceneQueryControllerEntryType;
+    origin: SceneObject;
+    cancel?: () => void;
+}
+type SceneQueryControllerEntryType = 'data' | 'annotations' | 'variable' | 'alerts' | 'plugin' | string;
+
+
+
+interface SceneComponentInteractionEvent {
+    origin: string;
+    duration: number;
+    networkDuration: number;
+    startTs: number;
+    endTs: number;
+}
+interface SceneInteractionTrackerState extends SceneObjectState {
+    enableInteractionTracking?: boolean;
+    onInteractionComplete?(event: SceneComponentInteractionEvent): void;
+}
+interface SceneQueryStateControllerState extends SceneObjectState {
+    isRunning: boolean;
+    enableProfiling?: boolean;
+}
+interface SceneQueryControllerLike extends SceneObject<SceneQueryStateControllerState> {
+    isQueryController: true;
+    cancelAll(): void;
+    queryStarted(entry: SceneQueryControllerEntry): void;
+    queryCompleted(entry: SceneQueryControllerEntry): void;
+    startProfile(name: string): void;
+    cancelProfile(): void;
+    runningQueriesCount(): number;
+}
+
+/**
+ * Performance tracking callback types
+ */
+type QueryCompletionCallback = (endTimestamp: number, error?: any) => void;
+type PluginLoadCompletionCallback = (plugin: any, fromCache?: boolean) => void;
+type FieldConfigCompletionCallback = (endTimestamp: number, dataPointsCount?: number, seriesCount?: number) => void;
+type RenderCompletionCallback = (endTimestamp: number, duration: number) => void;
+type DataTransformCompletionCallback = (endTimestamp: number, duration: number, success: boolean, result?: {
+    error?: string;
+}) => void;
+
+interface QueryProfilerLike {
+    onQueryStarted(timestamp: number, entry: SceneQueryControllerEntry, queryId: string): QueryCompletionCallback | null;
+}
+/**
+ * Will look for a scene object with a behavior that is a SceneQueryController and register the query with it.
+ * Optionally accepts a panel profiler for direct query tracking callbacks.
+ */
+declare function registerQueryWithController<T extends QueryResultWithState>(entry: SceneQueryControllerEntry, profiler?: QueryProfilerLike): (queryStream: Observable<T>) => Observable<T>;
+
+interface VizPanelRenderProfilerState extends SceneObjectState {
+}
+/**
+ * Tracks performance metrics for individual VizPanel instances using observer pattern.
+ *
+ * Performance events are sent to ScenePerformanceTracker observers, which are consumed
+ * by Grafana's ScenePerformanceLogger and DashboardAnalyticsAggregator.
+ */
+declare class VizPanelRenderProfiler extends SceneObjectBase<VizPanelRenderProfilerState> implements QueryProfilerLike {
+    private _panelKey?;
+    private _panelId?;
+    private _pluginId?;
+    private _pluginVersion?;
+    private _isTracking;
+    private _loadPluginStartTime?;
+    private _applyFieldConfigStartTime?;
+    private _activeQueries;
+    constructor(state?: Partial<VizPanelRenderProfilerState>);
+    private _onActivate;
+    private _handlePanelStateChange;
+    /**
+     * Track query execution with operation ID correlation
+     */
+    onQueryStarted(timestamp: number, entry: SceneQueryControllerEntry, queryId: string): QueryCompletionCallback | null;
+    /**
+     * Track plugin loading with operation ID correlation
+     */
+    onPluginLoadStart(pluginId: string): PluginLoadCompletionCallback | null;
+    /**
+     * Track field config processing with operation ID correlation
+     */
+    onFieldConfigStart(timestamp: number): FieldConfigCompletionCallback | null;
+    /**
+     * Get panel info for logging - truncates long titles for readability
+     */
+    private _getPanelInfo;
+    /**
+     * Track simple render timing with operation ID correlation
+     */
+    onSimpleRenderStart(timestamp: number): RenderCompletionCallback | undefined;
+    /** Handle plugin changes */
+    private _onPluginChange;
+    /** Start tracking this panel */
+    private _startTracking;
+    /** Cleanup when behavior is deactivated */
+    private _cleanup;
+    /**
+     * Track data transformation with operation ID correlation
+     */
+    onDataTransformStart(timestamp: number, transformationId: string, metrics: {
+        transformationCount: number;
+        seriesTransformationCount: number;
+        annotationTransformationCount: number;
+    }): DataTransformCompletionCallback | null;
+}
+
+interface VizPanelState<TOptions = {}, TFieldConfig = {}> extends SceneObjectState {
+    /**
+     * This is usually a plugin id that references a core plugin or an external plugin. But this can also reference a
+     * runtime registered PanelPlugin registered via function registerScenePanelPlugin.
+     */
+    pluginId: string;
+    title: string;
+    description?: string;
+    options: DeepPartial<TOptions>;
+    fieldConfig: FieldConfigSource<DeepPartial<TFieldConfig>>;
+    pluginVersion?: string;
+    displayMode?: 'default' | 'transparent';
+    /**
+     * Only shows header on hover, absolutly positioned above the panel.
+     */
+    hoverHeader?: boolean;
+    /**
+     * Offset hoverHeader position on the y axis
+     */
+    hoverHeaderOffset?: number;
+    /**
+     * Only shows vizPanelMenu on hover if false, otherwise the menu is always visible in the header
+     */
+    showMenuAlways?: boolean;
+    /**
+     * Defines a menu in the top right of the panel. The menu object is only activated when the dropdown menu itself is shown.
+     * So the best way to add dynamic menu actions and links is by adding them in a behavior attached to the menu.
+     */
+    menu?: VizPanelMenu;
+    /**
+     * Defines a menu that renders panel link.
+     **/
+    titleItems?: React.ReactNode | SceneObject | SceneObject[];
+    seriesLimit?: number;
+    seriesLimitShowAll?: boolean;
+    /**
+     * Add action to the top right panel header
+     */
+    headerActions?: React.ReactNode | SceneObject | SceneObject[];
+    /**
+     * Mainly for advanced use cases that need custom handling of PanelContext callbacks.
+     */
+    extendPanelContext?: (vizPanel: VizPanel, context: PanelContext) => void;
+    /**
+     * Sets panel chrome collapsed state
+     */
+    collapsible?: boolean;
+    collapsed?: boolean;
+    /** Marks object as a repeated object and a key pointer to source object */
+    repeatSourceKey?: string;
+    /**
+     * @internal
+     * Only for use from core to handle migration from old angular panels
+     **/
+    _UNSAFE_customMigrationHandler?: (panel: PanelModel, plugin: PanelPlugin) => void;
+    /** Internal */
+    _pluginLoadError?: string;
+    /** Internal */
+    _pluginInstanceState?: any;
+    _renderCounter?: number;
+}
+declare class VizPanel<TOptions = {}, TFieldConfig extends {} = {}> extends SceneObjectBase<VizPanelState<TOptions, TFieldConfig>> {
+    static Component: typeof VizPanelRenderer;
+    protected _variableDependency: VariableDependencyConfig<VizPanelState<{}, {}>>;
+    protected _panelContext?: PanelContext;
+    private _plugin?;
+    private _prevData?;
+    private _dataWithFieldConfig?;
+    private _structureRev;
+    constructor(state: Partial<VizPanelState<TOptions, TFieldConfig>>);
+    /**
+     * Get the VizPanelRenderProfiler behavior if attached
+     */
+    getProfiler(): VizPanelRenderProfiler | undefined;
+    private _onActivate;
+    forceRender(): void;
+    private _loadPlugin;
+    getLegacyPanelId(): number;
+    /**
+     * Unique id string that includes local variable values (for repeated panels)
+     */
+    getPathId(): string;
+    private _pluginLoaded;
+    private _getPluginVersion;
+    getPlugin(): PanelPlugin | undefined;
+    getPanelContext(): PanelContext;
+    onTimeRangeChange: (timeRange: AbsoluteTimeRange) => void;
+    getTimeRange: (data?: PanelData) => _grafana_data.TimeRange;
+    changePluginType(pluginId: string, newOptions?: DeepPartial<{}>, newFieldConfig?: FieldConfigSource): Promise<void>;
+    onTitleChange: (title: string) => void;
+    onDescriptionChange: (description: string) => void;
+    onDisplayModeChange: (displayMode: 'default' | 'transparent') => void;
+    onToggleCollapse: (collapsed: boolean) => void;
+    onOptionsChange: (optionsUpdate: DeepPartial<TOptions>, replace?: boolean, isAfterPluginChange?: boolean) => void;
+    onFieldConfigChange: (fieldConfigUpdate: FieldConfigSource<DeepPartial<TFieldConfig>>, replace?: boolean) => void;
+    interpolate: InterpolateFunction;
+    getDescription: () => string;
+    clearFieldConfigCache(): void;
+    /**
+     * Called from the react render path to apply the field config to the data provided by the data provider
+     */
+    applyFieldConfig(rawData?: PanelData): PanelData;
+    onCancelQuery: () => void;
+    onStatusMessageClick: () => void;
+    /**
+     * Panel context functions
+     */
+    private _onSeriesColorChange;
+    private _onSeriesVisibilityChange;
+    private _onInstanceStateChange;
+    private _onToggleLegendSort;
+    clone(withState?: Partial<VizPanelState>): this;
+    private buildPanelContext;
+}
+
+interface SceneObjectState {
+    key?: string;
+    $timeRange?: SceneTimeRangeLike;
+    $data?: SceneDataProvider;
+    $variables?: SceneVariables;
+    /**
+     * @experimental
+     * Can be used to add extra behaviors to a scene object.
+     * These are activated when the their parent scene object is activated.
+     */
+    $behaviors?: Array<SceneObject | SceneStatelessBehavior>;
+}
+interface SceneLayoutChildOptions {
+    width?: number | string;
+    height?: number | string;
+    xSizing?: 'fill' | 'content';
+    ySizing?: 'fill' | 'content';
+    x?: number;
+    y?: number;
+    minWidth?: number | string;
+    minHeight?: number | string;
+    isDraggable?: boolean;
+    isResizable?: boolean;
+}
+interface SceneComponentProps<T> {
+    model: T;
+}
+type SceneComponent<TModel> = (props: SceneComponentProps<TModel>) => React__default.ReactElement | null;
+interface SceneDataState extends SceneObjectState {
+    data?: PanelData;
+}
+interface SceneObject<TState extends SceneObjectState = SceneObjectState> {
+    /** The current state */
+    readonly state: TState;
+    /** True when there is a React component mounted for this Object */
+    readonly isActive: boolean;
+    /** Controls if activation blocks rendering */
+    readonly renderBeforeActivation: boolean;
+    /** SceneObject parent */
+    readonly parent?: SceneObject;
+    /** This abtractions declares what variables the scene object depends on and how to handle when they change value. **/
+    readonly variableDependency?: SceneVariableDependencyConfigLike;
+    /** This abstraction declares URL sync dependencies of a scene object. **/
+    readonly urlSync?: SceneObjectUrlSyncHandler;
+    /** Subscribe to state changes */
+    subscribeToState(handler: SceneStateChangedHandler<TState>): Unsubscribable;
+    /** Subscribe to a scene event */
+    subscribeToEvent<T extends BusEvent>(typeFilter: BusEventType<T>, handler: BusEventHandler<T>): Unsubscribable;
+    /** Publish an event and optionally bubble it up the scene */
+    publishEvent(event: BusEvent, bubble?: boolean): void;
+    /** Utility hook that wraps useObservable. Used by React components to subscribes to state changes */
+    useState(): TState;
+    /** How to modify state */
+    setState(state: Partial<TState>): void;
+    /**
+     * Called when the Component is mounted. This will also activate any $data, $variables or $timeRange scene object on this level.
+     * Don't override this in your custom SceneObjects, instead use addActivationHandler from the constructor.
+     **/
+    activate(): CancelActivationHandler;
+    /** Get the scene root */
+    getRoot(): SceneObject;
+    /** Returns a deep clone this object and all its children */
+    clone(state?: Partial<TState>): this;
+    /** A React component to use for rendering the object */
+    Component(props: SceneComponentProps<SceneObject<TState>>): React__default.ReactElement | null;
+    /** Force a re-render, should only be needed when variable values change */
+    forceRender(): void;
+    /** Returns a SceneObjectRef that will resolve to this object */
+    getRef(): SceneObjectRef<this>;
+    /**
+     * Allows external code to register code that is executed on activate and deactivate. This allow you
+     * to wire up scene objects that need to respond to state changes in other objects from the outside.
+     **/
+    addActivationHandler(handler: SceneActivationHandler): void;
+    /**
+     * Loop through state and call callback for each direct child scene object.
+     * Checks 1 level deep properties and arrays. So a scene object hidden in a nested plain object will not be detected.
+     * Return false to exit loop early.
+     */
+    forEachChild(callback: (child: SceneObject) => void): void | false;
+    /**
+     * Useful for edge cases when you want to move a scene object to another parent.
+     */
+    clearParent(): void;
+}
+type SceneActivationHandler = () => SceneDeactivationHandler | void;
+type SceneDeactivationHandler = () => void;
+/**
+ * Function returned by activate() that when called will deactivate the object if it's the last activator
+ **/
+type CancelActivationHandler = () => void;
+interface SceneLayoutState extends SceneObjectState {
+    children: SceneObject[];
+}
+interface SceneLayout<T extends SceneLayoutState = SceneLayoutState> extends SceneObject<T> {
+    isDraggable(): boolean;
+    getDragClass?(): string;
+    getDragClassCancel?(): string;
+    getDragHooks?(): {
+        onDragStart?: (e: React__default.PointerEvent, panel: VizPanel) => void;
+    };
+}
+interface SceneTimeRangeState extends SceneObjectState {
+    from: string;
+    to: string;
+    fiscalYearStartMonth?: number;
+    value: TimeRange;
+    timeZone?: TimeZone;
+    /** weekStart will change the global date locale so having multiple different weekStart values is not supported  */
+    weekStart?: WeekStart;
+    /**
+     * @internal
+     * To enable feature parity with the old time range picker, not sure if it will be kept.
+     * Override the now time by entering a time delay. Use this option to accommodate known delays in data aggregation to avoid null values.
+     * */
+    UNSAFE_nowDelay?: string;
+    refreshOnActivate?: {
+        /**
+         * When set, the time range will invalidate relative ranges after the specified interval has elapsed
+         */
+        afterMs?: number;
+        /**
+         * When set, the time range will invalidate relative ranges after the specified percentage of the current interval has elapsed.
+         * If both invalidate values are set, the smaller value will be used for the given interval.
+         */
+        percent?: number;
+    };
+}
+interface SceneTimeRangeLike extends SceneObject<SceneTimeRangeState> {
+    onTimeZoneChange(timeZone: TimeZone): void;
+    onTimeRangeChange(timeRange: TimeRange): void;
+    onRefresh(): void;
+    getTimeZone(): TimeZone;
+}
+declare function isSceneObject(obj: any): obj is SceneObject;
+interface SceneObjectWithUrlSync extends SceneObject {
+    getUrlState(): SceneObjectUrlValues;
+    updateFromUrl(values: SceneObjectUrlValues): void;
+}
+interface SceneObjectUrlSyncHandler {
+    getKeys(): string[];
+    getUrlState(): SceneObjectUrlValues;
+    updateFromUrl(values: SceneObjectUrlValues): void;
+    shouldCreateHistoryStep?(values: SceneObjectUrlValues): boolean;
+    performBrowserHistoryAction?(callback: () => void): void;
+}
+interface DataRequestEnricher {
+    enrichDataRequest(source: SceneObject): Partial<DataQueryRequest> | null;
+}
+interface FiltersRequestEnricher {
+    enrichFiltersRequest(source: SceneObject): Partial<DataSourceGetTagKeysOptions | DataSourceGetTagValuesOptions> | null;
+}
+declare function isDataRequestEnricher(obj: any): obj is DataRequestEnricher;
+declare function isFiltersRequestEnricher(obj: any): obj is FiltersRequestEnricher;
+type SceneObjectUrlValue = string | string[] | undefined | null;
+type SceneObjectUrlValues = Record<string, SceneObjectUrlValue>;
+type CustomTransformOperator = (context: DataTransformContext) => MonoTypeOperatorFunction<DataFrame[]>;
+type CustomTransformerDefinition = {
+    operator: CustomTransformOperator;
+    topic: DataTopic;
+} | CustomTransformOperator;
+type SceneStateChangedHandler<TState> = (newState: TState, prevState: TState) => void;
+type DeepPartial<T> = {
+    [K in keyof T]?: T[K] extends object ? DeepPartial<T[K]> : T[K];
+};
+interface SceneDataProviderResult {
+    data: PanelData;
+    origin: SceneDataProvider;
+}
+interface SceneDataProvider<T extends SceneObjectState = SceneDataState> extends SceneObject<T> {
+    setContainerWidth?: (width: number) => void;
+    isDataReadyToDisplay?: () => boolean;
+    cancelQuery?: () => void;
+    getResultsStream(): Observable<SceneDataProviderResult>;
+    /**
+     * Can be used to disable query execution for scene elements that are out of view
+     */
+    isInViewChanged?(isInView: boolean): void;
+    /**
+     * Allow activating or deactivating the isInView behavior
+     * This is useful for external consumers of a data provider (i.e., the Dashboard datasource)
+     */
+    bypassIsInViewChanged?(bypassIsInView: boolean): void;
+}
+interface SceneDataLayerProviderState extends SceneDataState {
+    name: string;
+    description?: string;
+    isEnabled?: boolean;
+    isHidden?: boolean;
+    placement?: 'inControlsMenu';
+}
+interface SceneDataLayerProvider extends SceneDataProvider<SceneDataLayerProviderState> {
+    isDataLayer: true;
+}
+declare function isDataLayer(obj: SceneObject): obj is SceneDataLayerProvider;
+interface DataLayerFilter {
+    panelId: number;
+}
+interface SceneStatelessBehavior<T extends SceneObject = any> {
+    (sceneObject: T): CancelActivationHandler | void;
+}
+type ControlsLayout = 'horizontal' | 'vertical';
+interface UseStateHookOptions {
+    /**
+     * For some edge cases other scene objects want to subscribe to scene object state for objects
+     * that are not active, or whose main React Component can be un-mounted. Set this to true
+     * to keep the scene object active even if the React component is unmounted.
+     *
+     * Normally you would not need this but this can be useful in some edge cases.
+     *
+     * @experimental
+     */
+    shouldActivateOrKeepAlive?: boolean;
+}
+interface SceneDataQuery extends DataQuery {
+    [key: string]: any;
+    timeRangeCompare?: boolean;
+}
+interface SceneUrlSyncOptions {
+    /**
+     * This will update the url to contain all scene url state
+     * when the scene is initialized. Important for browser history "back" actions.
+     */
+    updateUrlOnInit?: boolean;
+    /**
+     * This is only supported by some objects if they implement
+     * shouldCreateHistoryStep where they can control what changes
+     * url changes should add a new browser history entry.
+     */
+    createBrowserHistorySteps?: boolean;
+    /**
+     * This will automatically prefix url search parameters when syncing.
+     * Can be used to prevent collisions when multiple Scene apps are embedded in the page.
+     */
+    namespace?: string;
+    /**
+     * When `namespace` is provided, this prevents some url search parameters to be automatically prefixed.
+     * Defaults to the timerange parameters (["from", "to", "timezone"])
+     */
+    excludeFromNamespace?: string[];
+}
+
+interface EmbeddedSceneState extends SceneObjectState {
+    /**
+     * The main content of the scene (usually a SceneFlexLayout)
+     */
+    body: SceneObject;
+    /**
+     * Top row of variable selectors, filters, time pickers and custom actions.
+     */
+    controls?: SceneObject[];
+    /**
+     * For interoperability (used from EmbeddedSceneWithContext)
+     */
+    context?: SceneObject;
+}
+declare class EmbeddedScene extends SceneObjectBase<EmbeddedSceneState> {
+    static Component: typeof EmbeddedSceneRenderer;
+    constructor(state: EmbeddedSceneState);
+}
+declare function EmbeddedSceneRenderer({ model }: SceneComponentProps<EmbeddedScene>): React__default.JSX.Element;
+
+interface SceneRouteMatch<Params extends {
+    [K in keyof Params]?: string;
+} = {}> {
+    params: Params;
+    isExact: boolean;
+    path: string;
+    url: string;
+}
+interface SceneAppState extends SceneObjectState {
+    pages: SceneAppPageLike[];
+    name?: string;
+    urlSyncOptions?: SceneUrlSyncOptions;
+}
+interface SceneAppRoute {
+    path: string;
+    page?: SceneAppPageLike;
+    drilldown?: SceneAppDrilldownView;
+}
+interface SceneAppPageState extends SceneObjectState {
+    /** Page title or tab label */
+    title: string;
+    /** Page subTitle */
+    subTitle?: string | React.ReactNode;
+    /**
+     * Customize title rendering.
+     * Please return an unstyled h1 tag here + any additional elements you need.
+     **/
+    renderTitle?: (title: string) => React.ReactNode;
+    /** For an image before title */
+    titleImg?: string;
+    /** For an icon before title or tab label */
+    titleIcon?: IconName;
+    /** For a tab label suffix */
+    tabSuffix?: ComponentType<{
+        className?: string;
+    }>;
+    url: string;
+    routePath: string;
+    /** Array of scene object to be rendered at the top right of the page, inline with the page title */
+    controls?: SceneObject[];
+    hideFromBreadcrumbs?: boolean;
+    tabs?: SceneAppPageLike[];
+    getScene?: (routeMatch: SceneRouteMatch) => EmbeddedScene;
+    drilldowns?: SceneAppDrilldownView[];
+    getParentPage?: () => SceneAppPageLike;
+    preserveUrlKeys?: string[];
+    /**
+     * The current initialized scene, this is set by the framework after scene url initialization
+     **/
+    initializedScene?: SceneObject;
+    /**
+     * Function that returns a fallback scene app page,
+     * to be rendered when url does not match current page exactly or any of tabs or drilldowns.
+     */
+    getFallbackPage?: () => SceneAppPageLike;
+    layout?: PageLayoutType;
+}
+interface SceneAppPageLike extends SceneObject<SceneAppPageState>, DataRequestEnricher {
+    initializeScene(scene: SceneObject): void;
+    /**
+     * @internal. Please don't call this from plugin code.
+     * Will call the state.getScene function with the current routeMatch and will cache the resulting Scene using the routeMatch.url as key.
+     */
+    getScene(routeMatch: SceneRouteMatch): EmbeddedScene;
+    /**
+     * @internal. Please don't call this from plugin code.
+     * Get drilldown scene. Will call the drilldown.getPage function with the current routeMatch and will cache the resulting page using the routeMatch.url as key.
+     */
+    getDrilldownPage(drilldown: SceneAppDrilldownView, routeMatch: SceneRouteMatch): SceneAppPageLike;
+}
+interface SceneAppDrilldownView {
+    routePath: string;
+    defaultRoute?: boolean;
+    getPage: (routeMatch: SceneRouteMatch<any>, parent: SceneAppPageLike) => SceneAppPageLike;
+}
+
+/**
+ *
+ * @param path Url to append query params to
+ * @param searchObject Query params of the URL
+ * @param preserveParams Query params to preserve
+ * @returns Url with query params
+ */
+declare function getUrlWithAppState(path: string, searchObject: UrlQueryMap, preserveParams?: string[]): string;
+
+interface RuntimePanelPluginOptions {
+    /**
+     * Please specify a pluginId that is unlikely to collide with other plugins.
+     */
+    pluginId: string;
+    plugin: PanelPlugin;
+}
+/**
+ * Provides a way to register runtime panel plugins.
+ * Please use a pluginId that is unlikely to collide with other plugins.
+ */
+declare function registerRuntimePanelPlugin({ pluginId, plugin }: RuntimePanelPluginOptions): void;
 
 declare function cloneSceneObjectState<TState extends SceneObjectState>(sceneState: TState, withState?: Partial<TState>): TState;
 
@@ -485,16 +926,30 @@ interface RuntimeDataSourceOptions {
  */
 declare function registerRuntimeDataSource({ dataSource }: RuntimeDataSourceOptions): void;
 
+interface UniqueUrlKeyMapperOptions {
+    namespace?: string;
+    excludeFromNamespace?: string[];
+}
+
 /**
  * @param root
  * @returns the full scene url state as a object with keys and values
  */
-declare function getUrlState(root: SceneObject): SceneObjectUrlValues;
+declare function getUrlState(root: SceneObject, uniqueUrlKeyMapperOptions?: UniqueUrlKeyMapperOptions): SceneObjectUrlValues;
 /**
  * Exported util function to sync state from an initial url state.
  * Useful for initializing an embedded scenes with a url state string.
  */
-declare function syncStateFromSearchParams(root: SceneObject, urlParams: URLSearchParams): void;
+declare function syncStateFromSearchParams(root: SceneObject, urlParams: URLSearchParams, uniqueUrlKeyMapperOptions?: UniqueUrlKeyMapperOptions): void;
+
+declare const PATH_ID_SEPARATOR = "$";
+/**
+ * Returns a unique path for a given VizPanel based on the panels peristance id and any local variable value contexts.
+ * This is used to create a unique URL key identifiers for panels and repeated panels.
+ */
+declare function buildPathIdFor(panel: VizPanel): string;
+
+declare function isRepeatCloneOrChildOf(scene: SceneObject): boolean;
 
 interface FormatRegistryItem extends RegistryItem {
     formatter(value: VariableValue, args: string[], variable: FormatVariable): string;
@@ -524,11 +979,16 @@ interface MacroVariableConstructor {
 /**
  * Allows you to register a variable expression macro that can then be used in strings with syntax ${<macro_name>.<fieldPath>}
  * Call this on app activation and unregister the macro on deactivation.
+ * @param replace WARNING! If true, this will replace the existing macro with the same name. This is global and will affect all apps. Unregistering the macro will restore the original macro.
  * @returns a function that unregisters the macro
  */
-declare function registerVariableMacro(name: string, macro: MacroVariableConstructor): () => void;
+declare function registerVariableMacro(name: string, macro: MacroVariableConstructor, replace?: boolean): () => void;
 
 declare function renderPrometheusLabelFilters(filters: AdHocVariableFilter[]): string;
+declare function escapeLabelValueInExactSelector(labelValue: string): string;
+declare function escapeLabelValueInRegexSelector(labelValue: string): string;
+declare function escapeUrlPipeDelimiters(value: string | undefined): string;
+declare function escapeURLDelimiters(value: string | undefined): string;
 
 declare class AdHocFiltersVariableUrlSyncHandler implements SceneObjectUrlSyncHandler {
     private _variable;
@@ -539,12 +999,21 @@ declare class AdHocFiltersVariableUrlSyncHandler implements SceneObjectUrlSyncHa
     updateFromUrl(values: SceneObjectUrlValues): void;
 }
 
-interface AdHocFilterWithLabels extends AdHocVariableFilter {
+interface AdHocFilterWithLabels<M extends Record<string, any> = {}> extends AdHocVariableFilter {
     keyLabel?: string;
     valueLabels?: string[];
     forceEdit?: boolean;
+    hidden?: boolean;
+    meta?: M;
+    origin?: FilterOrigin;
+    matchAllFilter?: boolean;
+    readOnly?: boolean;
+    restorable?: boolean;
+    nonApplicable?: boolean;
+    nonApplicableReason?: string;
 }
 type AdHocControlsLayout = ControlsLayout | 'combobox';
+type FilterOrigin = 'dashboard' | 'scope' | string;
 interface AdHocFiltersVariableState extends SceneVariableState {
     /** Optional text to display on the 'add filter' button */
     addFilterButtonText?: string;
@@ -552,6 +1021,8 @@ interface AdHocFiltersVariableState extends SceneVariableState {
     filters: AdHocFilterWithLabels[];
     /** Base filters to always apply when looking up keys*/
     baseFilters?: AdHocFilterWithLabels[];
+    /** Filters originated from a source */
+    originFilters?: AdHocFilterWithLabels[];
     /** Datasource to use for getTagKeys and getTagValues and also controls which scene queries the filters should apply to */
     datasource: DataSourceRef | null;
     /** Controls if the filters can be changed */
@@ -615,9 +1086,19 @@ interface AdHocFiltersVariableState extends SceneVariableState {
      * @internal state of the new filter being added
      */
     _wip?: AdHocFilterWithLabels;
+    /**
+     * Allows custom formatting of a value before saving to filter state
+     */
+    onAddCustomValue?: OnAddCustomValueFn;
 }
 type AdHocVariableExpressionBuilderFn = (filters: AdHocFilterWithLabels[]) => string;
-type getTagKeysProvider$1 = (variable: AdHocFiltersVariable, currentKey: string | null) => Promise<{
+type OnAddCustomValueFn = (item: SelectableValue<string> & {
+    isCustom?: boolean;
+}, filter: AdHocFilterWithLabels) => {
+    value: string | undefined;
+    valueLabels: string[];
+};
+type getTagKeysProvider$1 = (variable: AdHocFiltersVariable, currentKey: string | null, operators?: OperatorDefinition[]) => Promise<{
     replace?: boolean;
     values: GetTagResponse | MetricFindValue[];
 }>;
@@ -625,12 +1106,25 @@ type getTagValuesProvider = (variable: AdHocFiltersVariable, filter: AdHocFilter
     replace?: boolean;
     values: GetTagResponse | MetricFindValue[];
 }>;
+type OperatorDefinition = {
+    value: string;
+    description?: string;
+    isMulti?: Boolean;
+    isRegex?: Boolean;
+};
 declare class AdHocFiltersVariable extends SceneObjectBase<AdHocFiltersVariableState> implements SceneVariable<AdHocFiltersVariableState> {
     static Component: typeof AdHocFiltersVariableRenderer;
     private _scopedVars;
     private _dataSourceSrv;
+    private _originalValues;
+    private _prevScopes;
+    /** Needed for scopes dependency */
+    protected _variableDependency: VariableDependencyConfig<AdHocFiltersVariableState>;
     protected _urlSync: AdHocFiltersVariableUrlSyncHandler;
+    private _debouncedVerifyApplicability;
     constructor(state: Partial<AdHocFiltersVariableState>);
+    private _activationHandler;
+    private _updateScopesFilters;
     setState(update: Partial<AdHocFiltersVariableState>): void;
     /**
      * Updates the variable's `filters` and `filterExpression` state.
@@ -641,11 +1135,14 @@ declare class AdHocFiltersVariable extends SceneObjectBase<AdHocFiltersVariableS
         skipPublish?: boolean;
         forcePublish?: boolean;
     }): void;
+    restoreOriginalFilter(filter: AdHocFilterWithLabels): void;
     getValue(): VariableValue | undefined;
     _updateFilter(filter: AdHocFilterWithLabels, update: Partial<AdHocFilterWithLabels>): void;
+    updateToMatchAll(filter: AdHocFilterWithLabels): void;
     _removeFilter(filter: AdHocFilterWithLabels): void;
     _removeLastFilter(): void;
     _handleComboboxBackspace(filter: AdHocFilterWithLabels): void;
+    _verifyApplicability(): Promise<void>;
     /**
      * Get possible keys given current filters. Do not call from plugins directly
      */
@@ -663,67 +1160,14 @@ interface ConstantVariableState extends SceneVariableState {
     value: VariableValue;
 }
 declare class ConstantVariable extends SceneObjectBase<ConstantVariableState> implements SceneVariable<ConstantVariableState> {
+    protected _variableDependency: VariableDependencyConfig<ConstantVariableState>;
+    private _prevValue;
     constructor(initialState: Partial<ConstantVariableState>);
+    /**
+     * This function is called on when SceneVariableSet is activated or when a dependency changes.
+     */
+    validateAndUpdate(): Observable<ValidateAndUpdateResult>;
     getValue(): VariableValue;
-}
-
-interface VariableDependencyConfigOptions<TState extends SceneObjectState> {
-    /**
-     * State paths to scan / extract variable dependencies from. Leave empty to scan all paths.
-     */
-    statePaths?: Array<keyof TState | '*'>;
-    /**
-     * Explicit list of variable names to depend on. Leave empty to scan state for dependencies.
-     */
-    variableNames?: string[];
-    /**
-     * Optional way to customize how to handle when a dependent variable changes
-     * If not specified the default behavior is to trigger a re-render
-     */
-    onReferencedVariableValueChanged?: (variable: SceneVariable) => void;
-    /**
-     * Two scenarios trigger this callback to be called.
-     * 1. When any direct dependency changed value
-     * 2. In case hasDependencyInLoadingState was called and returned true we really care about any variable update. So in this scenario this callback is called
-     *    after any variable update completes. This is to cover scenarios where an object is waiting for indirect dependencies to complete.
-     */
-    onVariableUpdateCompleted?: () => void;
-    /**
-     * Optional way to subscribe to all variable value changes, even to variables that are not dependencies.
-     */
-    onAnyVariableChanged?: (variable: SceneVariable) => void;
-    /**
-     * Handle time macros.
-     */
-    handleTimeMacros?: boolean;
-}
-declare class VariableDependencyConfig<TState extends SceneObjectState> implements SceneVariableDependencyConfigLike {
-    private _sceneObject;
-    private _options;
-    private _state;
-    private _dependencies;
-    private _statePaths?;
-    private _isWaitingForVariables;
-    scanCount: number;
-    constructor(_sceneObject: SceneObject<TState>, _options: VariableDependencyConfigOptions<TState>);
-    /**
-     * Used to check for dependency on a specific variable
-     */
-    hasDependencyOn(name: string): boolean;
-    /**
-     * This is called whenever any set of variables have new values. It is up to this implementation to check if it's relevant given the current dependencies.
-     */
-    variableUpdateCompleted(variable: SceneVariable, hasChanged: boolean): void;
-    hasDependencyInLoadingState(): boolean;
-    getNames(): Set<string>;
-    /**
-     * Update variableNames
-     */
-    setVariableNames(varNames: string[]): void;
-    setPaths(paths: Array<keyof TState | '*'>): void;
-    private scanStateForDependencies;
-    private extractVariablesFrom;
-    private handleTimeMacros;
 }
 
 interface MultiValueVariableState extends SceneVariableState {
@@ -772,23 +1216,27 @@ declare abstract class MultiValueVariable<TState extends MultiValueVariableState
      * This function can intercept and make sure those values are preserved.
      */
     protected interceptStateUpdateAfterValidation(stateUpdate: Partial<MultiValueVariableState>): void;
-    getValue(): VariableValue;
+    getValue(fieldPath?: string): VariableValue;
     getValueText(): string;
     hasAllValue(): boolean;
     getDefaultMultiState(options: VariableValueOption[]): {
         value: VariableValueSingle[];
         text: string[];
     };
+    protected getDefaultSingleState(options: VariableValueOption[]): {
+        value: VariableValueSingle;
+        text: string;
+    };
     /**
      * Change the value and publish SceneVariableValueChangedEvent event.
      */
-    changeValueTo(value: VariableValue, text?: VariableValue): void;
+    changeValueTo(value: VariableValue, text?: VariableValue, isUserAction?: boolean): void;
     private findLabelTextForValue;
     /**
      * This helper function is to counter the contravariance of setState
      */
     private setStateHelper;
-    getOptionsForSelect(): VariableValueOption[];
+    getOptionsForSelect(includeCurrentValue?: boolean): VariableValueOption[];
     refreshOptions(): void;
     /**
      * Can be used by subclasses to do custom handling of option search based on search input
@@ -802,8 +1250,9 @@ interface CustomVariableState extends MultiValueVariableState {
 declare class CustomVariable extends MultiValueVariable<CustomVariableState> {
     protected _variableDependency: VariableDependencyConfig<CustomVariableState>;
     constructor(initialState: Partial<CustomVariableState>);
+    transformCsvStringToOptions(str: string, interpolate?: boolean): VariableValueOption[];
     getValueOptions(args: VariableGetOptionsArgs): Observable<VariableValueOption[]>;
-    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React$1.JSX.Element;
+    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React__default.JSX.Element;
 }
 
 interface DataSourceVariableState extends MultiValueVariableState {
@@ -824,7 +1273,7 @@ declare class DataSourceVariable extends MultiValueVariable<DataSourceVariableSt
     protected _variableDependency: VariableDependencyConfig<DataSourceVariableState>;
     constructor(initialState: Partial<DataSourceVariableState>);
     getValueOptions(args: VariableGetOptionsArgs): Observable<VariableValueOption[]>;
-    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React$1.JSX.Element;
+    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React__default.JSX.Element;
 }
 
 interface IntervalVariableState extends SceneVariableState {
@@ -858,6 +1307,7 @@ declare class TextBoxVariable extends SceneObjectBase<TextBoxVariableState> impl
     getValue(): VariableValue;
     setValue(newValue: string): void;
     private getKey;
+    getKeys(): string[];
     getUrlState(): {
         [x: string]: string;
     };
@@ -872,6 +1322,8 @@ interface QueryVariableState extends MultiValueVariableState {
     regex: string;
     refresh: VariableRefresh$1;
     sort: VariableSort;
+    staticOptions?: VariableValueOption[];
+    staticOptionsOrder?: 'before' | 'after' | 'sorted';
     /** @internal Only for use inside core dashboards */
     definition?: string;
 }
@@ -882,7 +1334,7 @@ declare class QueryVariable extends MultiValueVariable<QueryVariableState> {
     private getRequest;
     onSearchChange: (searchFilter: string) => void;
     private _updateOptionsBasedOnSearchFilter;
-    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React$1.JSX.Element;
+    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React__default.JSX.Element;
 }
 
 interface GroupByVariableState extends MultiValueVariableState {
@@ -894,6 +1346,13 @@ interface GroupByVariableState extends MultiValueVariableState {
     baseFilters?: AdHocVariableFilter[];
     /** Datasource to use for getTagKeys and also controls which scene queries the group by should apply to */
     datasource: DataSourceRef | null;
+    /** Default value set for this groupBy. When this field is set, changing value will allow the user to restore back to this default value */
+    defaultValue?: {
+        text: VariableValue;
+        value: VariableValue;
+    };
+    /** Needed for url sync when passing flag to another dashboard */
+    restorable?: boolean;
     /** Controls if the group by can be changed */
     readOnly?: boolean;
     /**
@@ -917,6 +1376,10 @@ interface GroupByVariableState extends MultiValueVariableState {
      * Return replace: false if you want to combine the results with the default lookup
      */
     getTagKeysProvider?: getTagKeysProvider;
+    /**
+     * Holds the applicability for each of the selected keys
+     */
+    keysApplicability?: DrilldownsApplicability[];
 }
 type getTagKeysProvider = (set: GroupByVariable, currentKey: string | null) => Promise<{
     replace?: boolean;
@@ -930,6 +1393,11 @@ declare class GroupByVariable extends MultiValueVariable<GroupByVariableState> {
     private _updateValueGivenNewOptions;
     getValueOptions(args: VariableGetOptionsArgs): Observable<VariableValueOption[]>;
     constructor(initialState: Partial<GroupByVariableState>);
+    private _activationHandler;
+    getApplicableKeys(): VariableValue;
+    _verifyApplicability(): Promise<void>;
+    checkIfRestorable(values: VariableValue): boolean;
+    restoreDefaultValues(): void;
     /**
      * Get possible keys given current filters. Do not call from plugins directly
      */
@@ -942,7 +1410,31 @@ declare class GroupByVariable extends MultiValueVariable<GroupByVariableState> {
         text: string[];
     };
 }
-declare function GroupByVariableRenderer({ model }: SceneComponentProps<MultiValueVariable>): React__default.JSX.Element;
+declare function GroupByVariableRenderer({ model }: SceneComponentProps<GroupByVariable>): React__default.JSX.Element;
+
+interface SwitchVariableState extends SceneVariableState {
+    value: string;
+    enabledValue: string;
+    disabledValue: string;
+}
+declare class SwitchVariable extends SceneObjectBase<SwitchVariableState> implements SceneVariable<SwitchVariableState> {
+    static Component: typeof SwitchVariableRenderer;
+    private _prevValue;
+    constructor(initialState: Partial<SwitchVariableState>);
+    /**
+     * This function is called on when SceneVariableSet is activated or when a dependency changes.
+     */
+    validateAndUpdate(): Observable<ValidateAndUpdateResult>;
+    setValue(newValue: string): void;
+    getValue(): VariableValue;
+    isEnabled(): boolean;
+    isDisabled(): boolean;
+    private getKey;
+    getKeys(): string[];
+    getUrlState(): SceneObjectUrlValues;
+    updateFromUrl(values: SceneObjectUrlValues): void;
+}
+declare function SwitchVariableRenderer({ model }: SceneComponentProps<SwitchVariable>): React__default.JSX.Element;
 
 declare function isAdHocVariable(variable: SceneVariable): variable is AdHocFiltersVariable;
 declare function isConstantVariable(variable: SceneVariable): variable is ConstantVariable;
@@ -952,6 +1444,7 @@ declare function isIntervalVariable(variable: SceneVariable): variable is Interv
 declare function isQueryVariable(variable: SceneVariable): variable is QueryVariable;
 declare function isTextBoxVariable(variable: SceneVariable): variable is TextBoxVariable;
 declare function isGroupByVariable(variable: SceneVariable): variable is GroupByVariable;
+declare function isSwitchVariable(variable: SceneVariable): variable is SwitchVariable;
 
 interface SceneObjectStateChangedPayload<TState extends SceneObjectState = SceneObjectState> {
     prevState: TState;
@@ -977,38 +1470,14 @@ declare class UserActionEvent extends BusEventWithPayload<UserActionEventPayload
 declare function lookupVariable(name: string, sceneObject: SceneObject): SceneVariable | null;
 
 /**
+ * Returns the closest query controller undefined if none found
+ */
+declare function getQueryController(sceneObject: SceneObject): SceneQueryControllerLike | undefined;
+
+/**
  * Will walk up the scene object graph to the closest $timeRange scene object
  */
 declare function getTimeRange(sceneObject: SceneObject): SceneTimeRangeLike;
-
-interface SceneQueryStateControllerState extends SceneObjectState {
-    isRunning: boolean;
-}
-interface SceneQueryControllerLike extends SceneObject<SceneQueryStateControllerState> {
-    isQueryController: true;
-    cancelAll(): void;
-    queryStarted(entry: SceneQueryControllerEntry): void;
-    queryCompleted(entry: SceneQueryControllerEntry): void;
-}
-interface QueryResultWithState {
-    state: LoadingState;
-}
-interface SceneQueryControllerEntry {
-    request?: DataQueryRequest;
-    type: SceneQueryControllerEntryType;
-    origin: SceneObject;
-    cancel?: () => void;
-}
-type SceneQueryControllerEntryType = 'data' | 'annotations' | 'variable' | 'alerts';
-declare class SceneQueryController extends SceneObjectBase<SceneQueryStateControllerState> implements SceneQueryControllerLike {
-    #private;
-    isQueryController: true;
-    constructor();
-    queryStarted(entry: SceneQueryControllerEntry): void;
-    queryCompleted(entry: SceneQueryControllerEntry): void;
-    private changeRunningQueryCount;
-    cancelAll(): void;
-}
 
 interface UrlSyncManagerLike {
     initSync(root: SceneObject): void;
@@ -1113,14 +1582,9 @@ declare function getAncestor<ParentType>(sceneObject: SceneObject, ancestorType:
  */
 declare function findDescendents<T extends SceneObject>(scene: SceneObject, descendentType: SceneType<T>): T[];
 /**
- * Returns the closest query controller undefined if none found
+ * Will return the scopes from the scopes variable if available.
  */
-declare function getQueryController(sceneObject: SceneObject): SceneQueryControllerLike | undefined;
-/**
- * Returns the closest SceneObject that has a state property with the
- * name urlSyncManager that is of type UrlSyncManager
- */
-declare function getUrlSyncManager(sceneObject: SceneObject): UrlSyncManagerLike | undefined;
+declare function getScopes(sceneObject: SceneObject): Scope[] | undefined;
 
 declare const sceneGraph: {
     getVariables: typeof getVariables;
@@ -1136,9 +1600,9 @@ declare const sceneGraph: {
     findObject: typeof findObject;
     findAllObjects: typeof findAllObjects;
     getAncestor: typeof getAncestor;
-    findDescendents: typeof findDescendents;
     getQueryController: typeof getQueryController;
-    getUrlSyncManager: typeof getUrlSyncManager;
+    findDescendents: typeof findDescendents;
+    getScopes: typeof getScopes;
 };
 
 interface ActWhenVariableChangedState extends SceneObjectState {
@@ -1184,6 +1648,84 @@ declare class PanelContextEventBus implements EventBus {
     newScopedBus(key: string, filter: EventFilterOptions): EventBus;
 }
 
+interface PanelProfilingConfig {
+    watchStateKey?: string;
+}
+
+/**
+ * SceneRenderProfiler tracks dashboard interaction performance including:
+ * - Total interaction duration
+ * - Network time
+ * - Long frame detection (50ms threshold) during interaction using LoAF API (default) or manual tracking (fallback)
+ * - Slow frame detection (30ms threshold) for tail recording after interaction
+ *
+ * Long frame detection during interaction:
+ * - 50ms threshold aligned with LoAF API default
+ * - LoAF API preferred (Chrome 123+) with manual fallback
+ * - Provides script attribution when using LoAF API
+ *
+ * Slow frame detection for tail recording:
+ * - 30ms threshold for post-interaction monitoring
+ * - Manual frame timing measurement
+ * - Captures rendering delays after user interaction completes
+ */
+declare class SceneRenderProfiler {
+    #private;
+    private metadata;
+    private _panelProfilingManager?;
+    private queryController?;
+    constructor(panelProfilingConfig?: PanelProfilingConfig);
+    /** Set generic metadata for observer notifications */
+    setMetadata(metadata: Record<string, unknown>): void;
+    setQueryController(queryController: SceneQueryControllerLike): void;
+    /** Attach panel profiling to a scene object */
+    attachPanelProfiling(sceneObject: SceneObject): void;
+    /** Attach profiler to a specific panel */
+    attachProfilerToPanel(panel: VizPanel): void;
+    setInteractionCompleteHandler(handler?: (event: SceneComponentInteractionEvent) => void): void;
+    private setupVisibilityChangeHandler;
+    cleanup(): void;
+    startProfile(name: string): void;
+    startInteraction(interaction: string): void;
+    stopInteraction(): void;
+    getCurrentInteraction(): string | null;
+    /**
+     * Start new performance profile
+     * @param name - Profile trigger (e.g., 'time_range_change')
+     * @param force - True if canceling existing profile, false if starting clean
+     */
+    private _startNewProfile;
+    private recordProfileTail;
+    private measureTrailingFrames;
+    tryCompletingProfile(): void;
+    isTailRecording(): boolean;
+    cancelTailRecording(): void;
+    cancelProfile(): void;
+    addCrumb(crumb: string): void;
+}
+
+declare class SceneQueryController extends SceneObjectBase<SceneQueryStateControllerState> implements SceneQueryControllerLike {
+    #private;
+    private profiler?;
+    isQueryController: true;
+    constructor(state?: Partial<SceneQueryStateControllerState>, profiler?: SceneRenderProfiler | undefined);
+    runningQueriesCount: () => number;
+    startProfile(name: string): void;
+    cancelProfile(): void;
+    queryStarted(entry: SceneQueryControllerEntry): void;
+    queryCompleted(entry: SceneQueryControllerEntry): void;
+    private changeRunningQueryCount;
+    cancelAll(): void;
+}
+
+declare class SceneInteractionTracker extends SceneObjectBase<SceneInteractionTrackerState> {
+    private renderProfiler?;
+    isInteractionTracker: true;
+    constructor(state?: Partial<SceneInteractionTrackerState>, renderProfiler?: SceneRenderProfiler | undefined);
+    startInteraction(name: string): void;
+    stopInteraction(): void;
+}
+
 interface LiveNowTimerState extends SceneObjectState {
     enabled: boolean;
 }
@@ -1199,22 +1741,185 @@ declare class LiveNowTimer extends SceneObjectBase<LiveNowTimerState> {
     get isEnabled(): boolean;
 }
 
-type index$1_ActWhenVariableChanged = ActWhenVariableChanged;
-declare const index$1_ActWhenVariableChanged: typeof ActWhenVariableChanged;
-type index$1_CursorSync = CursorSync;
-declare const index$1_CursorSync: typeof CursorSync;
-type index$1_SceneQueryController = SceneQueryController;
-declare const index$1_SceneQueryController: typeof SceneQueryController;
-type index$1_LiveNowTimer = LiveNowTimer;
-declare const index$1_LiveNowTimer: typeof LiveNowTimer;
-declare namespace index$1 {
+type index$2_ActWhenVariableChanged = ActWhenVariableChanged;
+declare const index$2_ActWhenVariableChanged: typeof ActWhenVariableChanged;
+type index$2_CursorSync = CursorSync;
+declare const index$2_CursorSync: typeof CursorSync;
+type index$2_LiveNowTimer = LiveNowTimer;
+declare const index$2_LiveNowTimer: typeof LiveNowTimer;
+type index$2_SceneInteractionTracker = SceneInteractionTracker;
+declare const index$2_SceneInteractionTracker: typeof SceneInteractionTracker;
+type index$2_SceneQueryController = SceneQueryController;
+declare const index$2_SceneQueryController: typeof SceneQueryController;
+declare namespace index$2 {
   export {
-    index$1_ActWhenVariableChanged as ActWhenVariableChanged,
-    index$1_CursorSync as CursorSync,
-    index$1_SceneQueryController as SceneQueryController,
-    index$1_LiveNowTimer as LiveNowTimer,
+    index$2_ActWhenVariableChanged as ActWhenVariableChanged,
+    index$2_CursorSync as CursorSync,
+    index$2_LiveNowTimer as LiveNowTimer,
+    index$2_SceneInteractionTracker as SceneInteractionTracker,
+    index$2_SceneQueryController as SceneQueryController,
   };
 }
+
+/** Base interface for all performance events */
+interface BasePerformanceEvent {
+    operationId: string;
+    timestamp: number;
+    duration?: number;
+    error?: string;
+}
+interface DashboardInteractionStartData extends BasePerformanceEvent {
+    interactionType: string;
+    metadata?: Record<string, unknown>;
+}
+interface DashboardInteractionMilestoneData extends BasePerformanceEvent {
+    interactionType: string;
+    milestone: string;
+    metadata?: Record<string, unknown>;
+}
+interface DashboardInteractionCompleteData extends BasePerformanceEvent {
+    interactionType: string;
+    networkDuration?: number;
+    longFramesCount: number;
+    longFramesTotalTime: number;
+    metadata?: Record<string, unknown>;
+}
+/** Metadata interface for transform operations */
+interface TransformMetadata {
+    transformationId: string;
+    transformationCount: number;
+    seriesTransformationCount: number;
+    annotationTransformationCount: number;
+    success?: boolean;
+    error?: string;
+}
+/** Metadata interface for query operations */
+interface QueryMetadata {
+    queryId: string;
+    queryType: string;
+}
+/** Metadata interface for render operations */
+interface RenderMetadata {
+}
+/** Metadata interface for plugin load operations */
+interface PluginLoadMetadata {
+    pluginId: string;
+    fromCache?: boolean;
+    pluginLoadTime?: number;
+}
+/** Metadata interface for field config operations */
+interface FieldConfigMetadata {
+}
+/** Base interface for panel performance events */
+interface BasePanelPerformanceData extends BasePerformanceEvent {
+    panelId: string;
+    panelKey: string;
+    pluginId: string;
+    pluginVersion?: string;
+    panelTitle?: string;
+}
+/** Transform operation performance data */
+interface PanelTransformPerformanceData extends BasePanelPerformanceData {
+    operation: 'transform';
+    metadata: TransformMetadata;
+}
+/** Query operation performance data */
+interface PanelQueryPerformanceData extends BasePanelPerformanceData {
+    operation: 'query';
+    metadata: QueryMetadata;
+}
+/** Render operation performance data */
+interface PanelRenderPerformanceData extends BasePanelPerformanceData {
+    operation: 'render';
+    metadata: RenderMetadata;
+}
+/** Plugin load operation performance data */
+interface PanelPluginLoadPerformanceData extends BasePanelPerformanceData {
+    operation: 'plugin-load';
+    metadata: PluginLoadMetadata;
+}
+/** Field config operation performance data */
+interface PanelFieldConfigPerformanceData extends BasePanelPerformanceData {
+    operation: 'fieldConfig';
+    metadata: FieldConfigMetadata;
+}
+/** Discriminated union of all panel performance data types */
+type PanelPerformanceData = PanelTransformPerformanceData | PanelQueryPerformanceData | PanelRenderPerformanceData | PanelPluginLoadPerformanceData | PanelFieldConfigPerformanceData;
+/** Non-panel query performance data for dashboard queries (annotations, variables, etc.) */
+interface QueryPerformanceData extends BasePerformanceEvent {
+    queryId: string;
+    queryType: string;
+    origin: string;
+}
+/**
+ * Observer interface for performance monitoring
+ * External systems implement this to receive performance notifications
+ */
+interface ScenePerformanceObserver {
+    onDashboardInteractionStart?(data: DashboardInteractionStartData): void;
+    onDashboardInteractionMilestone?(data: DashboardInteractionMilestoneData): void;
+    onDashboardInteractionComplete?(data: DashboardInteractionCompleteData): void;
+    onPanelOperationStart?(data: PanelPerformanceData): void;
+    onPanelOperationComplete?(data: PanelPerformanceData): void;
+    onQueryStart?(data: QueryPerformanceData): void;
+    onQueryComplete?(data: QueryPerformanceData): void;
+}
+/**
+ * Centralized performance tracker
+ * Manages observers and provides methods for scene objects to report performance events
+ */
+declare class ScenePerformanceTracker {
+    private static instance;
+    private observers;
+    static getInstance(): ScenePerformanceTracker;
+    /**
+     * Register a performance observer
+     */
+    addObserver(observer: ScenePerformanceObserver): () => void;
+    /**
+     * Remove all observers (for testing)
+     */
+    clearObservers(): void;
+    /**
+     * Get current observer count (for debugging)
+     */
+    getObserverCount(): number;
+    private notifyObservers;
+    notifyDashboardInteractionStart(data: DashboardInteractionStartData): void;
+    notifyDashboardInteractionMilestone(data: DashboardInteractionMilestoneData): void;
+    notifyDashboardInteractionComplete(data: DashboardInteractionCompleteData): void;
+    notifyPanelOperationStart(data: PanelPerformanceData): void;
+    notifyPanelOperationComplete(data: PanelPerformanceData): void;
+    notifyQueryStart(data: QueryPerformanceData): void;
+    notifyQueryComplete(data: QueryPerformanceData): void;
+}
+/**
+ * Get the global performance tracker instance
+ */
+declare function getScenePerformanceTracker(): ScenePerformanceTracker;
+
+
+
+
+
+
+
+
+type index$1_DashboardInteractionCompleteData = DashboardInteractionCompleteData;
+type index$1_DashboardInteractionMilestoneData = DashboardInteractionMilestoneData;
+type index$1_DashboardInteractionStartData = DashboardInteractionStartData;
+type index$1_PanelPerformanceData = PanelPerformanceData;
+type index$1_QueryPerformanceData = QueryPerformanceData;
+type index$1_ScenePerformanceObserver = ScenePerformanceObserver;
+type index$1_SceneRenderProfiler = SceneRenderProfiler;
+declare const index$1_SceneRenderProfiler: typeof SceneRenderProfiler;
+declare const index$1_getScenePerformanceTracker: typeof getScenePerformanceTracker;
+declare namespace index$1 {
+  export { index$1_SceneRenderProfiler as SceneRenderProfiler, index$1_getScenePerformanceTracker as getScenePerformanceTracker };
+  export type { index$1_DashboardInteractionCompleteData as DashboardInteractionCompleteData, index$1_DashboardInteractionMilestoneData as DashboardInteractionMilestoneData, index$1_DashboardInteractionStartData as DashboardInteractionStartData, index$1_PanelPerformanceData as PanelPerformanceData, index$1_QueryPerformanceData as QueryPerformanceData, index$1_ScenePerformanceObserver as ScenePerformanceObserver };
+}
+
+declare function writePerformanceLog(logger: string, message: string, ...rest: unknown[]): void;
 
 /**
  * Base class for data layer. Handles common implementation including enabling/disabling layer and publishing results.
@@ -1277,6 +1982,7 @@ declare class AnnotationsDataLayer extends SceneDataLayerBase<AnnotationsDataLay
     static Component: typeof AnnotationsDataLayerRenderer;
     private _scopedVars;
     private _timeRangeSub;
+    private _drilldownDependenciesManager;
     constructor(initialState: AnnotationsDataLayerState);
     onEnable(): void;
     onDisable(): void;
@@ -1314,8 +2020,8 @@ declare class SceneObjectUrlSyncConfig implements SceneObjectUrlSyncHandler {
     getKeys(): string[];
     getUrlState(): SceneObjectUrlValues;
     updateFromUrl(values: SceneObjectUrlValues): void;
-    performBrowserHistoryAction(callback: () => void): void;
     shouldCreateHistoryStep(values: SceneObjectUrlValues): boolean;
+    performBrowserHistoryAction(callback: () => void): void;
 }
 
 declare class SceneTimeRange extends SceneObjectBase<SceneTimeRangeState> implements SceneTimeRangeLike {
@@ -1398,10 +2104,12 @@ declare class SceneQueryRunner extends SceneObjectBase<QueryRunnerState> impleme
     private _scopedVars;
     private _layerAnnotations?;
     private _resultAnnotations?;
-    private _adhocFiltersVar?;
-    private _groupByVar?;
+    private _isInView;
+    private _bypassIsInView;
+    private _queryNotExecutedWhenOutOfView;
     getResultsStream(): ReplaySubject<SceneDataProviderResult>;
     protected _variableDependency: VariableDependencyConfig<QueryRunnerState>;
+    private _drilldownDependenciesManager;
     constructor(initialState: QueryRunnerState);
     private _onActivate;
     private _handleDataLayers;
@@ -1446,12 +2154,9 @@ declare class SceneQueryRunner extends SceneObjectBase<QueryRunnerState> impleme
      * This will return an array of the closest provider of each type.
      */
     private getClosestExtraQueryProviders;
-    /**
-     * Walk up scene graph and find the closest filterset with matching data source
-     */
-    private findAndSubscribeToAdHocFilters;
-    private _updateExplicitVariableDependencies;
     private isQueryModeAuto;
+    isInViewChanged(isInView: boolean): void;
+    bypassIsInViewChanged(bypassIsInView: boolean): void;
 }
 
 interface DataProviderSharerState extends SceneDataState {
@@ -1541,17 +2246,20 @@ declare class SceneDataTransformer extends SceneObjectBase<SceneDataTransformerS
     setContainerWidth(width: number): void;
     isDataReadyToDisplay(): boolean;
     reprocessTransformations(): void;
+    /**
+     * S3.1: Calculate transformation complexity metrics
+     */
+    private _calculateTransformationMetrics;
     cancelQuery(): void;
     getResultsStream(): ReplaySubject<SceneDataProviderResult>;
     clone(withState?: Partial<SceneDataTransformerState>): this;
+    isInViewChanged(isInView: boolean): void;
+    bypassIsInViewChanged(bypassIsInView: boolean): void;
     private haveAlreadyTransformedData;
     private transform;
+    private _interpolateVariablesInTransformationConfigs;
+    private _filterAndPrepareTransformationsByTopic;
 }
-
-/**
- * Will look for a scene object with a behavior that is a SceneQueryController and register the query with it.
- */
-declare function registerQueryWithController<T extends QueryResultWithState>(entry: SceneQueryControllerEntry): (queryStream: Observable<T>) => Observable<T>;
 
 interface VariableValueSelectorsState extends SceneObjectState {
     layout?: ControlsLayout;
@@ -1583,8 +2291,6 @@ declare class VariableValueControl extends SceneObjectBase<VariableValueControlS
 declare function VariableValueControlRenderer({ model }: SceneComponentProps<VariableValueControl>): React__default.JSX.Element | null;
 
 declare class SceneVariableSet extends SceneObjectBase<SceneVariableSetState> implements SceneVariables {
-    /** Variables that have changed in since the activation or since the first manual value change */
-    private _variablesThatHaveChanged;
     /** Variables that are scheduled to be validated and updated */
     private _variablesToUpdate;
     /** Variables currently updating  */
@@ -1684,8 +2390,42 @@ declare class TestVariable extends MultiValueVariable<TestVariableState> {
     private getOptions;
     /** Useful from tests */
     signalUpdateCompleted(): void;
-    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React$1.JSX.Element;
+    static Component: ({ model }: SceneComponentProps<MultiValueVariable>) => React__default.JSX.Element;
 }
+
+interface ScopesVariableState extends SceneVariableState {
+    /**
+     * Last captured state from ScopesContext
+     */
+    scopes: Scope[];
+    /**
+     * Set to true if you want to the variable to enable / disable scopes when activated / deactivated
+     */
+    enable?: boolean;
+}
+declare class ScopesVariable extends SceneObjectBase<ScopesVariableState> implements SceneVariable<ScopesVariableState> {
+    protected _renderBeforeActivation: boolean;
+    protected _context: ScopesContextValue | undefined;
+    UNSAFE_renderAsHidden: boolean;
+    static Component: typeof ScopesVariableRenderer;
+    constructor(state: Partial<ScopesVariableState>);
+    /**
+     * Temporary simple implementation to stringify the scopes.
+     */
+    getValue(): VariableValue;
+    getScopes(): Scope[] | undefined;
+    /**
+     * This method is used to keep the context up to date with the scopes context received from React
+     * 1) Subscribes to ScopesContext state changes and synchronizes it with the variable state
+     * 2) Handles enable / disabling of scopes based on variable enable option.
+     */
+    setContext(context: ScopesContextValue | undefined): (() => void) | undefined;
+    updateStateFromContext(state: {
+        loading: boolean;
+        value: Scope[];
+    }): void;
+}
+declare function ScopesVariableRenderer({ model }: SceneComponentProps<ScopesVariable>): null;
 
 interface LocalValueVariableState extends SceneVariableState {
     value: VariableValue;
@@ -1708,6 +2448,121 @@ declare class LocalValueVariable extends SceneObjectBase<LocalValueVariableState
     isAncestorLoading(): boolean;
 }
 
+/**
+ * Controller state returned by useState hook
+ */
+interface AdHocFiltersControllerState {
+    filters: AdHocFilterWithLabels[];
+    originFilters?: AdHocFilterWithLabels[];
+    readOnly?: boolean;
+    allowCustomValue?: boolean;
+    supportsMultiValueOperators?: boolean;
+    onAddCustomValue?: OnAddCustomValueFn;
+    wip?: AdHocFilterWithLabels;
+    inputPlaceholder?: string;
+}
+/**
+ * Controller interface for adhoc filters combobox UI.
+ * Decouples the UI from AdHocFiltersVariable, allowing usage with or without a variable.
+ */
+interface AdHocFiltersController {
+    /**
+     * React hook to access controller state.
+     * Components should call this to get current filters and configuration.
+     */
+    useState(): AdHocFiltersControllerState;
+    /**
+     * Get possible keys given current filters.
+     * @param currentKey - The key being edited (to exclude from filter context)
+     */
+    getKeys(currentKey: string | null): Promise<Array<SelectableValue<string>>>;
+    /**
+     * Get possible values for a specific filter key.
+     * @param filter - The filter to get values for
+     */
+    getValuesFor(filter: AdHocFilterWithLabels): Promise<Array<SelectableValue<string>>>;
+    /**
+     * Get available operators based on configuration.
+     */
+    getOperators(): Array<SelectableValue<string>>;
+    /**
+     * Update a filter with partial changes.
+     * @param filter - The filter to update
+     * @param update - Partial filter properties to update
+     */
+    updateFilter(filter: AdHocFilterWithLabels, update: Partial<AdHocFilterWithLabels>): void;
+    /**
+     * Update a filter to match all values (=~ .*)
+     * @param filter - The filter to update
+     */
+    updateToMatchAll(filter: AdHocFilterWithLabels): void;
+    /**
+     * Remove a filter.
+     * @param filter - The filter to remove
+     */
+    removeFilter(filter: AdHocFilterWithLabels): void;
+    /**
+     * Remove the last filter in the list.
+     */
+    removeLastFilter(): void;
+    /**
+     * Handle backspace key in combobox (removes filter or navigates to previous).
+     * @param filter - The filter where backspace was pressed
+     */
+    handleComboboxBackspace(filter: AdHocFilterWithLabels): void;
+    /**
+     * Add a new work-in-progress filter.
+     */
+    addWip(): void;
+    /**
+     * Restore an origin filter to its original value.
+     * @param filter - The filter to restore
+     */
+    restoreOriginalFilter(filter: AdHocFilterWithLabels): void;
+    /**
+     * Optional: Start profiling an interaction (for performance tracking).
+     * @param name - The interaction name
+     */
+    startProfile?(name: string): void;
+    /**
+     * Optional: Start tracking an interaction (for analytics).
+     * @param name - The interaction name
+     */
+    startInteraction?(name: string): void;
+    /**
+     * Optional: Stop tracking the current interaction.
+     */
+    stopInteraction?(): void;
+}
+
+/**
+ * Adapter that wraps AdHocFiltersVariable to implement the AdHocFiltersController interface.
+ * This allows the combobox UI to work with the variable while keeping the UI decoupled.
+ */
+declare class AdHocFiltersVariableController implements AdHocFiltersController {
+    private model;
+    constructor(model: AdHocFiltersVariable);
+    useState(): AdHocFiltersControllerState;
+    getKeys(currentKey: string | null): Promise<Array<SelectableValue<string>>>;
+    getValuesFor(filter: AdHocFilterWithLabels): Promise<Array<SelectableValue<string>>>;
+    getOperators(): Array<SelectableValue<string>>;
+    updateFilter(filter: AdHocFilterWithLabels, update: Partial<AdHocFilterWithLabels>): void;
+    updateToMatchAll(filter: AdHocFilterWithLabels): void;
+    removeFilter(filter: AdHocFilterWithLabels): void;
+    removeLastFilter(): void;
+    handleComboboxBackspace(filter: AdHocFilterWithLabels): void;
+    addWip(): void;
+    restoreOriginalFilter(filter: AdHocFilterWithLabels): void;
+    startProfile(name: string): void;
+    startInteraction(name: string): void;
+    stopInteraction(): void;
+}
+
+interface Props$2 {
+    controller: AdHocFiltersController;
+}
+declare const AdHocFiltersComboboxRenderer: React__default.NamedExoticComponent<Props$2>;
+
 declare function useUrlSync(sceneRoot: SceneObject, options?: SceneUrlSyncOptions): boolean;
 
 interface UrlSyncContextProviderProps extends SceneUrlSyncOptions {
@@ -1717,143 +2572,7 @@ interface UrlSyncContextProviderProps extends SceneUrlSyncOptions {
 /**
  * Right now this is actually not defining a context, but think it might in the future (with UrlSyncManager as the context value)
  */
-declare function UrlSyncContextProvider({ children, scene, updateUrlOnInit, createBrowserHistorySteps, }: UrlSyncContextProviderProps): React$1.ReactNode;
-
-interface EmbeddedSceneState extends SceneObjectState {
-    /**
-     * The main content of the scene (usually a SceneFlexLayout)
-     */
-    body: SceneObject;
-    /**
-     * Top row of variable selectors, filters, time pickers and custom actions.
-     */
-    controls?: SceneObject[];
-    /**
-     * For interoperability (used from EmbeddedSceneWithContext)
-     */
-    context?: SceneObject;
-}
-declare class EmbeddedScene extends SceneObjectBase<EmbeddedSceneState> {
-    static Component: typeof EmbeddedSceneRenderer;
-    constructor(state: EmbeddedSceneState);
-}
-declare function EmbeddedSceneRenderer({ model }: SceneComponentProps<EmbeddedScene>): React__default.JSX.Element;
-
-declare function VizPanelRenderer({ model }: SceneComponentProps<VizPanel>): React__default.JSX.Element;
-
-interface VizPanelMenuState extends SceneObjectState {
-    items?: PanelMenuItem[];
-}
-declare class VizPanelMenu extends SceneObjectBase<VizPanelMenuState> {
-    static Component: typeof VizPanelMenuRenderer;
-    addItem(item: PanelMenuItem): void;
-    setItems(items: PanelMenuItem[]): void;
-}
-declare function VizPanelMenuRenderer({ model }: SceneComponentProps<VizPanelMenu>): React__default.JSX.Element;
-
-interface VizPanelState<TOptions = {}, TFieldConfig = {}> extends SceneObjectState {
-    /**
-     * This is usually a plugin id that references a core plugin or an external plugin. But this can also reference a
-     * runtime registered PanelPlugin registered via function registerScenePanelPlugin.
-     */
-    pluginId: string;
-    title: string;
-    description?: string;
-    options: DeepPartial<TOptions>;
-    fieldConfig: FieldConfigSource<DeepPartial<TFieldConfig>>;
-    pluginVersion?: string;
-    displayMode?: 'default' | 'transparent';
-    /**
-     * Only shows header on hover, absolutly positioned above the panel.
-     */
-    hoverHeader?: boolean;
-    /**
-     * Offset hoverHeader position on the y axis
-     */
-    hoverHeaderOffset?: number;
-    /**
-     * Only shows vizPanelMenu on hover if false, otherwise the menu is always visible in the header
-     */
-    showMenuAlways?: boolean;
-    /**
-     * Defines a menu in the top right of the panel. The menu object is only activated when the dropdown menu itself is shown.
-     * So the best way to add dynamic menu actions and links is by adding them in a behavior attached to the menu.
-     */
-    menu?: VizPanelMenu;
-    /**
-     * Defines a menu that renders panel link.
-     **/
-    titleItems?: React.ReactNode | SceneObject | SceneObject[];
-    seriesLimit?: number;
-    seriesLimitShowAll?: boolean;
-    /**
-     * Add action to the top right panel header
-     */
-    headerActions?: React.ReactNode | SceneObject | SceneObject[];
-    /**
-     * Mainly for advanced use cases that need custom handling of PanelContext callbacks.
-     */
-    extendPanelContext?: (vizPanel: VizPanel, context: PanelContext) => void;
-    /**
-     * Sets panel chrome collapsed state
-     */
-    collapsible?: boolean;
-    collapsed?: boolean;
-    /**
-     * @internal
-     * Only for use from core to handle migration from old angular panels
-     **/
-    _UNSAFE_customMigrationHandler?: (panel: PanelModel, plugin: PanelPlugin) => void;
-    /** Internal */
-    _pluginLoadError?: string;
-    /** Internal */
-    _pluginInstanceState?: any;
-    _renderCounter?: number;
-}
-declare class VizPanel<TOptions = {}, TFieldConfig extends {} = {}> extends SceneObjectBase<VizPanelState<TOptions, TFieldConfig>> {
-    static Component: typeof VizPanelRenderer;
-    protected _variableDependency: VariableDependencyConfig<VizPanelState<TOptions, TFieldConfig>>;
-    protected _panelContext?: PanelContext;
-    private _plugin?;
-    private _prevData?;
-    private _dataWithFieldConfig?;
-    private _structureRev;
-    constructor(state: Partial<VizPanelState<TOptions, TFieldConfig>>);
-    private _onActivate;
-    forceRender(): void;
-    private _loadPlugin;
-    getLegacyPanelId(): number;
-    private _pluginLoaded;
-    private _getPluginVersion;
-    getPlugin(): PanelPlugin | undefined;
-    getPanelContext(): PanelContext;
-    onTimeRangeChange: (timeRange: AbsoluteTimeRange) => void;
-    getTimeRange: (data?: PanelData) => _grafana_data.TimeRange;
-    changePluginType(pluginId: string, newOptions?: DeepPartial<{}>, newFieldConfig?: FieldConfigSource): Promise<void>;
-    onTitleChange: (title: string) => void;
-    onDescriptionChange: (description: string) => void;
-    onDisplayModeChange: (displayMode: 'default' | 'transparent') => void;
-    onToggleCollapse: (collapsed: boolean) => void;
-    onOptionsChange: (optionsUpdate: DeepPartial<TOptions>, replace?: boolean, isAfterPluginChange?: boolean) => void;
-    onFieldConfigChange: (fieldConfigUpdate: FieldConfigSource<DeepPartial<TFieldConfig>>, replace?: boolean) => void;
-    interpolate: InterpolateFunction;
-    getDescription: () => string;
-    clearFieldConfigCache(): void;
-    /**
-     * Called from the react render path to apply the field config to the data provided by the data provider
-     */
-    applyFieldConfig(rawData?: PanelData): PanelData;
-    onCancelQuery: () => void;
-    onStatusMessageClick: () => void;
-    /**
-     * Panel context functions
-     */
-    private _onSeriesColorChange;
-    private _onSeriesVisibilityChange;
-    private _onInstanceStateChange;
-    private _onToggleLegendSort;
-    private buildPanelContext;
-}
+declare function UrlSyncContextProvider({ children, scene, updateUrlOnInit, createBrowserHistorySteps, namespace, excludeFromNamespace, }: UrlSyncContextProviderProps): React$1.ReactNode;
 
 interface ExploreButtonOptions {
     onClick?: () => void;
@@ -1904,11 +2623,12 @@ interface SceneCanvasTextState extends SceneObjectState {
  */
 declare class SceneCanvasText extends SceneObjectBase<SceneCanvasTextState> {
     protected _variableDependency: VariableDependencyConfig<SceneCanvasTextState>;
-    static Component: ({ model }: SceneComponentProps<SceneCanvasText>) => React__default.JSX.Element;
+    static Component: typeof SceneCanvasTextRenderer;
 }
+declare function SceneCanvasTextRenderer({ model }: SceneComponentProps<SceneCanvasText>): React__default.JSX.Element;
 
 interface ToolbarButtonState extends SceneObjectState {
-    icon: IconName;
+    icon: IconName$1;
     onClick: () => void;
 }
 declare class SceneToolbarButton extends SceneObjectBase<ToolbarButtonState> {
@@ -1926,6 +2646,8 @@ declare class SceneToolbarInput extends SceneObjectBase<SceneToolbarInputState> 
 interface SceneTimePickerState extends SceneObjectState {
     hidePicker?: boolean;
     isOnCanvas?: boolean;
+    quickRanges?: TimeOption[];
+    defaultQuickRanges?: TimeOption[];
 }
 declare class SceneTimePicker extends SceneObjectBase<SceneTimePickerState> {
     static Component: typeof SceneTimePickerRenderer;
@@ -1983,6 +2705,7 @@ interface SceneTimeRangeCompareState extends SceneObjectState {
         label: string;
         value: string;
     }>;
+    hideCheckbox?: boolean;
 }
 declare class SceneTimeRangeCompare extends SceneObjectBase<SceneTimeRangeCompareState> implements ExtraQueryProvider<SceneTimeRangeCompareState> {
     static Component: typeof SceneTimeRangeCompareRenderer;
@@ -2159,6 +2882,16 @@ interface SceneGridItemLike extends SceneObject<SceneGridItemStateLike> {
      * Provide a custom CSS class name for the underlying DOM element when special styling (i.e. for mobile breakpoint) is required.
      **/
     getClassName?(): string;
+    /**
+     * Get the number of grid item children (eg. original panel with all repeats)
+     **/
+    getChildCount?(): number;
+}
+declare class SceneGridLayoutDragStartEvent extends BusEventWithPayload<{
+    evt: PointerEvent;
+    panel: VizPanel;
+}> {
+    static readonly type = "scene-grid-layout-drag-start";
 }
 
 interface SceneGridRowState extends SceneGridItemStateLike {
@@ -2167,6 +2900,8 @@ interface SceneGridRowState extends SceneGridItemStateLike {
     isCollapsed?: boolean;
     actions?: SceneObject;
     children: SceneGridItemLike[];
+    /** Marks object as a repeated object and a key pointer to source object */
+    repeatSourceKey?: string;
 }
 declare class SceneGridRow extends SceneObjectBase<SceneGridRowState> {
     static Component: typeof SceneGridRowRenderer;
@@ -2178,6 +2913,7 @@ declare class SceneGridRow extends SceneObjectBase<SceneGridRowState> {
         rowc: string;
     };
     updateFromUrl(values: SceneObjectUrlValues): void;
+    getPanelCount(children: SceneGridItemLike[]): number;
 }
 declare function SceneGridRowRenderer({ model }: SceneComponentProps<SceneGridRow>): React__default.JSX.Element;
 
@@ -2209,6 +2945,10 @@ declare class SceneGridLayout extends SceneObjectBase<SceneGridLayoutState> impl
     isDraggable(): boolean;
     getDragClass(): string;
     getDragClassCancel(): string;
+    getDragHooks(): {
+        onDragStart: (evt: PointerEvent, panel: VizPanel) => void;
+    };
+    adjustYPositions(after: number, amount: number): void;
     toggleRow(row: SceneGridRow): void;
     ignoreLayoutChange(shouldIgnore: boolean): void;
     onLayoutChange: (layout: ReactGridLayout.Layout[]) => void;
@@ -2264,86 +3004,24 @@ declare class SplitLayout extends SceneObjectBase<SplitLayoutState> {
     isDraggable(): boolean;
 }
 
-interface SceneRouteMatch<Params extends {
-    [K in keyof Params]?: string;
-} = {}> {
-    params: Params;
-    isExact: boolean;
-    path: string;
-    url: string;
+interface Props$1 extends Omit<React__default.HTMLProps<HTMLDivElement>, 'onChange' | 'children'> {
+    children: React__default.ReactNode;
+    key: string;
+    onLoad?: () => void;
+    onChange?: (isInView: boolean) => void;
 }
-interface SceneAppState extends SceneObjectState {
-    pages: SceneAppPageLike[];
-    name?: string;
-    urlSyncOptions?: SceneUrlSyncOptions;
+interface LazyLoaderType extends ForwardRefExoticComponent<Props$1> {
+    addCallback: (id: string, c: (e: IntersectionObserverEntry) => void) => void;
+    callbacks: Record<string, (e: IntersectionObserverEntry) => void>;
+    observer: IntersectionObserver;
 }
-interface SceneAppRoute {
-    path: string;
-    page?: SceneAppPageLike;
-    drilldown?: SceneAppDrilldownView;
-}
-interface SceneAppPageState extends SceneObjectState {
-    /** Page title or tab label */
-    title: string;
-    /** Page subTitle */
-    subTitle?: string | React.ReactNode;
-    /**
-     * Customize title rendering.
-     * Please return an unstyled h1 tag here + any additional elements you need.
-     **/
-    renderTitle?: (title: string) => React.ReactNode;
-    /** For an image before title */
-    titleImg?: string;
-    /** For an icon before title or tab label */
-    titleIcon?: IconName$1;
-    /** For a tab label suffix */
-    tabSuffix?: ComponentType<{
-        className?: string;
-    }>;
-    url: string;
-    routePath?: string;
-    /** Array of scene object to be rendered at the top right of the page, inline with the page title */
-    controls?: SceneObject[];
-    hideFromBreadcrumbs?: boolean;
-    tabs?: SceneAppPageLike[];
-    getScene?: (routeMatch: SceneRouteMatch) => EmbeddedScene;
-    drilldowns?: SceneAppDrilldownView[];
-    getParentPage?: () => SceneAppPageLike;
-    preserveUrlKeys?: string[];
-    /**
-     * The current initialized scene, this is set by the framework after scene url initialization
-     **/
-    initializedScene?: SceneObject;
-    /**
-     * Function that returns a fallback scene app page,
-     * to be rendered when url does not match current page exactly or any of tabs or drilldowns.
-     */
-    getFallbackPage?: () => SceneAppPageLike;
-    layout?: PageLayoutType;
-}
-interface SceneAppPageLike extends SceneObject<SceneAppPageState>, DataRequestEnricher {
-    initializeScene(scene: SceneObject): void;
-    /**
-     * @internal. Please don't call this from plugin code.
-     * Will call the state.getScene function with the current routeMatch and will cache the resulting Scene using the routeMatch.url as key.
-     */
-    getScene(routeMatch: SceneRouteMatch): EmbeddedScene;
-    /**
-     * @internal. Please don't call this from plugin code.
-     * Get drilldown scene. Will call the drilldown.getPage function with the current routeMatch and will cache the resulting page using the routeMatch.url as key.
-     */
-    getDrilldownPage(drilldown: SceneAppDrilldownView, routeMatch: SceneRouteMatch): SceneAppPageLike;
-}
-interface SceneAppDrilldownView {
-    routePath: string;
-    defaultRoute?: boolean;
-    getPage: (routeMatch: SceneRouteMatch<any>, parent: SceneAppPageLike) => SceneAppPageLike;
-}
+declare const LazyLoader: LazyLoaderType;
 
 /**
  * Responsible for top level pages routing
  */
 declare class SceneApp extends SceneObjectBase<SceneAppState> implements DataRequestEnricher {
+    protected _renderBeforeActivation: boolean;
     enrichDataRequest(): {
         app: string;
     };
@@ -2361,16 +3039,12 @@ declare class SceneAppPage extends SceneObjectBase<SceneAppPageState> implements
     static Component: typeof SceneAppPageRenderer;
     private _sceneCache;
     private _drilldownCache;
-    constructor(state: SceneAppPageState);
     initializeScene(scene: EmbeddedScene): void;
     getScene(routeMatch: SceneRouteMatch): EmbeddedScene;
     getDrilldownPage(drilldown: SceneAppDrilldownView, routeMatch: SceneRouteMatch<{}>): SceneAppPageLike;
     enrichDataRequest(source: SceneObject): Partial<_grafana_data.DataQueryRequest<_grafana_data.DataQuery>> | null;
 }
-interface SceneAppPageRendererProps extends SceneComponentProps<SceneAppPage> {
-    routeProps: RouteComponentProps;
-}
-declare function SceneAppPageRenderer({ model, routeProps }: SceneAppPageRendererProps): React__default.JSX.Element;
+declare function SceneAppPageRenderer({ model }: SceneComponentProps<SceneAppPage>): React__default.JSX.Element;
 
 interface SceneReactObjectState<TProps = {}> extends SceneObjectState {
     /**
@@ -2734,14 +3408,19 @@ interface ControlsLabelProps {
     description?: string;
     isLoading?: boolean;
     error?: string;
-    icon?: IconName$1;
+    icon?: IconName;
     layout?: ControlsLayout;
+    prefix?: React__default.ReactNode;
+    suffix?: React__default.ReactNode;
+    className?: string;
     onCancel?: () => void;
     onRemove?: () => void;
 }
 declare function ControlsLabel(props: ControlsLabelProps): JSX.Element;
 
-declare function renderSelectForVariable(model: MultiValueVariable): React__default.JSX.Element;
+declare function MultiOrSingleValueSelect({ model }: {
+    model: MultiValueVariable;
+}): React__default.JSX.Element;
 
 declare class VizConfigBuilder<TOptions extends {}, TFieldConfig extends {}> implements StandardFieldConfigInterface<StandardFieldConfig, VizConfigBuilder<TOptions, TFieldConfig>, 'set'> {
     private _fieldConfigBuilder;
@@ -2843,6 +3522,41 @@ declare class SafeSerializableSceneObject implements ScopedVar {
  */
 declare function getExploreURL(data: PanelData, model: SceneObject, timeRange: RawTimeRange, transform?: (query: DataQuery) => DataQuery): Promise<string>;
 
+/**
+ * Loads the translation resources for the given language and returns them.
+ */
+declare const loadResources: ResourceLoader;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 declare const sceneUtils: {
     getUrlWithAppState: typeof getUrlWithAppState;
     registerRuntimePanelPlugin: typeof registerRuntimePanelPlugin;
@@ -2852,6 +3566,9 @@ declare const sceneUtils: {
     syncStateFromSearchParams: typeof syncStateFromSearchParams;
     getUrlState: typeof getUrlState;
     renderPrometheusLabelFilters: typeof renderPrometheusLabelFilters;
+    escapeLabelValueInRegexSelector: typeof escapeLabelValueInRegexSelector;
+    escapeLabelValueInExactSelector: typeof escapeLabelValueInExactSelector;
+    escapeURLDelimiters: typeof escapeURLDelimiters;
     isAdHocVariable: typeof isAdHocVariable;
     isConstantVariable: typeof isConstantVariable;
     isCustomVariable: typeof isCustomVariable;
@@ -2860,6 +3577,10 @@ declare const sceneUtils: {
     isQueryVariable: typeof isQueryVariable;
     isTextBoxVariable: typeof isTextBoxVariable;
     isGroupByVariable: typeof isGroupByVariable;
+    isSwitchVariable: typeof isSwitchVariable;
+    isRepeatCloneOrChildOf: typeof isRepeatCloneOrChildOf;
+    buildPathIdFor: typeof buildPathIdFor;
 };
 
-export { AdHocFiltersVariable, CancelActivationHandler, ConstantVariable, ControlsLabel, ControlsLayout, CustomFormatterVariable, CustomTransformOperator, CustomTransformerDefinition, CustomVariable, CustomVariableValue, DataLayerFilter, DataProviderProxy, DataRequestEnricher, DataSourceVariable, DeepPartial, EmbeddedScene, EmbeddedSceneState, ExtraQueryDataProcessor, ExtraQueryDescriptor, ExtraQueryProvider, FieldConfigBuilder, FieldConfigBuilders, FieldConfigOverridesBuilder, FiltersRequestEnricher, FormatVariable, GroupByVariable, InterpolationFormatParameter, IntervalVariable, LocalValueVariable, MacroVariableConstructor, MultiValueVariable, MultiValueVariableState, NestedScene, NewSceneObjectAddedEvent, PanelBuilders, PanelOptionsBuilders, QueryRunnerState, QueryVariable, RuntimeDataSource, SafeSerializableSceneObject, SceneActivationHandler, SceneApp, SceneAppDrilldownView, SceneAppPage, SceneAppPageLike, SceneAppPageState, SceneAppRoute, SceneByFrameRepeater, SceneByVariableRepeater, SceneCSSGridItem, SceneCSSGridLayout, SceneCanvasText, SceneComponent, SceneComponentProps, SceneControlsSpacer, SceneDataLayerBase, SceneDataLayerControls, SceneDataLayerProvider, SceneDataLayerProviderState, SceneDataLayerSet, SceneDataLayerSetBase, SceneDataNode, SceneDataProvider, SceneDataProviderResult, SceneDataQuery, SceneDataState, SceneDataTransformer, SceneDataTransformerState, SceneDeactivationHandler, SceneDebugger, SceneFlexItem, SceneFlexItemLike, SceneFlexItemState, SceneFlexLayout, SceneGridItem, SceneGridItemLike, SceneGridItemStateLike, SceneGridLayout, SceneGridRow, SceneLayout, SceneLayoutChildOptions, SceneLayoutState, SceneObject, SceneObjectBase, SceneObjectRef, SceneObjectState, SceneObjectStateChangedEvent, SceneObjectStateChangedPayload, SceneObjectUrlSyncConfig, SceneObjectUrlSyncHandler, SceneObjectUrlValue, SceneObjectUrlValues, SceneObjectWithUrlSync, SceneQueryControllerEntry, SceneQueryControllerEntryType, SceneQueryControllerLike, SceneQueryRunner, SceneReactObject, SceneRefreshPicker, SceneRefreshPickerState, SceneRouteMatch, SceneStateChangedHandler, SceneStatelessBehavior, SceneTimePicker, SceneTimeRange, SceneTimeRangeCompare, SceneTimeRangeLike, SceneTimeRangeState, SceneTimeRangeTransformerBase, SceneTimeZoneOverride, SceneToolbarButton, SceneToolbarInput, SceneUrlSyncOptions, SceneVariable, SceneVariableDependencyConfigLike, SceneVariableSet, SceneVariableSetState, SceneVariableState, SceneVariableValueChangedEvent, SceneVariables, SplitLayout, TestVariable, TextBoxVariable, UrlSyncContextProvider, UrlSyncManager, UrlSyncManagerLike, UseStateHookOptions, UserActionEvent, ValidateAndUpdateResult, VariableCustomFormatterFn, VariableDependencyConfig, VariableGetOptionsArgs, VariableValue, VariableValueControl, VariableValueOption, VariableValueSelectWrapper, VariableValueSelectors, VariableValueSingle, VizConfig, VizConfigBuilder, VizConfigBuilders, VizPanel, VizPanelBuilder, VizPanelExploreButton, VizPanelMenu, VizPanelState, index$1 as behaviors, index as dataLayers, formatRegistry, getExploreURL, isCustomVariableValue, isDataLayer, isDataRequestEnricher, isFiltersRequestEnricher, isSceneObject, registerQueryWithController, registerRuntimeDataSource, renderSelectForVariable, sceneGraph, sceneUtils, useSceneApp, useSceneObjectState, useUrlSync };
+export { AdHocFiltersComboboxRenderer, AdHocFiltersVariable, AdHocFiltersVariableController, ConstantVariable, ControlsLabel, CustomVariable, DataProviderProxy, DataSourceVariable, EmbeddedScene, FieldConfigBuilder, FieldConfigBuilders, FieldConfigOverridesBuilder, GroupByVariable, IntervalVariable, LazyLoader, LocalValueVariable, MultiOrSingleValueSelect, MultiValueVariable, NestedScene, NewSceneObjectAddedEvent, PATH_ID_SEPARATOR, PanelBuilders, PanelOptionsBuilders, QueryVariable, RuntimeDataSource, SafeSerializableSceneObject, SceneApp, SceneAppPage, SceneByFrameRepeater, SceneByVariableRepeater, SceneCSSGridItem, SceneCSSGridLayout, SceneCanvasText, SceneControlsSpacer, SceneDataLayerBase, SceneDataLayerControls, SceneDataLayerSet, SceneDataLayerSetBase, SceneDataNode, SceneDataTransformer, SceneDebugger, SceneFlexItem, SceneFlexLayout, SceneGridItem, SceneGridLayout, SceneGridLayoutDragStartEvent, SceneGridRow, SceneObjectBase, SceneObjectRef, SceneObjectStateChangedEvent, SceneObjectUrlSyncConfig, SceneQueryRunner, SceneReactObject, SceneRefreshPicker, SceneTimePicker, SceneTimeRange, SceneTimeRangeCompare, SceneTimeRangeTransformerBase, SceneTimeZoneOverride, SceneToolbarButton, SceneToolbarInput, SceneVariableSet, SceneVariableValueChangedEvent, ScopesVariable, SplitLayout, SwitchVariable, TestVariable, TextBoxVariable, UrlSyncContextProvider, UrlSyncManager, UserActionEvent, VariableDependencyConfig, VariableValueControl, VariableValueSelectWrapper, VariableValueSelectors, VizConfigBuilder, VizConfigBuilders, VizPanel, VizPanelBuilder, VizPanelExploreButton, VizPanelMenu, index$2 as behaviors, index as dataLayers, escapeUrlPipeDelimiters, formatRegistry, getExploreURL, isCustomVariableValue, isDataLayer, isDataRequestEnricher, isFiltersRequestEnricher, isSceneObject, loadResources, index$1 as performanceUtils, registerQueryWithController, registerRuntimeDataSource, sceneGraph, sceneUtils, useSceneApp, useSceneObjectState, useUrlSync, writePerformanceLog };
+export type { AdHocFilterWithLabels, AdHocFiltersController, AdHocFiltersControllerState, CancelActivationHandler, ControlsLayout, CustomFormatterVariable, CustomTransformOperator, CustomTransformerDefinition, CustomVariableValue, DataLayerFilter, DataRequestEnricher, DeepPartial, EmbeddedSceneState, ExtraQueryDataProcessor, ExtraQueryDescriptor, ExtraQueryProvider, FiltersRequestEnricher, FormatVariable, InterpolationFormatParameter, MacroVariableConstructor, MultiValueVariableState, QueryRunnerState, SceneActivationHandler, SceneAppDrilldownView, SceneAppPageLike, SceneAppPageState, SceneAppRoute, SceneComponent, SceneComponentProps, SceneDataLayerProvider, SceneDataLayerProviderState, SceneDataProvider, SceneDataProviderResult, SceneDataQuery, SceneDataState, SceneDataTransformerState, SceneDeactivationHandler, SceneFlexItemLike, SceneFlexItemState, SceneGridItemLike, SceneGridItemStateLike, SceneLayout, SceneLayoutChildOptions, SceneLayoutState, SceneObject, SceneObjectState, SceneObjectStateChangedPayload, SceneObjectUrlSyncHandler, SceneObjectUrlValue, SceneObjectUrlValues, SceneObjectWithUrlSync, SceneQueryControllerEntry, SceneQueryControllerEntryType, SceneQueryControllerLike, SceneRefreshPickerState, SceneRouteMatch, SceneStateChangedHandler, SceneStatelessBehavior, SceneTimeRangeLike, SceneTimeRangeState, SceneUrlSyncOptions, SceneVariable, SceneVariableDependencyConfigLike, SceneVariableSetState, SceneVariableState, SceneVariables, UrlSyncManagerLike, UseStateHookOptions, ValidateAndUpdateResult, VariableCustomFormatterFn, VariableGetOptionsArgs, VariableValue, VariableValueOption, VariableValueSingle, VizConfig, VizPanelState };

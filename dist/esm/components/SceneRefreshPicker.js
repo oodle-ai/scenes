@@ -5,26 +5,9 @@ import { RefreshPicker } from '@grafana/ui';
 import { SceneObjectBase } from '../core/SceneObjectBase.js';
 import { sceneGraph } from '../core/sceneGraph/index.js';
 import { SceneObjectUrlSyncConfig } from '../services/SceneObjectUrlSyncConfig.js';
+import { REFRESH_INTERACTION } from '../performance/interactionConstants.js';
+import { t } from '@grafana/i18n';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 const DEFAULT_INTERVALS = ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"];
 class SceneRefreshPicker extends SceneObjectBase {
   constructor(state) {
@@ -38,22 +21,24 @@ class SceneRefreshPicker extends SceneObjectBase {
         return false;
       }
     };
-    super(__spreadProps(__spreadValues({
-      refresh: ""
-    }, state), {
+    super({
+      refresh: "",
+      ...state,
       autoValue: void 0,
       autoEnabled: (_a = state.autoEnabled) != null ? _a : true,
       autoMinInterval: (_b = state.autoMinInterval) != null ? _b : config.minRefreshInterval,
       intervals: ((_c = state.intervals) != null ? _c : DEFAULT_INTERVALS).filter(filterDissalowedIntervals)
-    }));
+    });
     this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: ["refresh"] });
     this._autoRefreshBlocked = false;
     this.onRefresh = () => {
       const queryController = sceneGraph.getQueryController(this);
       if (queryController == null ? void 0 : queryController.state.isRunning) {
         queryController.cancelAll();
+        queryController.cancelProfile();
         return;
       }
+      queryController == null ? void 0 : queryController.startProfile(REFRESH_INTERACTION);
       const timeRange = sceneGraph.getTimeRange(this);
       if (this._intervalTimer) {
         clearInterval(this._intervalTimer);
@@ -105,6 +90,11 @@ class SceneRefreshPicker extends SceneObjectBase {
       }
       this._intervalTimer = setInterval(() => {
         if (this.isTabVisible()) {
+          const queryController = sceneGraph.getQueryController(this);
+          if (queryController == null ? void 0 : queryController.state.isRunning) {
+            queryController.cancelProfile();
+          }
+          queryController == null ? void 0 : queryController.startProfile(REFRESH_INTERACTION);
           timeRange.onRefresh();
         } else {
           this._autoRefreshBlocked = true;
@@ -145,6 +135,7 @@ class SceneRefreshPicker extends SceneObjectBase {
         this.setState({ refresh });
       } else {
         this.setState({
+          // Default to the first refresh interval if the interval from the URL is not allowed, just like in the old architecture.
           refresh: intervals ? intervals[0] : void 0
         });
       }
@@ -159,31 +150,36 @@ function SceneRefreshPickerRenderer({ model }) {
   var _a;
   const { refresh, intervals, autoEnabled, autoValue, isOnCanvas, primary, withText } = model.useState();
   const isRunning = useQueryControllerState(model);
-  let text = refresh === ((_a = RefreshPicker.autoOption) == null ? void 0 : _a.value) ? autoValue : withText ? "Refresh" : void 0;
+  let text = refresh === ((_a = RefreshPicker.autoOption) == null ? void 0 : _a.value) ? autoValue : withText ? t("grafana-scenes.components.scene-refresh-picker.text-refresh", "Refresh") : void 0;
   let tooltip;
   let width;
   if (isRunning) {
-    tooltip = "Cancel all queries";
+    tooltip = t("grafana-scenes.components.scene-refresh-picker.tooltip-cancel", "Cancel all queries");
     if (withText) {
-      text = "Cancel";
+      text = t("grafana-scenes.components.scene-refresh-picker.text-cancel", "Cancel");
     }
   }
   if (withText) {
     width = "96px";
   }
-  return /* @__PURE__ */ React.createElement(RefreshPicker, {
-    showAutoInterval: autoEnabled,
-    value: refresh,
-    intervals,
-    tooltip,
-    width,
-    text,
-    onRefresh: model.onRefresh,
-    primary,
-    onIntervalChanged: model.onIntervalChanged,
-    isLoading: isRunning,
-    isOnCanvas: isOnCanvas != null ? isOnCanvas : true
-  });
+  return /* @__PURE__ */ React.createElement(
+    RefreshPicker,
+    {
+      showAutoInterval: autoEnabled,
+      value: refresh,
+      intervals,
+      tooltip,
+      width,
+      text,
+      onRefresh: () => {
+        model.onRefresh();
+      },
+      primary,
+      onIntervalChanged: model.onIntervalChanged,
+      isLoading: isRunning,
+      isOnCanvas: isOnCanvas != null ? isOnCanvas : true
+    }
+  );
 }
 function useQueryControllerState(model) {
   const queryController = sceneGraph.getQueryController(model);

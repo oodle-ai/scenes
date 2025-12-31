@@ -2,16 +2,17 @@ import { PluginPage } from '@grafana/runtime';
 import React, { useContext, useLayoutEffect, useEffect } from 'react';
 import { SceneDebugger } from '../SceneDebugger/SceneDebugger.js';
 import { SceneAppPage } from './SceneAppPage.js';
-import { useAppQueryParams, getUrlWithAppState, renderSceneComponentWithRouteProps } from './utils.js';
+import { useSceneRouteMatch, useAppQueryParams, getUrlWithAppState } from './utils.js';
 import { useUrlSync } from '../../services/useUrlSync.js';
 import { SceneAppContext } from './SceneApp.js';
 import { useLocationServiceSafe } from '../../utils/utils.js';
 
-function SceneAppPageView({ page, routeProps }) {
+function SceneAppPageView({ page }) {
+  const routeMatch = useSceneRouteMatch(page.state.url);
   const containerPage = getParentPageIfTab(page);
   const containerState = containerPage.useState();
   const params = useAppQueryParams();
-  const scene = page.getScene(routeProps.match);
+  const scene = page.getScene(routeMatch);
   const appContext = useContext(SceneAppContext);
   const isInitialized = containerState.initializedScene === scene;
   const { layout } = page.state;
@@ -54,26 +55,22 @@ function SceneAppPageView({ page, routeProps }) {
   }
   let pageActions = [];
   if (containerState.controls) {
-    pageActions = containerState.controls.map((control) => /* @__PURE__ */ React.createElement(control.Component, {
-      model: control,
-      key: control.state.key
-    }));
+    pageActions = containerState.controls.map((control) => /* @__PURE__ */ React.createElement(control.Component, { model: control, key: control.state.key }));
   }
   if (params["scene-debugger"]) {
-    pageActions.push(/* @__PURE__ */ React.createElement(SceneDebugger, {
-      scene: containerPage,
-      key: "scene-debugger"
-    }));
+    pageActions.push(/* @__PURE__ */ React.createElement(SceneDebugger, { scene: containerPage, key: "scene-debugger" }));
   }
-  return /* @__PURE__ */ React.createElement(PluginPage, {
-    layout,
-    pageNav,
-    actions: pageActions,
-    renderTitle: containerState.renderTitle,
-    subTitle: containerState.subTitle
-  }, /* @__PURE__ */ React.createElement(scene.Component, {
-    model: scene
-  }));
+  return /* @__PURE__ */ React.createElement(
+    PluginPage,
+    {
+      layout,
+      pageNav,
+      actions: pageActions,
+      renderTitle: containerState.renderTitle,
+      subTitle: containerState.subTitle
+    },
+    /* @__PURE__ */ React.createElement(scene.Component, { model: scene })
+  );
 }
 function getParentPageIfTab(page) {
   if (page.parent instanceof SceneAppPage) {
@@ -96,8 +93,10 @@ function getParentBreadcrumbs(parent, params, searchObject) {
   }
   return void 0;
 }
-function SceneAppDrilldownViewRender({ drilldown, parent, routeProps }) {
-  return renderSceneComponentWithRouteProps(parent.getDrilldownPage(drilldown, routeProps.match), routeProps);
+function SceneAppDrilldownViewRender({ drilldown, parent }) {
+  const routeMatch = useSceneRouteMatch(drilldown.routePath);
+  const page = parent.getDrilldownPage(drilldown, routeMatch);
+  return /* @__PURE__ */ React.createElement(page.Component, { model: page });
 }
 
 export { SceneAppDrilldownViewRender, SceneAppPageView };

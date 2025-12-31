@@ -1,35 +1,38 @@
+import { of } from 'rxjs';
 import { SceneObjectBase } from '../../core/SceneObjectBase.js';
+import { sceneGraph } from '../../core/sceneGraph/index.js';
+import { VariableDependencyConfig } from '../VariableDependencyConfig.js';
+import { SceneVariableValueChangedEvent } from '../types.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class ConstantVariable extends SceneObjectBase {
   constructor(initialState) {
-    super(__spreadProps(__spreadValues({
+    super({
       type: "constant",
       value: "",
-      name: ""
-    }, initialState), {
+      name: "",
+      ...initialState,
       skipUrlSync: true
-    }));
+    });
+    this._variableDependency = new VariableDependencyConfig(this, {
+      statePaths: ["value"]
+    });
+    this._prevValue = "";
+  }
+  /**
+   * This function is called on when SceneVariableSet is activated or when a dependency changes.
+   */
+  validateAndUpdate() {
+    const newValue = this.getValue();
+    if (this._prevValue !== newValue) {
+      this._prevValue = newValue;
+      this.publishEvent(new SceneVariableValueChangedEvent(this), true);
+    }
+    return of({});
   }
   getValue() {
+    if (typeof this.state.value === "string") {
+      return sceneGraph.interpolate(this, this.state.value);
+    }
     return this.state.value;
   }
 }

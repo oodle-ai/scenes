@@ -1,7 +1,7 @@
 import { isEqual } from 'lodash';
 import { sceneGraph } from '../core/sceneGraph/index.js';
 import { SceneQueryRunner } from '../querying/SceneQueryRunner.js';
-import uFuzzy from '@leeoniya/ufuzzy';
+import { css } from '@emotion/css';
 
 function isVariableValueEqual(a, b) {
   if (a === b) {
@@ -76,7 +76,15 @@ function getQueriesForVariables(sourceObject) {
   }
   const result = [];
   applicableRunners.forEach((r) => {
-    result.push(...r.state.queries);
+    result.push(
+      ...r.state.queries.filter((q) => {
+        if (!q.datasource || !q.datasource.uid) {
+          return true;
+        }
+        const interpolatedQueryDsUuid = sceneGraph.interpolate(sourceObject, q.datasource.uid);
+        return interpolatedQueryDsUuid === interpolatedDsUuid;
+      })
+    );
   });
   return result;
 }
@@ -110,12 +118,25 @@ function escapeUrlCommaDelimiters(value) {
   }
   return /,/g[Symbol.replace](value, "__gfc__");
 }
+function escapeUrlHashDelimiters(value) {
+  if (value === null || value === void 0) {
+    return "";
+  }
+  return /#/g[Symbol.replace](value, "__gfh__");
+}
+function escapeOriginFilterUrlDelimiters(value) {
+  return escapeUrlHashDelimiters(escapeUrlPipeDelimiters(value));
+}
+function escapeURLDelimiters(value) {
+  return escapeUrlCommaDelimiters(escapeUrlPipeDelimiters(value));
+}
 function unescapeUrlDelimiters(value) {
   if (value === null || value === void 0) {
     return "";
   }
   value = /__gfp__/g[Symbol.replace](value, "|");
   value = /__gfc__/g[Symbol.replace](value, ",");
+  value = /__gfh__/g[Symbol.replace](value, "#");
   return value;
 }
 function toUrlCommaDelimitedString(key, label) {
@@ -149,27 +170,21 @@ function handleOptionGroups(values) {
   }
   return result;
 }
-function getFuzzySearcher(haystack, limit = 1e4) {
-  const ufuzzy = new uFuzzy();
-  const FIRST = Array.from({ length: Math.min(limit, haystack.length) }, (_, i) => i);
-  return (search) => {
-    if (search === "") {
-      return FIRST;
-    }
-    const [idxs, info, order] = ufuzzy.search(haystack, search);
-    if (idxs) {
-      if (info && order) {
-        const outIdxs = Array(Math.min(order.length, limit));
-        for (let i = 0; i < outIdxs.length; i++) {
-          outIdxs[i] = info.idx[order[i]];
-        }
-        return outIdxs;
+function getNonApplicablePillStyles(theme) {
+  return {
+    disabledPill: css({
+      background: theme.colors.action.selected,
+      color: theme.colors.text.disabled,
+      border: 0,
+      "&:hover": {
+        background: theme.colors.action.selected
       }
-      return idxs.slice(0, limit);
-    }
-    return [];
+    }),
+    strikethrough: css({
+      textDecoration: "line-through"
+    })
   };
 }
 
-export { dataFromResponse, escapeLabelValueInExactSelector, escapeLabelValueInRegexSelector, escapeUrlCommaDelimiters, escapeUrlPipeDelimiters, getFuzzySearcher, getQueriesForVariables, handleOptionGroups, isVariableValueEqual, renderPrometheusLabelFilters, responseHasError, safeStringifyValue, toUrlCommaDelimitedString, unescapeUrlDelimiters };
+export { dataFromResponse, escapeLabelValueInExactSelector, escapeLabelValueInRegexSelector, escapeOriginFilterUrlDelimiters, escapeURLDelimiters, escapeUrlCommaDelimiters, escapeUrlHashDelimiters, escapeUrlPipeDelimiters, getNonApplicablePillStyles, getQueriesForVariables, handleOptionGroups, isVariableValueEqual, renderPrometheusLabelFilters, responseHasError, safeStringifyValue, toUrlCommaDelimitedString, unescapeUrlDelimiters };
 //# sourceMappingURL=utils.js.map

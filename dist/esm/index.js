@@ -1,19 +1,26 @@
 import { getUrlWithAppState } from './components/SceneApp/utils.js';
 import { registerRuntimePanelPlugin } from './components/VizPanel/registerRuntimePanelPlugin.js';
-import { cloneSceneObjectState } from './core/sceneGraph/utils.js';
+import { cloneSceneObjectState } from './core/sceneGraph/cloneSceneObject.js';
 import { registerRuntimeDataSource } from './querying/RuntimeDataSource.js';
-export { RuntimeDataSource, registerRuntimeDataSource } from './querying/RuntimeDataSource.js';
-import { syncStateFromSearchParams, getUrlState } from './services/utils.js';
+export { RuntimeDataSource } from './querying/RuntimeDataSource.js';
+import { getUrlState, syncStateFromSearchParams } from './services/utils.js';
+import { buildPathIdFor } from './utils/pathId.js';
+export { PATH_ID_SEPARATOR } from './utils/pathId.js';
+import { isRepeatCloneOrChildOf } from './utils/utils.js';
 import { registerVariableMacro } from './variables/macros/index.js';
-import { renderPrometheusLabelFilters } from './variables/utils.js';
-import { isAdHocVariable, isConstantVariable, isCustomVariable, isDataSourceVariable, isIntervalVariable, isQueryVariable, isTextBoxVariable, isGroupByVariable } from './variables/variants/guards.js';
+import { escapeURLDelimiters, escapeLabelValueInExactSelector, escapeLabelValueInRegexSelector, renderPrometheusLabelFilters } from './variables/utils.js';
+export { escapeUrlPipeDelimiters } from './variables/utils.js';
+import { isSwitchVariable, isGroupByVariable, isTextBoxVariable, isQueryVariable, isIntervalVariable, isDataSourceVariable, isCustomVariable, isConstantVariable, isAdHocVariable } from './variables/variants/guards.js';
 export { isDataLayer, isDataRequestEnricher, isFiltersRequestEnricher, isSceneObject } from './core/types.js';
 export { SceneObjectStateChangedEvent, UserActionEvent } from './core/events.js';
 export { sceneGraph } from './core/sceneGraph/index.js';
 import * as index from './behaviors/index.js';
 export { index as behaviors };
-import * as index$1 from './querying/layers/index.js';
-export { index$1 as dataLayers };
+import * as index$1 from './performance/index.js';
+export { index$1 as performanceUtils };
+export { writePerformanceLog } from './utils/writePerformanceLog.js';
+import * as index$2 from './querying/layers/index.js';
+export { index$2 as dataLayers };
 export { SceneObjectBase, useSceneObjectState } from './core/SceneObjectBase.js';
 export { SceneDataNode } from './core/SceneDataNode.js';
 export { SceneTimeRange } from './core/SceneTimeRange.js';
@@ -33,14 +40,18 @@ export { VariableValueControl } from './variables/components/VariableValueContro
 export { SceneVariableSet } from './variables/sets/SceneVariableSet.js';
 export { ConstantVariable } from './variables/variants/ConstantVariable.js';
 export { CustomVariable } from './variables/variants/CustomVariable.js';
+export { SwitchVariable } from './variables/variants/SwitchVariable.js';
 export { DataSourceVariable } from './variables/variants/DataSourceVariable.js';
 export { QueryVariable } from './variables/variants/query/QueryVariable.js';
 export { TestVariable } from './variables/variants/TestVariable.js';
 export { TextBoxVariable } from './variables/variants/TextBoxVariable.js';
+export { ScopesVariable } from './variables/variants/ScopesVariable.js';
 export { MultiValueVariable } from './variables/variants/MultiValueVariable.js';
 export { LocalValueVariable } from './variables/variants/LocalValueVariable.js';
 export { IntervalVariable } from './variables/variants/IntervalVariable.js';
 export { AdHocFiltersVariable } from './variables/adhoc/AdHocFiltersVariable.js';
+export { AdHocFiltersVariableController } from './variables/adhoc/controller/AdHocFiltersVariableController.js';
+export { AdHocFiltersComboboxRenderer } from './variables/adhoc/AdHocFiltersCombobox/AdHocFiltersComboboxRenderer.js';
 export { GroupByVariable } from './variables/groupby/GroupByVariable.js';
 export { NewSceneObjectAddedEvent, UrlSyncManager } from './services/UrlSyncManager.js';
 export { useUrlSync } from './services/useUrlSync.js';
@@ -63,9 +74,11 @@ export { SceneControlsSpacer } from './components/SceneControlsSpacer.js';
 export { SceneFlexItem, SceneFlexLayout } from './components/layout/SceneFlexLayout.js';
 export { SceneCSSGridItem, SceneCSSGridLayout } from './components/layout/CSSGrid/SceneCSSGridLayout.js';
 export { SceneGridLayout } from './components/layout/grid/SceneGridLayout.js';
+export { SceneGridLayoutDragStartEvent } from './components/layout/grid/types.js';
 export { SceneGridItem } from './components/layout/grid/SceneGridItem.js';
 export { SceneGridRow } from './components/layout/grid/SceneGridRow.js';
 export { SplitLayout } from './components/layout/split/SplitLayout.js';
+export { LazyLoader } from './components/layout/LazyLoader.js';
 export { SceneApp, useSceneApp } from './components/SceneApp/SceneApp.js';
 export { SceneAppPage } from './components/SceneApp/SceneAppPage.js';
 export { SceneReactObject } from './components/SceneReactObject.js';
@@ -75,11 +88,12 @@ export { FieldConfigBuilder } from './core/PanelBuilders/FieldConfigBuilder.js';
 export { VizPanelBuilder } from './core/PanelBuilders/VizPanelBuilder.js';
 export { SceneDebugger } from './components/SceneDebugger/SceneDebugger.js';
 export { ControlsLabel } from './utils/ControlsLabel.js';
-export { renderSelectForVariable } from './variables/components/VariableValueSelect.js';
+export { MultiOrSingleValueSelect } from './variables/components/VariableValueSelect.js';
 export { VizConfigBuilder } from './core/PanelBuilders/VizConfigBuilder.js';
 export { VizConfigBuilders } from './core/PanelBuilders/VizConfigBuilders.js';
 export { SafeSerializableSceneObject } from './utils/SafeSerializableSceneObject.js';
 export { getExploreURL } from './utils/explore.js';
+export { loadResources } from './utils/loadResources.js';
 export { PanelOptionsBuilders } from './core/PanelBuilders/PanelOptionsBuilders.js';
 export { FieldConfigBuilders } from './core/PanelBuilders/FieldConfigBuilders.js';
 export { FieldConfigOverridesBuilder } from './core/PanelBuilders/FieldConfigOverridesBuilder.js';
@@ -93,6 +107,10 @@ const sceneUtils = {
   syncStateFromSearchParams,
   getUrlState,
   renderPrometheusLabelFilters,
+  escapeLabelValueInRegexSelector,
+  escapeLabelValueInExactSelector,
+  escapeURLDelimiters,
+  // Variable guards
   isAdHocVariable,
   isConstantVariable,
   isCustomVariable,
@@ -100,8 +118,11 @@ const sceneUtils = {
   isIntervalVariable,
   isQueryVariable,
   isTextBoxVariable,
-  isGroupByVariable
+  isGroupByVariable,
+  isSwitchVariable,
+  isRepeatCloneOrChildOf,
+  buildPathIdFor
 };
 
-export { sceneUtils };
+export { registerRuntimeDataSource, sceneUtils };
 //# sourceMappingURL=index.js.map

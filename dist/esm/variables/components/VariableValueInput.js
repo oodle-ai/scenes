@@ -1,3 +1,4 @@
+import { t } from '@grafana/i18n';
 import React, { useCallback } from 'react';
 import { AutoSizeInput } from '@grafana/ui';
 
@@ -17,16 +18,19 @@ function VariableValueInput({ model }) {
     },
     [model]
   );
-  return /* @__PURE__ */ React.createElement(AutoSizeInput, {
-    id: key,
-    placeholder: "Enter value",
-    minWidth: 15,
-    maxWidth: 30,
-    value,
-    loading,
-    onBlur,
-    onKeyDown
-  });
+  return /* @__PURE__ */ React.createElement(
+    AutoSizeInput,
+    {
+      id: key,
+      placeholder: t("grafana-scenes.variables.variable-value-input.placeholder-enter-value", "Enter value"),
+      minWidth: 15,
+      maxWidth: 30,
+      value,
+      loading,
+      onBlur,
+      onKeyDown
+    }
+  );
 }
 
 export { VariableValueInput };

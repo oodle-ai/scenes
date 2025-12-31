@@ -4,32 +4,17 @@ import { SceneObjectBase } from '../../../core/SceneObjectBase.js';
 import { config } from '@grafana/runtime';
 import { LazyLoader } from '../LazyLoader.js';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneCSSGridLayout extends SceneObjectBase {
   constructor(state) {
     var _a, _b;
-    super(__spreadValues({
+    super({
       rowGap: 1,
       columnGap: 1,
       templateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
       autoRows: (_a = state.autoRows) != null ? _a : `320px`,
-      children: (_b = state.children) != null ? _b : []
-    }, state));
+      children: (_b = state.children) != null ? _b : [],
+      ...state
+    });
   }
   isDraggable() {
     return false;
@@ -42,25 +27,12 @@ function SceneCSSGridLayoutRenderer({ model }) {
   if (isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement("div", {
-    className: style
-  }, children.map((item) => {
+  return /* @__PURE__ */ React.createElement("div", { className: style }, children.map((item) => {
     const Component = item.Component;
     if (isLazy) {
-      return /* @__PURE__ */ React.createElement(LazyLoader, {
-        key: item.state.key,
-        className: style
-      }, /* @__PURE__ */ React.createElement(Component, {
-        key: item.state.key,
-        model: item,
-        parentState: model.state
-      }));
+      return /* @__PURE__ */ React.createElement(LazyLoader, { key: item.state.key, className: style }, /* @__PURE__ */ React.createElement(Component, { key: item.state.key, model: item, parentState: model.state }));
     }
-    return /* @__PURE__ */ React.createElement(Component, {
-      key: item.state.key,
-      model: item,
-      parentState: model.state
-    });
+    return /* @__PURE__ */ React.createElement(Component, { key: item.state.key, model: item, parentState: model.state });
   }));
 }
 class SceneCSSGridItem extends SceneObjectBase {
@@ -75,11 +47,7 @@ function SceneCSSGridItemRenderer({ model, parentState }) {
   if (!body || isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement("div", {
-    className: style
-  }, /* @__PURE__ */ React.createElement(body.Component, {
-    model: body
-  }));
+  return /* @__PURE__ */ React.createElement("div", { className: style }, /* @__PURE__ */ React.createElement(body.Component, { model: body }));
 }
 function useLayoutStyle(state) {
   return useMemo(() => {

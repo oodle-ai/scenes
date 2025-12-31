@@ -4,25 +4,9 @@ import { v4 } from 'uuid';
 import { EventBusSrv } from '@grafana/data';
 import { SceneComponentWrapper } from './SceneComponentWrapper.js';
 import { SceneObjectStateChangedEvent } from './events.js';
-import { cloneSceneObject } from './sceneGraph/utils.js';
+import { cloneSceneObject } from './sceneGraph/cloneSceneObject.js';
 import { SceneObjectRef } from './SceneObjectRef.js';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class SceneObjectBase {
   constructor(state) {
     this._isActive = false;
@@ -38,24 +22,33 @@ class SceneObjectBase {
     this._state = Object.freeze(state);
     this._setParent(this._state);
   }
+  /** Current state */
   get state() {
     return this._state;
   }
+  /** True if currently being active (ie displayed for visual objects) */
   get isActive() {
     return this._isActive;
   }
   get renderBeforeActivation() {
     return this._renderBeforeActivation;
   }
+  /** Returns the parent, undefined for root object */
   get parent() {
     return this._parent;
   }
+  /** Returns variable dependency config */
   get variableDependency() {
     return this._variableDependency;
   }
+  /** Returns url sync config */
   get urlSync() {
     return this._urlSync;
   }
+  /**
+   * Used in render functions when rendering a SceneObject.
+   * Wraps the component in an EditWrapper that handles edit mode
+   */
   get Component() {
     return SceneComponentWrapper;
   }
@@ -71,9 +64,16 @@ class SceneObjectBase {
       child._parent = this;
     });
   }
+  /**
+   * Sometimes you want to move one instance to another parent.
+   * This is a way to do that without getting the console warning.
+   */
   clearParent() {
     this._parent = void 0;
   }
+  /**
+   * Subscribe to the scene state subject
+   **/
   subscribeToState(handler) {
     return this._events.subscribe(SceneObjectStateChangedEvent, (event) => {
       if (event.payload.changedObject === this) {
@@ -81,12 +81,18 @@ class SceneObjectBase {
       }
     });
   }
+  /**
+   * Subscribe to the scene event
+   **/
   subscribeToEvent(eventType, handler) {
     return this._events.subscribe(eventType, handler);
   }
   setState(update) {
     const prevState = this._state;
-    const newState = __spreadValues(__spreadValues({}, this._state), update);
+    const newState = {
+      ...this._state,
+      ...update
+    };
     this._state = Object.freeze(newState);
     this._setParent(update);
     this._handleActivationOfChangedStateProps(prevState, newState);
@@ -100,6 +106,10 @@ class SceneObjectBase {
       true
     );
   }
+  /**
+   * This handles activation and deactivation of $data, $timeRange and $variables when they change
+   * during the active phase of the scene object.
+   */
   _handleActivationOfChangedStateProps(prevState, newState) {
     if (!this.isActive) {
       return;
@@ -149,6 +159,9 @@ class SceneObjectBase {
       }
     }
   }
+  /*
+   * Publish an event and optionally bubble it up the scene
+   **/
   publishEvent(event, bubble) {
     this._events.publish(event);
     if (bubble && this.parent) {
@@ -192,6 +205,11 @@ class SceneObjectBase {
       }
     }
   }
+  /**
+   * This is primarily called from SceneComponentWrapper when the SceneObject's Component is mounted.
+   * But in some scenarios this can also be called directly from another scene object. When called manually from another scene object
+   * make sure to call the returned function when the source scene object is deactivated.
+   */
   activate() {
     if (!this.isActive) {
       this._internalActivate();
@@ -210,6 +228,10 @@ class SceneObjectBase {
       }
     };
   }
+  /**
+   * Called by the SceneComponentWrapper when the react component is unmounted.
+   * Don't override this, instead use addActivationHandler. The activation handler can return a deactivation handler.
+   */
   _internalDeactivate() {
     this._isActive = false;
     for (let handler of this._deactivationHandlers.values()) {
@@ -220,26 +242,50 @@ class SceneObjectBase {
     this._subs.unsubscribe();
     this._subs = new Subscription();
   }
+  /**
+   * Utility hook to get and subscribe to state
+   */
   useState() {
     return useSceneObjectState(this);
   }
+  /** Force a re-render, should only be needed when variable values change */
   forceRender() {
     this.setState({});
   }
+  /**
+   * Will create new SceneObject with shallow-cloned state, but all state items of type SceneObject are deep cloned
+   */
   clone(withState) {
     return cloneSceneObject(this, withState);
   }
+  /**
+   * Allows external code to register code that is executed on activate and deactivate. This allow you
+   * to wire up scene objects that need to respond to state changes in other objects from the outside.
+   **/
   addActivationHandler(handler) {
     this._activationHandlers.push(handler);
   }
+  /**
+   * Loop through state and call callback for each direct child scene object.
+   * Checks 1 level deep properties and arrays. So a scene object hidden in a nested plain object will not be detected.
+   * Return false to exit loop early.
+   */
   forEachChild(callback) {
     forEachChild(this.state, callback);
   }
+  /** Returns a SceneObjectRef that will resolve to this object */
   getRef() {
     if (!this._ref) {
       this._ref = new SceneObjectRef(this);
     }
     return this._ref;
+  }
+  toJSON() {
+    return {
+      type: Object.getPrototypeOf(this).constructor.name,
+      isActive: this.isActive,
+      state: this.state
+    };
   }
 }
 function useSceneObjectState(model, options) {
@@ -270,13 +316,24 @@ function useSceneObjectState(model, options) {
 function forEachChild(state, callback) {
   for (const propValue of Object.values(state)) {
     if (propValue instanceof SceneObjectBase) {
-      callback(propValue);
+      const result = callback(propValue);
+      if (result === false) {
+        break;
+      }
     }
     if (Array.isArray(propValue)) {
+      let exitEarly = false;
       for (const child of propValue) {
         if (child instanceof SceneObjectBase) {
-          callback(child);
+          const result = callback(child);
+          if (result === false) {
+            exitEarly = true;
+            break;
+          }
         }
+      }
+      if (exitEarly) {
+        break;
       }
     }
   }

@@ -1,5 +1,4 @@
 import { isMultiValueOperator } from '../AdHocFiltersVariable.js';
-import { getFuzzySearcher } from '../../utils.js';
 
 const VIRTUAL_LIST_WIDTH_ESTIMATE_MULTIPLIER = 8;
 const VIRTUAL_LIST_DESCRIPTION_WIDTH_ESTIMATE_MULTIPLIER = 6;
@@ -8,19 +7,6 @@ const VIRTUAL_LIST_OVERSCAN = 5;
 const VIRTUAL_LIST_ITEM_HEIGHT = 38;
 const VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION = 60;
 const ERROR_STATE_DROPDOWN_WIDTH = 366;
-function fuzzySearchOptions(options) {
-  const haystack = options.map((o) => {
-    var _a;
-    return (_a = o.label) != null ? _a : o.value;
-  });
-  const fuzzySearch = getFuzzySearcher(haystack);
-  return (search, filterInputType) => {
-    if (filterInputType === "operator" && search !== "") {
-      search = `"${search}"`;
-    }
-    return fuzzySearch(search).map((i) => options[i]);
-  };
-}
 const flattenOptionGroups = (options) => options.flatMap((option) => option.options ? [option, ...option.options] : [option]);
 const setupDropdownAccessibility = (options, listRef, disabledIndicesRef) => {
   var _a, _b, _c, _d;
@@ -68,16 +54,21 @@ const generateFilterUpdatePayload = ({
   filterInputType,
   item,
   filter,
-  setFilterMultiValues
+  setFilterMultiValues,
+  onAddCustomValue
 }) => {
   var _a, _b, _c, _d, _e;
   if (filterInputType === "key") {
     return {
       key: item.value,
-      keyLabel: item.label ? item.label : item.value
+      keyLabel: item.label ? item.label : item.value,
+      meta: item == null ? void 0 : item.meta
     };
   }
   if (filterInputType === "value") {
+    if (item.isCustom && onAddCustomValue) {
+      return onAddCustomValue(item, filter);
+    }
     return {
       value: item.value,
       valueLabels: [item.label ? item.label : item.value]
@@ -114,11 +105,11 @@ const generateFilterUpdatePayload = ({
     [filterInputType]: item.value
   };
 };
-const INPUT_PLACEHOLDER = "Filter by label values";
-const generatePlaceholder = (filter, filterInputType, isMultiValueEdit, isAlwaysWip) => {
+const INPUT_PLACEHOLDER_DEFAULT = "Filter by label values";
+const generatePlaceholder = (filter, filterInputType, isMultiValueEdit, isAlwaysWip, inputPlaceholder) => {
   var _a;
   if (filterInputType === "key") {
-    return INPUT_PLACEHOLDER;
+    return inputPlaceholder || INPUT_PLACEHOLDER_DEFAULT;
   }
   if (filterInputType === "value") {
     if (isMultiValueEdit) {
@@ -126,7 +117,7 @@ const generatePlaceholder = (filter, filterInputType, isMultiValueEdit, isAlways
     }
     return ((_a = filter.valueLabels) == null ? void 0 : _a[0]) || "";
   }
-  return filter[filterInputType] && !isAlwaysWip ? `${filter[filterInputType]}` : INPUT_PLACEHOLDER;
+  return filter[filterInputType] && !isAlwaysWip ? `${filter[filterInputType]}` : inputPlaceholder || INPUT_PLACEHOLDER_DEFAULT;
 };
 const populateInputValueOnInputTypeSwitch = ({
   populateInputOnEdit,
@@ -135,12 +126,13 @@ const populateInputValueOnInputTypeSwitch = ({
   setInputValue,
   filter
 }) => {
+  var _a, _b, _c;
   if (populateInputOnEdit && !isMultiValueOperator(item.value || "") && nextInputTypeMap[filterInputType] === "value") {
-    setInputValue((filter == null ? void 0 : filter.value) || "");
+    setInputValue((_c = (_b = (_a = filter == null ? void 0 : filter.valueLabels) == null ? void 0 : _a[0]) != null ? _b : filter == null ? void 0 : filter.value) != null ? _c : "");
   } else {
     setInputValue("");
   }
 };
 
-export { ERROR_STATE_DROPDOWN_WIDTH, VIRTUAL_LIST_ITEM_HEIGHT, VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION, VIRTUAL_LIST_OVERSCAN, flattenOptionGroups, fuzzySearchOptions, generateFilterUpdatePayload, generatePlaceholder, populateInputValueOnInputTypeSwitch, setupDropdownAccessibility, switchInputType, switchToNextInputType };
+export { ERROR_STATE_DROPDOWN_WIDTH, VIRTUAL_LIST_ITEM_HEIGHT, VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION, VIRTUAL_LIST_OVERSCAN, flattenOptionGroups, generateFilterUpdatePayload, generatePlaceholder, populateInputValueOnInputTypeSwitch, setupDropdownAccessibility, switchInputType, switchToNextInputType };
 //# sourceMappingURL=utils.js.map

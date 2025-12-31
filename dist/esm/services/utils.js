@@ -1,8 +1,8 @@
 import { isEqual } from 'lodash';
 import { UniqueUrlKeyMapper } from './UniqueUrlKeyMapper.js';
 
-function getUrlState(root) {
-  const urlKeyMapper = new UniqueUrlKeyMapper();
+function getUrlState(root, uniqueUrlKeyMapperOptions) {
+  const urlKeyMapper = new UniqueUrlKeyMapper(uniqueUrlKeyMapperOptions);
   const result = {};
   const visitNode = (obj) => {
     if (obj.urlSync) {
@@ -19,8 +19,8 @@ function getUrlState(root) {
   visitNode(root);
   return result;
 }
-function syncStateFromSearchParams(root, urlParams) {
-  const urlKeyMapper = new UniqueUrlKeyMapper();
+function syncStateFromSearchParams(root, urlParams, uniqueUrlKeyMapperOptions) {
+  const urlKeyMapper = new UniqueUrlKeyMapper(uniqueUrlKeyMapperOptions);
   syncStateFromUrl(root, urlParams, urlKeyMapper);
 }
 function syncStateFromUrl(root, urlParams, urlKeyMapper, onlyChildren) {

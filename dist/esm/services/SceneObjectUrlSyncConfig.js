@@ -16,13 +16,13 @@ class SceneObjectUrlSyncConfig {
   updateFromUrl(values) {
     this._sceneObject.updateFromUrl(values);
   }
+  shouldCreateHistoryStep(values) {
+    return this._nextChangeShouldAddHistoryStep;
+  }
   performBrowserHistoryAction(callback) {
     this._nextChangeShouldAddHistoryStep = true;
     callback();
     this._nextChangeShouldAddHistoryStep = false;
-  }
-  shouldCreateHistoryStep(values) {
-    return this._nextChangeShouldAddHistoryStep;
   }
 }
 

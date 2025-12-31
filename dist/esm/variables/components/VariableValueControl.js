@@ -11,12 +11,15 @@ function VariableValueControlRenderer({ model }) {
   if (!variable) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement(VariableValueSelectWrapper, {
-    key: variable.state.key,
-    variable,
-    layout: model.state.layout,
-    showAlways: true
-  });
+  return /* @__PURE__ */ React.createElement(
+    VariableValueSelectWrapper,
+    {
+      key: variable.state.key,
+      variable,
+      layout: model.state.layout,
+      showAlways: true
+    }
+  );
 }
 
 export { VariableValueControl };

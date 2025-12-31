@@ -5,30 +5,15 @@ import { sceneGraph } from '../core/sceneGraph/index.js';
 import { SceneObjectBase } from '../core/SceneObjectBase.js';
 import { VariableDependencyConfig } from '../variables/VariableDependencyConfig.js';
 import { SceneDataLayerSet } from './SceneDataLayerSet.js';
+import { findPanelProfiler } from '../utils/findPanelProfiler.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class SceneDataTransformer extends SceneObjectBase {
   constructor(state) {
     super(state);
     this._results = new ReplaySubject(1);
+    /**
+     * Scan transformations for variable usage and re-process transforms when a variable values change
+     */
     this._variableDependency = new VariableDependencyConfig(
       this,
       {
@@ -77,6 +62,29 @@ class SceneDataTransformer extends SceneObjectBase {
   reprocessTransformations() {
     this.transform(this.getSourceData().state.data, true);
   }
+  /**
+   * S3.1: Calculate transformation complexity metrics
+   */
+  _calculateTransformationMetrics(data, transformations) {
+    const transformationCount = transformations.length;
+    const seriesTransformationCount = transformations.filter((transformation) => {
+      if ("options" in transformation || "topic" in transformation) {
+        return transformation.topic == null || transformation.topic === DataTopic.Series;
+      }
+      return true;
+    }).length;
+    const annotationTransformationCount = transformations.filter((transformation) => {
+      if ("options" in transformation || "topic" in transformation) {
+        return transformation.topic === DataTopic.Annotations;
+      }
+      return false;
+    }).length;
+    return {
+      transformationCount,
+      seriesTransformationCount,
+      annotationTransformationCount
+    };
+  }
   cancelQuery() {
     var _a, _b;
     (_b = (_a = this.getSourceData()).cancelQuery) == null ? void 0 : _b.call(_a);
@@ -91,6 +99,14 @@ class SceneDataTransformer extends SceneObjectBase {
     }
     return clone;
   }
+  isInViewChanged(isInView) {
+    var _a, _b;
+    (_b = (_a = this.state.$data) == null ? void 0 : _a.isInViewChanged) == null ? void 0 : _b.call(_a, isInView);
+  }
+  bypassIsInViewChanged(bypassIsInView) {
+    var _a, _b;
+    (_b = (_a = this.state.$data) == null ? void 0 : _a.bypassIsInViewChanged) == null ? void 0 : _b.call(_a, bypassIsInView);
+  }
   haveAlreadyTransformedData(data) {
     if (!this._prevDataFromSource) {
       return false;
@@ -101,7 +117,7 @@ class SceneDataTransformer extends SceneObjectBase {
     const { series, annotations } = this._prevDataFromSource;
     if (data.series === series && data.annotations === annotations) {
       if (this.state.data && data.state !== this.state.data.state) {
-        this.setState({ data: __spreadProps(__spreadValues({}, this.state.data), { state: data.state }) });
+        this.setState({ data: { ...this.state.data, state: data.state } });
       }
       return true;
     }
@@ -109,6 +125,11 @@ class SceneDataTransformer extends SceneObjectBase {
   }
   transform(data, force = false) {
     var _a;
+    const timestamp = performance.now();
+    const profiler = findPanelProfiler(this);
+    const transformStartTime = performance.now();
+    let transformationId;
+    let endTransformCallback = null;
     if (this.state.transformations.length === 0 || !data) {
       this._prevDataFromSource = data;
       this.setState({ data });
@@ -120,57 +141,117 @@ class SceneDataTransformer extends SceneObjectBase {
     if (!force && this.haveAlreadyTransformedData(data)) {
       return;
     }
-    const seriesTransformations = this.state.transformations.filter((transformation) => {
-      if ("options" in transformation || "topic" in transformation) {
-        return transformation.topic == null || transformation.topic === DataTopic.Series;
+    if (profiler) {
+      const transformationTypes = this.state.transformations.map((t) => {
+        if ("id" in t) {
+          return t.id;
+        } else {
+          return "customTransformation";
+        }
+      }).join("+");
+      transformationId = transformationTypes || "no-transforms";
+      const metrics = this._calculateTransformationMetrics(data, this.state.transformations);
+      endTransformCallback = profiler.onDataTransformStart(timestamp, transformationId, metrics);
+    }
+    const interpolatedTransformations = this._interpolateVariablesInTransformationConfigs(data);
+    const seriesTransformations = this._filterAndPrepareTransformationsByTopic(
+      interpolatedTransformations,
+      (transformation) => {
+        if ("options" in transformation || "topic" in transformation) {
+          return transformation.topic == null || transformation.topic === DataTopic.Series;
+        }
+        return true;
       }
-      return true;
-    }).map((transformation) => "operator" in transformation ? transformation.operator : transformation);
-    const annotationsTransformations = this.state.transformations.filter((transformation) => {
-      if ("options" in transformation || "topic" in transformation) {
-        return transformation.topic === DataTopic.Annotations;
+    );
+    const annotationsTransformations = this._filterAndPrepareTransformationsByTopic(
+      interpolatedTransformations,
+      (transformation) => {
+        if ("options" in transformation || "topic" in transformation) {
+          return transformation.topic === DataTopic.Annotations;
+        }
+        return false;
       }
-      return false;
-    }).map((transformation) => "operator" in transformation ? transformation.operator : transformation);
+    );
     if (this._transformSub) {
       this._transformSub.unsubscribe();
     }
     const ctx = {
-      interpolate: (value) => {
+      interpolate: (value, scopedVars) => {
         var _a2;
-        return sceneGraph.interpolate(this, value, (_a2 = data.request) == null ? void 0 : _a2.scopedVars);
+        return sceneGraph.interpolate(this, value, { ...(_a2 = data.request) == null ? void 0 : _a2.scopedVars, ...scopedVars });
       }
     };
-    let streams = [transformDataFrame(seriesTransformations, data.series, ctx)];
-    if (data.annotations && data.annotations.length > 0 && annotationsTransformations.length > 0) {
-      streams.push(transformDataFrame(annotationsTransformations, (_a = data.annotations) != null ? _a : []));
-    }
-    this._transformSub = forkJoin(streams).pipe(
-      map((values) => {
-        const transformedSeries = values[0];
-        const transformedAnnotations = values[1];
-        return __spreadProps(__spreadValues({}, data), {
-          series: transformedSeries,
-          annotations: transformedAnnotations != null ? transformedAnnotations : data.annotations
+    const seriesStream = transformDataFrame(seriesTransformations, data.series, ctx);
+    const annotationsStream = transformDataFrame(annotationsTransformations, (_a = data.annotations) != null ? _a : []);
+    let series = [];
+    let annotations = [];
+    this._transformSub = forkJoin([seriesStream, annotationsStream]).pipe(
+      map((results) => {
+        results.forEach((frames) => {
+          var _a2;
+          for (const frame of frames) {
+            if (((_a2 = frame.meta) == null ? void 0 : _a2.dataTopic) === DataTopic.Annotations) {
+              annotations.push(frame);
+            } else {
+              series.push(frame);
+            }
+          }
         });
+        return { ...data, series, annotations };
       }),
       catchError((err) => {
         var _a2;
+        const timestamp2 = performance.now();
+        const duration = timestamp2 - transformStartTime;
+        if (endTransformCallback) {
+          endTransformCallback(timestamp2, duration, false, {
+            error: err.message || err
+          });
+        }
         console.error("Error transforming data: ", err);
         const sourceErr = ((_a2 = this.getSourceData().state.data) == null ? void 0 : _a2.errors) || [];
         const transformationError = toDataQueryError(err);
         transformationError.message = `Error transforming data: ${transformationError.message}`;
-        const result = __spreadProps(__spreadValues({}, data), {
+        const result = {
+          ...data,
           state: LoadingState.Error,
+          // Combine transformation error with upstream errors
           errors: [...sourceErr, transformationError]
-        });
+        };
         return of(result);
       })
     ).subscribe((transformedData) => {
+      var _a2;
+      const timestamp2 = performance.now();
+      const duration = timestamp2 - transformStartTime;
+      if (endTransformCallback) {
+        endTransformCallback(timestamp2, duration, true, {
+          outputSeriesCount: transformedData.series.length,
+          outputAnnotationsCount: ((_a2 = transformedData.annotations) == null ? void 0 : _a2.length) || 0
+        });
+      }
       this.setState({ data: transformedData });
       this._results.next({ origin: this, data: transformedData });
       this._prevDataFromSource = data;
     });
+  }
+  _interpolateVariablesInTransformationConfigs(data) {
+    var _a;
+    const transformations = this.state.transformations;
+    if (this._variableDependency.getNames().size === 0) {
+      return transformations;
+    }
+    const onlyObjects = transformations.every((t) => typeof t === "object");
+    if (onlyObjects) {
+      return JSON.parse(sceneGraph.interpolate(this, JSON.stringify(transformations), (_a = data.request) == null ? void 0 : _a.scopedVars));
+    }
+    return transformations.map((t) => {
+      var _a2;
+      return typeof t === "object" ? JSON.parse(sceneGraph.interpolate(this, JSON.stringify(t), (_a2 = data.request) == null ? void 0 : _a2.scopedVars)) : t;
+    });
+  }
+  _filterAndPrepareTransformationsByTopic(interpolatedTransformations, transformationFilter) {
+    return interpolatedTransformations.filter(transformationFilter).map((transformation) => "operator" in transformation ? transformation.operator : transformation);
   }
 }
 

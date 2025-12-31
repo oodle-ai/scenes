@@ -1,3 +1,4 @@
+import { Trans } from '@grafana/i18n';
 import React from 'react';
 import { LinkButton } from '@grafana/ui';
 import { useAsync } from 'react-use';
@@ -16,26 +17,32 @@ function VizPanelExploreButtonComponent({ model }) {
   const { options } = model.useState();
   const { data } = sceneGraph.getData(model).useState();
   const { from, to } = sceneGraph.getTimeRange(model).useState();
-  const { value: exploreLink } = useAsync(
-    async () => data ? getExploreURL(data, model, { from, to }, options.transform) : "",
-    [data, model, from, to]
-  );
+  const { value: exploreLink } = useAsync(async () => {
+    if (!data) {
+      return "";
+    }
+    return getExploreURL(data, model, { from, to }, options.transform);
+  }, [data, model, from, to]);
   const returnToPrevious = useReturnToPrevious();
   if (exploreLink) {
-    return /* @__PURE__ */ React.createElement(LinkButton, {
-      key: "explore",
-      icon: "compass",
-      size: "sm",
-      variant: "secondary",
-      href: exploreLink,
-      onClick: () => {
-        var _a;
-        if (options.returnToPrevious) {
-          returnToPrevious(options.returnToPrevious.title, options.returnToPrevious.href);
+    return /* @__PURE__ */ React.createElement(
+      LinkButton,
+      {
+        key: "explore",
+        icon: "compass",
+        size: "sm",
+        variant: "secondary",
+        href: exploreLink,
+        onClick: () => {
+          var _a;
+          if (options.returnToPrevious) {
+            returnToPrevious(options.returnToPrevious.title, options.returnToPrevious.href);
+          }
+          (_a = options.onClick) == null ? void 0 : _a.call(options);
         }
-        (_a = options.onClick) == null ? void 0 : _a.call(options);
-      }
-    }, "Explore");
+      },
+      /* @__PURE__ */ React.createElement(Trans, { i18nKey: "grafana-scenes.components.viz-panel-explore-button.explore" }, "Explore")
+    );
   }
   return null;
 }

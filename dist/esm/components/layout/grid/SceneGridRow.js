@@ -7,37 +7,20 @@ import { GRID_COLUMN_COUNT } from './constants.js';
 import { sceneGraph } from '../../../core/sceneGraph/index.js';
 import { selectors } from '@grafana/e2e-selectors';
 import { VariableDependencyConfig } from '../../../variables/VariableDependencyConfig.js';
+import { t } from '@grafana/i18n';
+import { isRepeatCloneOrChildOf } from '../../../utils/utils.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class SceneGridRow extends SceneObjectBase {
   constructor(state) {
-    super(__spreadProps(__spreadValues({
+    super({
       children: state.children || [],
       isCollapsible: state.isCollapsible || true,
-      title: state.title || ""
-    }, state), {
+      title: state.title || "",
+      ...state,
       x: 0,
       height: 1,
       width: GRID_COLUMN_COUNT
-    }));
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["title"],
       handleTimeMacros: true
@@ -67,6 +50,14 @@ class SceneGridRow extends SceneObjectBase {
       this.onCollapseToggle();
     }
   }
+  getPanelCount(children) {
+    var _a;
+    let count = 0;
+    for (const child of children) {
+      count += ((_a = child.getChildCount) == null ? void 0 : _a.call(child)) || 1;
+    }
+    return count;
+  }
 }
 SceneGridRow.Component = SceneGridRowRenderer;
 function SceneGridRowRenderer({ model }) {
@@ -74,34 +65,20 @@ function SceneGridRowRenderer({ model }) {
   const { isCollapsible, isCollapsed, title, actions, children } = model.useState();
   const layout = model.getGridLayout();
   const layoutDragClass = layout.getDragClass();
-  const isDraggable = layout.isDraggable();
-  const count = children ? children.length : 0;
+  const isDraggable = layout.isDraggable() && !isRepeatCloneOrChildOf(model);
+  const count = model.getPanelCount(children);
   const panels = count === 1 ? "panel" : "panels";
-  return /* @__PURE__ */ React.createElement("div", {
-    className: cx(styles.row, isCollapsed && styles.rowCollapsed) + " oodle-panel-row oodle-panel-row-" + (isCollapsed ? "closed" : "open")
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.rowTitleAndActionsGroup
-  }, /* @__PURE__ */ React.createElement("button", {
-    onClick: model.onCollapseToggle,
-    className: styles.rowTitleButton,
-    "aria-label": isCollapsed ? "Expand row" : "Collapse row",
-    "data-testid": selectors.components.DashboardRow.title(sceneGraph.interpolate(model, title, void 0, "text"))
-  }, isCollapsible && /* @__PURE__ */ React.createElement(Icon, {
-    name: isCollapsed ? "angle-right" : "angle-down"
-  }), /* @__PURE__ */ React.createElement("span", {
-    className: styles.rowTitle,
-    role: "heading"
-  }, sceneGraph.interpolate(model, title, void 0, "text"))), /* @__PURE__ */ React.createElement("span", {
-    className: cx(styles.panelCount, isCollapsed && styles.panelCountCollapsed)
-  }, "(", count, " ", panels, ")"), actions && /* @__PURE__ */ React.createElement("div", {
-    className: styles.rowActions
-  }, /* @__PURE__ */ React.createElement(actions.Component, {
-    model: actions
-  }))), isDraggable && isCollapsed && /* @__PURE__ */ React.createElement("div", {
-    className: cx(styles.dragHandle, layoutDragClass)
-  }, /* @__PURE__ */ React.createElement(Icon, {
-    name: "draggabledots"
-  })));
+  return /* @__PURE__ */ React.createElement("div", { className: cx(styles.row, isCollapsed && styles.rowCollapsed) + " oodle-panel-row oodle-panel-row-" + (isCollapsed ? "closed" : "open") }, /* @__PURE__ */ React.createElement("div", { className: styles.rowTitleAndActionsGroup }, /* @__PURE__ */ React.createElement(
+    "button",
+    {
+      onClick: model.onCollapseToggle,
+      className: styles.rowTitleButton,
+      "aria-label": isCollapsed ? t("grafana-scenes.components.scene-grid-row.expand-row", "Expand row") : t("grafana-scenes.components.scene-grid-row.collapse-row", "Collapse row"),
+      "data-testid": selectors.components.DashboardRow.title(sceneGraph.interpolate(model, title, void 0, "text"))
+    },
+    isCollapsible && /* @__PURE__ */ React.createElement(Icon, { name: isCollapsed ? "angle-right" : "angle-down" }),
+    /* @__PURE__ */ React.createElement("span", { className: styles.rowTitle, role: "heading" }, sceneGraph.interpolate(model, title, void 0, "text"))
+  ), /* @__PURE__ */ React.createElement("span", { className: cx(styles.panelCount, isCollapsed && styles.panelCountCollapsed) }, "(", count, " ", panels, ")"), actions && /* @__PURE__ */ React.createElement("div", { className: styles.rowActions }, /* @__PURE__ */ React.createElement(actions.Component, { model: actions }))), isDraggable && isCollapsed && /* @__PURE__ */ React.createElement("div", { className: cx(styles.dragHandle, layoutDragClass) }, /* @__PURE__ */ React.createElement(Icon, { name: "draggabledots" })));
 }
 const getSceneGridRowStyles = (theme) => {
   return {

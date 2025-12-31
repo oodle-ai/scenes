@@ -1,36 +1,27 @@
+import { t } from '@grafana/i18n';
 import React, { forwardRef, useState, useRef, useId, useMemo, useCallback, useImperativeHandle, useEffect, useLayoutEffect } from 'react';
 import { FloatingPortal, FloatingFocusManager } from '@floating-ui/react';
 import { useStyles2, Spinner, Text } from '@grafana/ui';
-import { cx, css } from '@emotion/css';
-import { isMultiValueOperator } from '../AdHocFiltersVariable.js';
+import { css, cx } from '@emotion/css';
+import { isMultiValueOperator, OPERATORS, isFilterComplete } from '../AdHocFiltersVariable.js';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { LoadingOptionsPlaceholder, OptionsErrorPlaceholder, NoOptionsPlaceholder, DropdownItem, MultiValueApplyButton } from './DropdownItem.js';
-import { fuzzySearchOptions, flattenOptionGroups, setupDropdownAccessibility, VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION, VIRTUAL_LIST_ITEM_HEIGHT, VIRTUAL_LIST_OVERSCAN, generateFilterUpdatePayload, populateInputValueOnInputTypeSwitch, switchToNextInputType, switchInputType, generatePlaceholder, ERROR_STATE_DROPDOWN_WIDTH } from './utils.js';
+import { flattenOptionGroups, setupDropdownAccessibility, VIRTUAL_LIST_OVERSCAN, VIRTUAL_LIST_ITEM_HEIGHT_WITH_DESCRIPTION, VIRTUAL_LIST_ITEM_HEIGHT, generateFilterUpdatePayload, populateInputValueOnInputTypeSwitch, switchToNextInputType, switchInputType, generatePlaceholder, ERROR_STATE_DROPDOWN_WIDTH } from './utils.js';
 import { handleOptionGroups } from '../../utils.js';
 import { useFloatingInteractions, MAX_MENU_HEIGHT } from './useFloatingInteractions.js';
 import { MultiValuePill } from './MultiValuePill.js';
+import { getAdhocOptionSearcher } from '../getAdhocOptionSearcher.js';
+import { FILTER_CHANGED_INTERACTION, ADHOC_KEYS_DROPDOWN_INTERACTION, ADHOC_VALUES_DROPDOWN_INTERACTION, FILTER_REMOVED_INTERACTION } from '../../../performance/interactionConstants.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwaysWip, handleChangeViewMode, focusOnWipInputRef, populateInputOnEdit }, parentRef) {
-  var _a, _b, _c, _d;
+const AdHocCombobox = forwardRef(function AdHocCombobox2({
+  filter,
+  controller,
+  isAlwaysWip,
+  handleChangeViewMode,
+  focusOnWipInputRef,
+  populateInputOnEdit
+}, parentRef) {
+  var _a, _b, _c;
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState([]);
   const [optionsLoading, setOptionsLoading] = useState(false);
@@ -42,7 +33,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
   const styles = useStyles2(getStyles);
   const [filterMultiValues, setFilterMultiValues] = useState([]);
   const [_, setForceRefresh] = useState({});
-  const allowCustomValue = (_a = model.state.allowCustomValue) != null ? _a : true;
+  const { allowCustomValue = true, onAddCustomValue, filters, inputPlaceholder } = controller.useState();
   const multiValuePillWrapperRef = useRef(null);
   const hasMultiValueOperator = isMultiValueOperator((filter == null ? void 0 : filter.operator) || "");
   const isMultiValueEdit = hasMultiValueOperator && filterInputType === "value";
@@ -50,43 +41,55 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
   const listRef = useRef([]);
   const disabledIndicesRef = useRef([]);
   const filterInputTypeRef = useRef(!isAlwaysWip ? "value" : "key");
-  const optionsSearcher = useMemo(() => fuzzySearchOptions(options), [options]);
+  const optionsSearcher = useMemo(() => getAdhocOptionSearcher(options), [options]);
   const isLastFilter = useMemo(() => {
     if (isAlwaysWip) {
       return false;
     }
-    if (model.state.filters.at(-1) === filter) {
+    if (filters.at(-1) === filter) {
       return true;
     }
     return false;
-  }, [filter, isAlwaysWip, model.state.filters]);
+  }, [filter, isAlwaysWip, filters]);
   const handleResetWip = useCallback(() => {
     if (isAlwaysWip) {
-      model._addWip();
+      controller.addWip();
       setInputType("key");
       setInputValue("");
     }
-  }, [model, isAlwaysWip]);
+  }, [controller, isAlwaysWip]);
   const handleMultiValueFilterCommit = useCallback(
-    (model2, filter2, filterMultiValues2, preventFocus) => {
+    (controller2, filter2, filterMultiValues2, preventFocus) => {
+      var _a2;
+      if (!filterMultiValues2.length && filter2.origin) {
+        controller2.updateToMatchAll(filter2);
+      }
       if (filterMultiValues2.length) {
         const valueLabels = [];
         const values = [];
         filterMultiValues2.forEach((item) => {
-          var _a2;
-          valueLabels.push((_a2 = item.label) != null ? _a2 : item.value);
+          var _a3;
+          valueLabels.push((_a3 = item.label) != null ? _a3 : item.value);
           values.push(item.value);
         });
-        model2._updateFilter(filter2, { valueLabels, values, value: values[0] });
+        let shouldUpdate = true;
+        if (Array.isArray(filter2.values) && filter2.values.length === values.length) {
+          shouldUpdate = !filter2.values.every((v, i) => v === values[i]);
+        }
+        if (shouldUpdate) {
+          (_a2 = controller2.startProfile) == null ? void 0 : _a2.call(controller2, FILTER_CHANGED_INTERACTION);
+        }
+        controller2.updateFilter(filter2, { valueLabels, values, value: values[0] });
         setFilterMultiValues([]);
       }
       if (!preventFocus) {
         setTimeout(() => {
-          var _a2;
-          return (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
+          var _a3;
+          return (_a3 = refs.domReference.current) == null ? void 0 : _a3.focus();
         });
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
   const handleLocalMultiValueChange = useCallback((selectedItem) => {
@@ -102,7 +105,11 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       setOpen(nextOpen);
       if (reason && ["outside-press", "escape-key"].includes(reason)) {
         if (isMultiValueEdit) {
-          handleMultiValueFilterCommit(model, filter, filterMultiValues);
+          handleMultiValueFilterCommit(controller, filter, filterMultiValues);
+        } else {
+          if (filter && filter.origin && inputValue === "") {
+            controller.updateToMatchAll(filter);
+          }
         }
         handleResetWip();
         handleChangeViewMode == null ? void 0 : handleChangeViewMode();
@@ -114,8 +121,9 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       handleChangeViewMode,
       handleMultiValueFilterCommit,
       handleResetWip,
+      inputValue,
       isMultiValueEdit,
-      model
+      controller
     ]
   );
   const outsidePressIdsToIgnore = useMemo(() => {
@@ -159,36 +167,47 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
     [refs.domReference]
   );
   const filteredDropDownItems = flattenOptionGroups(
-    handleOptionGroups(optionsSearcher(preventFiltering ? "" : inputValue, filterInputType))
+    handleOptionGroups(optionsSearcher(preventFiltering ? "" : inputValue))
   );
   if (allowCustomValue && filterInputType !== "operator" && inputValue) {
-    filteredDropDownItems.push({
+    const operatorDefinition = OPERATORS.find((op) => (filter == null ? void 0 : filter.operator) === op.value);
+    const customOptionValue = {
       value: inputValue.trim(),
       label: inputValue.trim(),
       isCustom: true
-    });
+    };
+    if (operatorDefinition == null ? void 0 : operatorDefinition.isRegex) {
+      filteredDropDownItems.unshift(customOptionValue);
+    } else {
+      filteredDropDownItems.push(customOptionValue);
+    }
   }
   const maxOptionWidth = setupDropdownAccessibility(filteredDropDownItems, listRef, disabledIndicesRef);
   const handleFetchOptions = useCallback(
     async (inputType) => {
-      var _a2;
+      var _a2, _b2, _c2, _d;
+      const interactionName = inputType === "key" ? ADHOC_KEYS_DROPDOWN_INTERACTION : ADHOC_VALUES_DROPDOWN_INTERACTION;
+      if (inputType !== "operator") {
+        (_a2 = controller.startInteraction) == null ? void 0 : _a2.call(controller, interactionName);
+      }
       setOptionsError(false);
       setOptionsLoading(true);
       setOptions([]);
       let options2 = [];
       try {
         if (inputType === "key") {
-          options2 = await model._getKeys(null);
+          options2 = await controller.getKeys(null);
         } else if (inputType === "operator") {
-          options2 = model._getOperators();
+          options2 = controller.getOperators();
         } else if (inputType === "value") {
-          options2 = await model._getValuesFor(filter);
+          options2 = await controller.getValuesFor(filter);
         }
         if (filterInputTypeRef.current !== inputType) {
+          (_b2 = controller.stopInteraction) == null ? void 0 : _b2.call(controller);
           return;
         }
         setOptions(options2);
-        if ((_a2 = options2[0]) == null ? void 0 : _a2.group) {
+        if ((_c2 = options2[0]) == null ? void 0 : _c2.group) {
           setActiveIndex(1);
         } else {
           setActiveIndex(0);
@@ -197,8 +216,9 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
         setOptionsError(true);
       }
       setOptionsLoading(false);
+      (_d = controller.stopInteraction) == null ? void 0 : _d.call(controller);
     },
-    [filter, model]
+    [filter, controller]
   );
   const rowVirtualizer = useVirtualizer({
     count: filteredDropDownItems.length,
@@ -208,6 +228,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
   });
   const handleBackspaceInput = useCallback(
     (event, multiValueEdit) => {
+      var _a2;
       if (event.key === "Backspace" && !inputValue) {
         if (filterInputType === "value") {
           if (multiValueEdit) {
@@ -220,11 +241,17 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
               return;
             }
           }
+          if (filter == null ? void 0 : filter.origin) {
+            return;
+          }
           setInputType("operator");
           return;
         }
         focusOnWipInputRef == null ? void 0 : focusOnWipInputRef();
-        model._handleComboboxBackspace(filter);
+        if (isFilterComplete(filter)) {
+          (_a2 = controller.startProfile) == null ? void 0 : _a2.call(controller, FILTER_REMOVED_INTERACTION);
+        }
+        controller.handleComboboxBackspace(filter);
         if (isAlwaysWip) {
           handleResetWip();
         }
@@ -233,7 +260,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
     [
       inputValue,
       filterInputType,
-      model,
+      controller,
       filter,
       isAlwaysWip,
       filterMultiValues.length,
@@ -247,7 +274,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       if (event.key === "Tab" && !event.shiftKey) {
         if (multiValueEdit) {
           event.preventDefault();
-          handleMultiValueFilterCommit(model, filter, filterMultiValues);
+          handleMultiValueFilterCommit(controller, filter, filterMultiValues);
           (_a2 = refs.domReference.current) == null ? void 0 : _a2.focus();
         }
         handleChangeViewMode == null ? void 0 : handleChangeViewMode();
@@ -260,7 +287,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       handleChangeViewMode,
       handleMultiValueFilterCommit,
       handleResetWip,
-      model,
+      controller,
       refs.domReference
     ]
   );
@@ -269,16 +296,17 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       if (event.key === "Tab" && event.shiftKey) {
         if (multiValueEdit) {
           event.preventDefault();
-          handleMultiValueFilterCommit(model, filter, filterMultiValues, true);
+          handleMultiValueFilterCommit(controller, filter, filterMultiValues, true);
         }
         handleChangeViewMode == null ? void 0 : handleChangeViewMode();
         handleResetWip();
       }
     },
-    [filter, filterMultiValues, handleChangeViewMode, handleMultiValueFilterCommit, handleResetWip, model]
+    [filter, filterMultiValues, handleChangeViewMode, handleMultiValueFilterCommit, handleResetWip, controller]
   );
   const handleEnterInput = useCallback(
     (event, multiValueEdit) => {
+      var _a2;
       if (event.key === "Enter" && activeIndex != null) {
         if (!filteredDropDownItems[activeIndex]) {
           return;
@@ -288,15 +316,17 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
           handleLocalMultiValueChange(selectedItem);
           setInputValue("");
         } else {
-          model._updateFilter(
+          const payload = generateFilterUpdatePayload({
+            filterInputType,
+            item: selectedItem,
             filter,
-            generateFilterUpdatePayload({
-              filterInputType,
-              item: selectedItem,
-              filter,
-              setFilterMultiValues
-            })
-          );
+            setFilterMultiValues,
+            onAddCustomValue
+          });
+          if (filterInputType === "value" && payload.value !== (filter == null ? void 0 : filter.value)) {
+            (_a2 = controller.startProfile) == null ? void 0 : _a2.call(controller, FILTER_CHANGED_INTERACTION);
+          }
+          controller.updateFilter(filter, payload);
           populateInputValueOnInputTypeSwitch({
             populateInputOnEdit,
             item: selectedItem,
@@ -309,6 +339,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
             setInputType,
             handleChangeViewMode,
             refs.domReference.current,
+            // preventing focus on filter pill only when last filter for better backspace experience
             isLastFilter ? false : void 0
           );
           setActiveIndex(null);
@@ -322,14 +353,15 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       activeIndex,
       filteredDropDownItems,
       handleLocalMultiValueChange,
-      model,
+      controller,
       filter,
       filterInputType,
       populateInputOnEdit,
       handleChangeViewMode,
       refs.domReference,
       isLastFilter,
-      focusOnWipInputRef
+      focusOnWipInputRef,
+      onAddCustomValue
     ]
   );
   const handleEditMultiValuePill = useCallback(
@@ -353,7 +385,7 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
     }
   }, [open, filterInputType]);
   useEffect(() => {
-    var _a2, _b2;
+    var _a2, _b2, _c2, _d;
     if (!isAlwaysWip) {
       if (hasMultiValueOperator && ((_a2 = filter == null ? void 0 : filter.values) == null ? void 0 : _a2.length)) {
         const multiValueOptions = filter.values.reduce(
@@ -372,13 +404,13 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
         setFilterMultiValues(multiValueOptions);
       }
       if (!hasMultiValueOperator && populateInputOnEdit) {
-        setInputValue((filter == null ? void 0 : filter.value) || "");
+        setInputValue((_c2 = (_b2 = filter == null ? void 0 : filter.valueLabels) == null ? void 0 : _b2[0]) != null ? _c2 : (filter == null ? void 0 : filter.value) || "");
         setTimeout(() => {
           var _a3;
           (_a3 = refs.domReference.current) == null ? void 0 : _a3.select();
         });
       }
-      (_b2 = refs.domReference.current) == null ? void 0 : _b2.focus();
+      (_d = refs.domReference.current) == null ? void 0 : _d.focus();
     }
   }, []);
   useEffect(() => {
@@ -397,174 +429,212 @@ const AdHocCombobox = forwardRef(function AdHocCombobox2({ filter, model, isAlwa
       rowVirtualizer.scrollToIndex(activeIndex);
     }
   }, [activeIndex, rowVirtualizer]);
-  const keyLabel = (_b = filter == null ? void 0 : filter.keyLabel) != null ? _b : filter == null ? void 0 : filter.key;
-  return /* @__PURE__ */ React.createElement("div", {
-    className: styles.comboboxWrapper
-  }, filter ? /* @__PURE__ */ React.createElement("div", {
-    className: styles.pillWrapper
-  }, (filter == null ? void 0 : filter.key) ? /* @__PURE__ */ React.createElement("div", {
-    className: cx(styles.basePill, styles.keyPill)
-  }, keyLabel) : null, (filter == null ? void 0 : filter.key) && (filter == null ? void 0 : filter.operator) && filterInputType !== "operator" ? /* @__PURE__ */ React.createElement("div", {
-    id: operatorIdentifier,
-    className: cx(styles.basePill, styles.operatorPill, operatorIdentifier),
-    role: "button",
-    "aria-label": "Edit filter operator",
-    tabIndex: 0,
-    onClick: (event) => {
-      event.stopPropagation();
-      setInputValue("");
-      switchInputType("operator", setInputType, void 0, refs.domReference.current);
-    },
-    onKeyDown: (event) => {
-      handleShiftTabInput(event, hasMultiValueOperator);
-      if (event.key === "Enter") {
+  const keyLabel = (_a = filter == null ? void 0 : filter.keyLabel) != null ? _a : filter == null ? void 0 : filter.key;
+  return /* @__PURE__ */ React.createElement("div", { className: styles.comboboxWrapper }, filter ? /* @__PURE__ */ React.createElement("div", { className: styles.pillWrapper }, (filter == null ? void 0 : filter.key) ? /* @__PURE__ */ React.createElement("div", { className: cx(styles.basePill, styles.keyPill) }, keyLabel) : null, (filter == null ? void 0 : filter.key) && (filter == null ? void 0 : filter.operator) && filterInputType !== "operator" ? /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      id: operatorIdentifier,
+      className: cx(
+        styles.basePill,
+        !filter.origin && styles.operatorPill,
+        filter.origin && styles.keyPill,
+        operatorIdentifier
+      ),
+      "aria-label": t(
+        "grafana-scenes.variables.ad-hoc-combobox.aria-label-edit-filter-operator",
+        "Edit filter operator"
+      ),
+      tabIndex: filter.origin ? -1 : 0,
+      onClick: (event) => {
+        if (filter.origin) {
+          handleChangeViewMode == null ? void 0 : handleChangeViewMode();
+          return;
+        }
+        event.stopPropagation();
         setInputValue("");
         switchInputType("operator", setInputType, void 0, refs.domReference.current);
-      }
-    }
-  }, filter.operator) : null, /* @__PURE__ */ React.createElement("div", {
-    ref: multiValuePillWrapperRef
-  }), isMultiValueEdit ? filterMultiValues.map((item, i) => /* @__PURE__ */ React.createElement(MultiValuePill, {
-    key: `${item.value}-${i}`,
-    item,
-    index: i,
-    handleRemoveMultiValue,
-    handleEditMultiValuePill
-  })) : null) : null, /* @__PURE__ */ React.createElement("input", __spreadProps(__spreadValues({}, getReferenceProps({
-    ref: refs.setReference,
-    onChange,
-    value: inputValue,
-    placeholder: generatePlaceholder(filter, filterInputType, isMultiValueEdit, isAlwaysWip),
-    "aria-autocomplete": "list",
-    onKeyDown(event) {
-      if (!open) {
-        setOpen(true);
-        return;
-      }
-      if (filterInputType === "operator") {
-        handleShiftTabInput(event);
-      }
-      handleBackspaceInput(event, isMultiValueEdit);
-      handleTabInput(event, isMultiValueEdit);
-      handleEnterInput(event, isMultiValueEdit);
-    }
-  })), {
-    className: cx(styles.inputStyle, { [styles.loadingInputPadding]: !optionsLoading }),
-    onClick: (event) => {
-      event.stopPropagation();
-      setOpen(true);
-    },
-    onFocus: () => {
-      setOpen(true);
-    }
-  })), optionsLoading ? /* @__PURE__ */ React.createElement(Spinner, {
-    className: styles.loadingIndicator,
-    inline: true
-  }) : null, /* @__PURE__ */ React.createElement(FloatingPortal, null, open && /* @__PURE__ */ React.createElement(FloatingFocusManager, {
-    context,
-    initialFocus: -1,
-    visuallyHiddenDismiss: true,
-    modal: false
-  }, /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", {
-    style: __spreadProps(__spreadValues({}, floatingStyles), {
-      width: `${optionsError ? ERROR_STATE_DROPDOWN_WIDTH : maxOptionWidth}px`,
-      transform: isMultiValueEdit ? `translate(${((_c = multiValuePillWrapperRef.current) == null ? void 0 : _c.getBoundingClientRect().left) || 0}px, ${(((_d = refs.domReference.current) == null ? void 0 : _d.getBoundingClientRect().bottom) || 0) + 10}px )` : floatingStyles.transform
-    }),
-    ref: refs.setFloating,
-    className: styles.dropdownWrapper,
-    tabIndex: -1
-  }, /* @__PURE__ */ React.createElement("div", __spreadProps(__spreadValues({
-    style: {
-      height: `${rowVirtualizer.getTotalSize() || VIRTUAL_LIST_ITEM_HEIGHT}px`
-    }
-  }, getFloatingProps()), {
-    tabIndex: -1
-  }), optionsLoading ? /* @__PURE__ */ React.createElement(LoadingOptionsPlaceholder, null) : optionsError ? /* @__PURE__ */ React.createElement(OptionsErrorPlaceholder, {
-    handleFetchOptions: () => handleFetchOptions(filterInputType)
-  }) : !filteredDropDownItems.length && (!allowCustomValue || filterInputType === "operator" || !inputValue) ? /* @__PURE__ */ React.createElement(NoOptionsPlaceholder, null) : rowVirtualizer.getVirtualItems().map((virtualItem) => {
-    var _a2;
-    const item = filteredDropDownItems[virtualItem.index];
-    const index = virtualItem.index;
-    if (item.options) {
-      return /* @__PURE__ */ React.createElement("div", {
-        key: `${item.label}+${index}`,
-        className: cx(styles.optionGroupLabel, styles.groupTopBorder),
-        style: {
-          height: `${virtualItem.size}px`,
-          transform: `translateY(${virtualItem.start}px)`
-        }
-      }, /* @__PURE__ */ React.createElement(Text, {
-        weight: "bold",
-        variant: "bodySmall",
-        color: "secondary"
-      }, item.label));
-    }
-    const nextItem = filteredDropDownItems[virtualItem.index + 1];
-    const shouldAddBottomBorder = nextItem && !nextItem.group && !nextItem.options && item.group;
-    return /* @__PURE__ */ React.createElement(DropdownItem, __spreadProps(__spreadValues({}, getItemProps({
-      key: `${item.value}-${index}`,
-      ref(node) {
-        listRef.current[index] = node;
       },
-      onClick(event) {
-        var _a3;
-        if (filterInputType !== "value") {
-          event.stopPropagation();
+      onKeyDown: (event) => {
+        if (filter.origin) {
+          return;
         }
-        if (isMultiValueEdit) {
-          event.preventDefault();
-          event.stopPropagation();
-          handleLocalMultiValueChange(item);
+        handleShiftTabInput(event, hasMultiValueOperator);
+        if (event.key === "Enter") {
           setInputValue("");
-          (_a3 = refs.domReference.current) == null ? void 0 : _a3.focus();
-        } else {
-          model._updateFilter(
-            filter,
-            generateFilterUpdatePayload({
-              filterInputType,
-              item,
-              filter,
-              setFilterMultiValues
-            })
-          );
-          populateInputValueOnInputTypeSwitch({
-            populateInputOnEdit,
-            item,
-            filterInputType,
-            setInputValue,
-            filter
-          });
-          switchToNextInputType(
-            filterInputType,
-            setInputType,
-            handleChangeViewMode,
-            refs.domReference.current,
-            false
+          switchInputType("operator", setInputType, void 0, refs.domReference.current);
+        }
+      },
+      ...!filter.origin && { role: "button" }
+    },
+    filter.operator
+  ) : null, /* @__PURE__ */ React.createElement("div", { ref: multiValuePillWrapperRef }), isMultiValueEdit ? filterMultiValues.map((item, i) => /* @__PURE__ */ React.createElement(
+    MultiValuePill,
+    {
+      key: `${item.value}-${i}`,
+      item,
+      index: i,
+      handleRemoveMultiValue,
+      handleEditMultiValuePill
+    }
+  )) : null) : null, /* @__PURE__ */ React.createElement(
+    "input",
+    {
+      ...getReferenceProps({
+        ref: refs.setReference,
+        onChange,
+        value: inputValue,
+        // dynamic placeholder to display operator and/or value in filter edit mode
+        placeholder: generatePlaceholder(filter, filterInputType, isMultiValueEdit, isAlwaysWip, inputPlaceholder),
+        "aria-autocomplete": "list",
+        onKeyDown(event) {
+          if (!open) {
+            setOpen(true);
+            return;
+          }
+          if (filterInputType === "operator") {
+            handleShiftTabInput(event);
+          }
+          handleBackspaceInput(event, isMultiValueEdit);
+          handleTabInput(event, isMultiValueEdit);
+          handleEnterInput(event, isMultiValueEdit);
+        }
+      }),
+      className: cx(styles.inputStyle, { [styles.loadingInputPadding]: !optionsLoading }),
+      onClick: (event) => {
+        event.stopPropagation();
+        setOpen(true);
+      },
+      onFocus: () => {
+        setOpen(true);
+      }
+    }
+  ), optionsLoading ? /* @__PURE__ */ React.createElement(Spinner, { className: styles.loadingIndicator, inline: true }) : null, /* @__PURE__ */ React.createElement(FloatingPortal, null, open && /* @__PURE__ */ React.createElement(FloatingFocusManager, { context, initialFocus: -1, visuallyHiddenDismiss: true, modal: true }, /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      style: {
+        ...floatingStyles,
+        width: `${optionsError ? ERROR_STATE_DROPDOWN_WIDTH : maxOptionWidth}px`,
+        transform: isMultiValueEdit ? `translate(${((_b = multiValuePillWrapperRef.current) == null ? void 0 : _b.getBoundingClientRect().left) || 0}px, ${(((_c = refs.domReference.current) == null ? void 0 : _c.getBoundingClientRect().bottom) || 0) + 10}px )` : floatingStyles.transform
+      },
+      ref: refs.setFloating,
+      className: styles.dropdownWrapper,
+      tabIndex: -1
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        style: {
+          height: `${rowVirtualizer.getTotalSize() || VIRTUAL_LIST_ITEM_HEIGHT}px`
+          // fallback to 38px for loading/error/no options placeholders
+        },
+        ...getFloatingProps(),
+        tabIndex: -1
+      },
+      optionsLoading ? /* @__PURE__ */ React.createElement(LoadingOptionsPlaceholder, null) : optionsError ? /* @__PURE__ */ React.createElement(OptionsErrorPlaceholder, { handleFetchOptions: () => handleFetchOptions(filterInputType) }) : !filteredDropDownItems.length && (!allowCustomValue || filterInputType === "operator" || !inputValue) ? /* @__PURE__ */ React.createElement(NoOptionsPlaceholder, null) : rowVirtualizer.getVirtualItems().map((virtualItem) => {
+        var _a2;
+        const item = filteredDropDownItems[virtualItem.index];
+        const index = virtualItem.index;
+        if (item.options) {
+          return /* @__PURE__ */ React.createElement(
+            "div",
+            {
+              key: `${item.label}+${index}`,
+              className: cx(styles.optionGroupLabel, styles.groupTopBorder),
+              style: {
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`
+              }
+            },
+            /* @__PURE__ */ React.createElement(Text, { weight: "bold", variant: "bodySmall", color: "secondary" }, item.label)
           );
         }
-      }
-    })), {
-      active: activeIndex === index,
-      addGroupBottomBorder: shouldAddBottomBorder,
-      style: {
-        height: `${virtualItem.size}px`,
-        transform: `translateY(${virtualItem.start}px)`
+        const nextItem = filteredDropDownItems[virtualItem.index + 1];
+        const shouldAddBottomBorder = nextItem && !nextItem.group && !nextItem.options && item.group;
+        const itemLabel = (_a2 = item.label) != null ? _a2 : item.value;
+        return (
+          // key is included in getItemProps()
+          // eslint-disable-next-line react/jsx-key
+          /* @__PURE__ */ React.createElement(
+            DropdownItem,
+            {
+              ...getItemProps({
+                key: `${item.value}-${index}`,
+                ref(node) {
+                  listRef.current[index] = node;
+                },
+                onClick(event) {
+                  var _a3, _b2;
+                  if (filterInputType !== "value") {
+                    event.stopPropagation();
+                  }
+                  if (isMultiValueEdit) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    handleLocalMultiValueChange(item);
+                    setInputValue("");
+                    (_a3 = refs.domReference.current) == null ? void 0 : _a3.focus();
+                  } else {
+                    const payload = generateFilterUpdatePayload({
+                      filterInputType,
+                      item,
+                      filter,
+                      setFilterMultiValues,
+                      onAddCustomValue
+                    });
+                    if (filterInputType === "value" && payload.value !== (filter == null ? void 0 : filter.value)) {
+                      (_b2 = controller.startProfile) == null ? void 0 : _b2.call(controller, FILTER_CHANGED_INTERACTION);
+                    }
+                    controller.updateFilter(filter, payload);
+                    populateInputValueOnInputTypeSwitch({
+                      populateInputOnEdit,
+                      item,
+                      filterInputType,
+                      setInputValue,
+                      filter
+                    });
+                    switchToNextInputType(
+                      filterInputType,
+                      setInputType,
+                      handleChangeViewMode,
+                      refs.domReference.current,
+                      // explicitly preventing focus on filter pill due to a11y error
+                      false
+                    );
+                  }
+                }
+              }),
+              active: activeIndex === index,
+              addGroupBottomBorder: shouldAddBottomBorder,
+              style: {
+                height: `${virtualItem.size}px`,
+                transform: `translateY(${virtualItem.start}px)`
+              },
+              "aria-setsize": filteredDropDownItems.length,
+              "aria-posinset": virtualItem.index + 1,
+              isMultiValueEdit,
+              checked: filterMultiValues.some((val) => val.value === item.value)
+            },
+            /* @__PURE__ */ React.createElement("span", null, item.isCustom ? t(
+              "grafana-scenes.components.adhoc-filters-combobox.use-custom-value",
+              "Use custom value: {{itemLabel}}",
+              { itemLabel }
+            ) : itemLabel),
+            item.description ? /* @__PURE__ */ React.createElement("div", { className: styles.descriptionText }, item.description) : null
+          )
+        );
+      })
+    )
+  ), isMultiValueEdit && !optionsLoading && !optionsError && filteredDropDownItems.length ? /* @__PURE__ */ React.createElement(
+    MultiValueApplyButton,
+    {
+      onApply: () => {
+        handleMultiValueFilterCommit(controller, filter, filterMultiValues);
       },
-      "aria-setsize": filteredDropDownItems.length,
-      "aria-posinset": virtualItem.index + 1,
-      isMultiValueEdit,
-      checked: filterMultiValues.some((val) => val.value === item.value)
-    }), /* @__PURE__ */ React.createElement("span", null, item.isCustom ? "Use custom value: " : "", " ", (_a2 = item.label) != null ? _a2 : item.value), item.description ? /* @__PURE__ */ React.createElement("div", {
-      className: styles.descriptionText
-    }, item.description) : null);
-  }))), isMultiValueEdit && !optionsLoading && !optionsError && filteredDropDownItems.length ? /* @__PURE__ */ React.createElement(MultiValueApplyButton, {
-    onApply: () => {
-      handleMultiValueFilterCommit(model, filter, filterMultiValues);
-    },
-    floatingElement: refs.floating.current,
-    maxOptionWidth,
-    menuHeight: Math.min(rowVirtualizer.getTotalSize(), MAX_MENU_HEIGHT)
-  }) : null))));
+      floatingElement: refs.floating.current,
+      maxOptionWidth,
+      menuHeight: Math.min(rowVirtualizer.getTotalSize(), MAX_MENU_HEIGHT)
+    }
+  ) : null))));
 });
 const getStyles = (theme) => ({
   comboboxWrapper: css({
@@ -576,7 +646,7 @@ const getStyles = (theme) => ({
     alignItems: "center",
     flexWrap: "wrap"
   }),
-  basePill: css(__spreadProps(__spreadValues({
+  basePill: css({
     display: "flex",
     alignItems: "center",
     background: theme.colors.action.disabledBackground,
@@ -585,10 +655,10 @@ const getStyles = (theme) => ({
     color: theme.colors.text.primary,
     overflow: "hidden",
     whiteSpace: "nowrap",
-    minHeight: theme.spacing(2.75)
-  }, theme.typography.bodySmall), {
+    minHeight: theme.spacing(2.75),
+    ...theme.typography.bodySmall,
     cursor: "pointer"
-  })),
+  }),
   keyPill: css({
     fontWeight: theme.typography.fontWeightBold,
     cursor: "default"
@@ -603,7 +673,7 @@ const getStyles = (theme) => ({
     color: theme.colors.text.primary,
     boxShadow: theme.shadows.z2,
     overflowY: "auto",
-    zIndex: theme.zIndex.dropdown
+    zIndex: theme.zIndex.portal
   }),
   inputStyle: css({
     paddingBlock: 0,
@@ -630,10 +700,11 @@ const getStyles = (theme) => ({
       borderTop: `1px solid ${theme.colors.border.weak}`
     }
   }),
-  descriptionText: css(__spreadProps(__spreadValues({}, theme.typography.bodySmall), {
+  descriptionText: css({
+    ...theme.typography.bodySmall,
     color: theme.colors.text.secondary,
     paddingTop: theme.spacing(0.5)
-  }))
+  })
 });
 
 export { AdHocCombobox };

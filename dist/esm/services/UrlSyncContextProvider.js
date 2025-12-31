@@ -4,9 +4,16 @@ function UrlSyncContextProvider({
   children,
   scene,
   updateUrlOnInit,
-  createBrowserHistorySteps
+  createBrowserHistorySteps,
+  namespace,
+  excludeFromNamespace
 }) {
-  const isInitialized = useUrlSync(scene, { updateUrlOnInit, createBrowserHistorySteps });
+  const isInitialized = useUrlSync(scene, {
+    updateUrlOnInit,
+    createBrowserHistorySteps,
+    namespace,
+    excludeFromNamespace
+  });
   if (!isInitialized) {
     return null;
   }

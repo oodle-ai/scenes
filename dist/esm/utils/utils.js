@@ -6,6 +6,16 @@ function setBaseClassState(sceneObject, newState) {
 function useLocationServiceSafe() {
   return useLocationService ? useLocationService() : locationService;
 }
+function isRepeatCloneOrChildOf(scene) {
+  let obj = scene;
+  do {
+    if ("repeatSourceKey" in obj.state && obj.state.repeatSourceKey) {
+      return true;
+    }
+    obj = obj.parent;
+  } while (obj);
+  return false;
+}
 
-export { setBaseClassState, useLocationServiceSafe };
+export { isRepeatCloneOrChildOf, setBaseClassState, useLocationServiceSafe };
 //# sourceMappingURL=utils.js.map

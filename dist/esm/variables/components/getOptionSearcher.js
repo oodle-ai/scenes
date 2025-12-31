@@ -1,5 +1,5 @@
-import { ALL_VARIABLE_VALUE, ALL_VARIABLE_TEXT } from '../constants.js';
-import { getFuzzySearcher } from '../utils.js';
+import { ALL_VARIABLE_TEXT, ALL_VARIABLE_VALUE } from '../constants.js';
+import { fuzzyFind } from '../filter.js';
 
 function getOptionSearcher(options, includeAll = false) {
   let allOptions = options;
@@ -7,8 +7,7 @@ function getOptionSearcher(options, includeAll = false) {
     allOptions = [{ value: ALL_VARIABLE_VALUE, label: ALL_VARIABLE_TEXT }, ...allOptions];
   }
   const haystack = allOptions.map((o) => o.label);
-  const fuzzySearch = getFuzzySearcher(haystack);
-  return (search) => fuzzySearch(search).map((i) => allOptions[i]);
+  return (search) => fuzzyFind(allOptions, haystack, search);
 }
 
 export { getOptionSearcher };

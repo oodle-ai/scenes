@@ -1,29 +1,14 @@
-import { cx, css } from '@emotion/css';
-import { useStyles2, Tooltip, IconButton } from '@grafana/ui';
+import { css, cx } from '@emotion/css';
+import { useStyles2, Tooltip, IconButton, Icon } from '@grafana/ui';
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { AdHocCombobox } from './AdHocFiltersCombobox.js';
+import { isMatchAllFilter } from '../AdHocFiltersVariable.js';
+import { t } from '@grafana/i18n';
+import { getNonApplicablePillStyles } from '../../utils.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-function AdHocFilterPill({ filter, model, readOnly, focusOnWipInputRef }) {
-  var _a, _b, _c;
+const LABEL_MAX_VISIBLE_LENGTH = 20;
+function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
+  var _a, _b, _c, _d;
   const styles = useStyles2(getStyles);
   const [viewMode, setViewMode] = useState(true);
   const [shouldFocusOnPillWrapper, setShouldFocusOnPillWrapper] = useState(false);
@@ -52,70 +37,158 @@ function AdHocFilterPill({ filter, model, readOnly, focusOnWipInputRef }) {
   useEffect(() => {
     if (filter.forceEdit && viewMode) {
       setViewMode(false);
-      model._updateFilter(filter, { forceEdit: void 0 });
+      controller.updateFilter(filter, { forceEdit: void 0 });
     }
-  }, [filter, model, viewMode]);
+  }, [filter, controller, viewMode]);
   useEffect(() => {
     if (viewMode) {
       setPopulateInputOnEdit((prevValue) => prevValue ? false : prevValue);
     }
   }, [viewMode]);
+  const getOriginFilterTooltips = (origin) => {
+    if (origin === "dashboard") {
+      return {
+        info: "Applied by default in this dashboard. If edited, it carries over to other dashboards.",
+        restore: "Restore the value set by this dashboard."
+      };
+    } else if (origin === "scope") {
+      return {
+        info: "Applied automatically from your selected scope.",
+        restore: "Restore the value set by your selected scope."
+      };
+    } else {
+      return {
+        info: `This is a ${origin} injected filter.`,
+        restore: `Restore filter to its original value.`
+      };
+    }
+  };
+  const cleanFilter = !filter.restorable && !filter.readOnly && !filter.nonApplicable;
   if (viewMode) {
-    const pillText = /* @__PURE__ */ React.createElement("span", {
-      className: styles.pillText
-    }, keyLabel, " ", filter.operator, " ", valueLabel);
-    return /* @__PURE__ */ React.createElement("div", {
-      className: cx(styles.combinedFilterPill, { [styles.readOnlyCombinedFilter]: readOnly }),
-      onClick: (e) => {
-        e.stopPropagation();
-        setPopulateInputOnEdit(true);
-        handleChangeViewMode();
-      },
-      onKeyDown: (e) => {
-        if (e.key === "Enter") {
+    const pillTextContent = `${keyLabel} ${filter.operator} ${valueLabel}`;
+    const pillText = /* @__PURE__ */ React.createElement("span", { className: cx(styles.pillText, filter.nonApplicable && styles.strikethrough) }, pillTextContent);
+    return /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        className: cx(
+          styles.combinedFilterPill,
+          readOnly && styles.readOnlyCombinedFilter,
+          (isMatchAllFilter(filter) || filter.nonApplicable) && styles.disabledPill,
+          filter.readOnly && styles.filterReadOnly
+        ),
+        onClick: (e) => {
+          e.stopPropagation();
           setPopulateInputOnEdit(true);
           handleChangeViewMode();
+        },
+        onKeyDown: (e) => {
+          if (e.key === "Enter") {
+            setPopulateInputOnEdit(true);
+            handleChangeViewMode();
+          }
+        },
+        role: readOnly ? void 0 : "button",
+        "aria-label": t(
+          "grafana-scenes.components.adhoc-filter-pill.edit-filter-with-key",
+          "Edit filter with key {{keyLabel}}",
+          {
+            keyLabel
+          }
+        ),
+        tabIndex: 0,
+        ref: pillWrapperRef
+      },
+      pillTextContent.length < LABEL_MAX_VISIBLE_LENGTH ? pillText : /* @__PURE__ */ React.createElement(Tooltip, { content: /* @__PURE__ */ React.createElement("div", { className: styles.tooltipText }, pillTextContent), placement: "top" }, pillText),
+      !readOnly && !filter.matchAllFilter && (!filter.origin || filter.origin === "dashboard") ? /* @__PURE__ */ React.createElement(
+        IconButton,
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            if (filter.origin && filter.origin === "dashboard") {
+              controller.updateToMatchAll(filter);
+            } else {
+              controller.removeFilter(filter);
+            }
+            setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
+          },
+          onKeyDownCapture: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              if (filter.origin && filter.origin === "dashboard") {
+                controller.updateToMatchAll(filter);
+              } else {
+                controller.removeFilter(filter);
+              }
+              setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
+            }
+          },
+          name: "times",
+          size: "md",
+          className: cx(styles.pillIcon, filter.nonApplicable && styles.disabledPillIcon),
+          tooltip: t(
+            "grafana-scenes.components.adhoc-filter-pill.remove-filter-with-key",
+            "Remove filter with key {{keyLabel}}",
+            {
+              keyLabel
+            }
+          )
         }
-      },
-      role: "button",
-      "aria-label": `Edit filter with key ${keyLabel}`,
-      tabIndex: 0,
-      ref: pillWrapperRef
-    }, valueLabel.length < 20 ? pillText : /* @__PURE__ */ React.createElement(Tooltip, {
-      content: /* @__PURE__ */ React.createElement("div", {
-        className: styles.tooltipText
-      }, valueLabel),
-      placement: "top"
-    }, pillText), !readOnly ? /* @__PURE__ */ React.createElement(IconButton, {
-      onClick: (e) => {
-        e.stopPropagation();
-        model._removeFilter(filter);
-        setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
-      },
-      onKeyDownCapture: (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          e.stopPropagation();
-          model._removeFilter(filter);
-          setTimeout(() => focusOnWipInputRef == null ? void 0 : focusOnWipInputRef());
+      ) : null,
+      filter.origin && filter.readOnly && /* @__PURE__ */ React.createElement(
+        Tooltip,
+        {
+          content: t("grafana-scenes.components.adhoc-filter-pill.managed-filter", "{{origin}} managed filter", {
+            origin: filter.origin
+          }),
+          placement: "bottom"
+        },
+        /* @__PURE__ */ React.createElement(Icon, { name: "lock", size: "md", className: styles.readOnlyPillIcon })
+      ),
+      filter.origin && cleanFilter && /* @__PURE__ */ React.createElement(Tooltip, { content: getOriginFilterTooltips(filter.origin).info, placement: "bottom" }, /* @__PURE__ */ React.createElement(Icon, { name: "info-circle", size: "md", className: styles.infoPillIcon })),
+      filter.origin && filter.restorable && !filter.readOnly && /* @__PURE__ */ React.createElement(
+        IconButton,
+        {
+          onClick: (e) => {
+            e.stopPropagation();
+            controller.restoreOriginalFilter(filter);
+          },
+          onKeyDownCapture: (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+              controller.restoreOriginalFilter(filter);
+            }
+          },
+          name: "history",
+          size: "md",
+          className: isMatchAllFilter(filter) ? styles.matchAllPillIcon : styles.pillIcon,
+          tooltip: getOriginFilterTooltips(filter.origin).restore
         }
-      },
-      name: "times",
-      size: "md",
-      className: styles.removeButton,
-      tooltip: `Remove filter with key ${keyLabel}`
-    }) : null);
+      ),
+      filter.nonApplicable && /* @__PURE__ */ React.createElement(
+        Tooltip,
+        {
+          content: (_d = filter.nonApplicableReason) != null ? _d : t("grafana-scenes.components.adhoc-filter-pill.non-applicable", "Filter is not applicable"),
+          placement: "bottom"
+        },
+        /* @__PURE__ */ React.createElement(Icon, { name: "info-circle", size: "md", className: styles.infoPillIcon })
+      )
+    );
   }
-  return /* @__PURE__ */ React.createElement(AdHocCombobox, {
-    filter,
-    model,
-    handleChangeViewMode,
-    focusOnWipInputRef,
-    populateInputOnEdit
-  });
+  return /* @__PURE__ */ React.createElement(
+    AdHocCombobox,
+    {
+      filter,
+      controller,
+      handleChangeViewMode,
+      focusOnWipInputRef,
+      populateInputOnEdit
+    }
+  );
 }
 const getStyles = (theme) => ({
-  combinedFilterPill: css(__spreadProps(__spreadValues({
+  combinedFilterPill: css({
     display: "flex",
     alignItems: "center",
     background: theme.colors.action.selected,
@@ -125,14 +198,14 @@ const getStyles = (theme) => ({
     color: theme.colors.text.primary,
     overflow: "hidden",
     whiteSpace: "nowrap",
-    minHeight: theme.spacing(2.75)
-  }, theme.typography.bodySmall), {
+    minHeight: theme.spacing(2.75),
+    ...theme.typography.bodySmall,
     fontWeight: theme.typography.fontWeightBold,
     cursor: "pointer",
     "&:hover": {
       background: theme.colors.action.hover
     }
-  })),
+  }),
   readOnlyCombinedFilter: css({
     paddingRight: theme.spacing(1),
     cursor: "text",
@@ -140,7 +213,14 @@ const getStyles = (theme) => ({
       background: theme.colors.action.selected
     }
   }),
-  removeButton: css({
+  filterReadOnly: css({
+    background: theme.colors.background.canvas,
+    cursor: "text",
+    "&:hover": {
+      background: theme.colors.background.canvas
+    }
+  }),
+  pillIcon: css({
     marginInline: theme.spacing(0.5),
     cursor: "pointer",
     "&:hover": {
@@ -155,7 +235,28 @@ const getStyles = (theme) => ({
   }),
   tooltipText: css({
     textAlign: "center"
-  })
+  }),
+  infoPillIcon: css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer"
+  }),
+  readOnlyPillIcon: css({
+    marginInline: theme.spacing(0.5)
+  }),
+  matchAllPillIcon: css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer",
+    color: theme.colors.text.disabled
+  }),
+  disabledPillIcon: css({
+    marginInline: theme.spacing(0.5),
+    cursor: "pointer",
+    color: theme.colors.text.disabled,
+    "&:hover": {
+      color: theme.colors.text.disabled
+    }
+  }),
+  ...getNonApplicablePillStyles(theme)
 });
 
 export { AdHocFilterPill };

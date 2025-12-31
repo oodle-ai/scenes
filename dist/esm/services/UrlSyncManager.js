@@ -7,35 +7,30 @@ import { getUrlState, syncStateFromUrl, isUrlValueEqual } from './utils.js';
 import { BusEventWithPayload } from '@grafana/data';
 import { useMemo } from 'react';
 
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
+var __typeError = (msg) => {
+  throw TypeError(msg);
 };
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
+var __accessCheck = (obj, member, msg) => member.has(obj) || __typeError("Cannot " + msg);
+var __privateGet = (obj, member, getter) => (__accessCheck(obj, member, "read from private field"), getter ? getter.call(obj) : member.get(obj));
+var __privateAdd = (obj, member, value) => member.has(obj) ? __typeError("Cannot add the same private member more than once") : member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+var __privateSet = (obj, member, value, setter) => (__accessCheck(obj, member, "write to private field"), member.set(obj, value), value);
 var _cache, _location;
 class NewSceneObjectAddedEvent extends BusEventWithPayload {
 }
 NewSceneObjectAddedEvent.type = "new-scene-object-added";
 class UrlSyncManager {
   constructor(_options = {}, locationService$1 = locationService) {
-    this._urlKeyMapper = new UniqueUrlKeyMapper();
     this._options = _options;
     this._locationService = locationService$1;
     this._paramsCache = new UrlParamsCache(locationService$1);
+    this._urlKeyMapper = new UniqueUrlKeyMapper({
+      namespace: _options.namespace,
+      excludeFromNamespace: _options.excludeFromNamespace
+    });
   }
+  /**
+   * Updates the current scene state to match URL state.
+   */
   initSync(root) {
     var _a;
     if (this._subs) {
@@ -59,7 +54,7 @@ class UrlSyncManager {
     this._lastLocation = this._locationService.getLocation();
     this.handleNewObject(this._sceneRoot);
     if (this._options.updateUrlOnInit) {
-      const urlState = getUrlState(root);
+      const urlState = getUrlState(root, this._urlKeyMapper.getOptions());
       if (isUrlStateDifferent(urlState, this._paramsCache.getParams())) {
         this._locationService.partial(urlState, true);
       }
@@ -121,14 +116,14 @@ class UrlSyncManager {
     }
   }
   getUrlState(root) {
-    return getUrlState(root);
+    return getUrlState(root, this._urlKeyMapper.getOptions());
   }
 }
 class UrlParamsCache {
   constructor(locationService) {
     this.locationService = locationService;
-    __privateAdd(this, _cache, void 0);
-    __privateAdd(this, _location, void 0);
+    __privateAdd(this, _cache);
+    __privateAdd(this, _location);
   }
   getParams() {
     const location = this.locationService.getLocation();
@@ -155,11 +150,19 @@ function useUrlSyncManager(options, locationService) {
     () => new UrlSyncManager(
       {
         updateUrlOnInit: options.updateUrlOnInit,
-        createBrowserHistorySteps: options.createBrowserHistorySteps
+        createBrowserHistorySteps: options.createBrowserHistorySteps,
+        namespace: options.namespace,
+        excludeFromNamespace: options.excludeFromNamespace
       },
       locationService
     ),
-    [options.updateUrlOnInit, options.createBrowserHistorySteps, locationService]
+    [
+      options.updateUrlOnInit,
+      options.createBrowserHistorySteps,
+      options.namespace,
+      options.excludeFromNamespace,
+      locationService
+    ]
   );
 }
 

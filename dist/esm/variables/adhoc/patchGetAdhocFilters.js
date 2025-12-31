@@ -2,7 +2,7 @@ import { getTemplateSrv, getDataSourceSrv } from '@grafana/runtime';
 import { interpolate } from '../../core/sceneGraph/sceneGraph.js';
 
 let originalGetAdhocFilters = void 0;
-let allActiveFilterSets = /* @__PURE__ */ new Set();
+const allActiveFilterSets = /* @__PURE__ */ new Set();
 function patchGetAdhocFilters(filterVar) {
   filterVar.addActivationHandler(() => {
     allActiveFilterSets.add(filterVar);
@@ -44,5 +44,5 @@ function findActiveAdHocFilterVariableByUid(dsUid) {
   return void 0;
 }
 
-export { findActiveAdHocFilterVariableByUid, patchGetAdhocFilters };
+export { allActiveFilterSets, findActiveAdHocFilterVariableByUid, patchGetAdhocFilters };
 //# sourceMappingURL=patchGetAdhocFilters.js.map

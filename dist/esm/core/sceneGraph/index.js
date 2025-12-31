@@ -1,6 +1,7 @@
 import { lookupVariable } from '../../variables/lookupVariable.js';
+import { getQueryController } from './getQueryController.js';
 import { getTimeRange } from './getTimeRange.js';
-import { getVariables, getData, getLayout, getDataLayers, interpolate, hasVariableDependencyInLoadingState, findByKey, findByKeyAndType, findObject, findAllObjects, getAncestor, findDescendents, getQueryController, getUrlSyncManager } from './sceneGraph.js';
+import { getScopes, findDescendents, getAncestor, findAllObjects, findObject, findByKeyAndType, findByKey, hasVariableDependencyInLoadingState, interpolate, getDataLayers, getLayout, getData, getVariables } from './sceneGraph.js';
 
 const sceneGraph = {
   getVariables,
@@ -16,9 +17,9 @@ const sceneGraph = {
   findObject,
   findAllObjects,
   getAncestor,
-  findDescendents,
   getQueryController,
-  getUrlSyncManager
+  findDescendents,
+  getScopes
 };
 
 export { sceneGraph };

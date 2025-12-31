@@ -3,8 +3,9 @@ import { sceneInterpolator } from '../../variables/interpolation/sceneInterpolat
 import { isDataLayer } from '../types.js';
 import { lookupVariable } from '../../variables/lookupVariable.js';
 import { getClosest } from './utils.js';
-import { isQueryController } from '../../behaviors/SceneQueryController.js';
 import { QueryVariable } from '../../variables/variants/query/QueryVariable.js';
+import { ScopesVariable } from '../../variables/variants/ScopesVariable.js';
+import { SCOPES_VARIABLE_NAME } from '../../variables/constants.js';
 
 function getVariables(sceneObject) {
   var _a;
@@ -62,7 +63,9 @@ function findObjectInternal(scene, check, alreadySearchedChild, shouldSearchUp) 
     let maybe = findObjectInternal(child, check);
     if (maybe) {
       found = maybe;
+      return false;
     }
+    return;
   });
   if (found) {
     return found;
@@ -149,30 +152,13 @@ function findDescendents(scene, descendentType) {
   const targetScenes = findAllObjects(scene, isDescendentType);
   return targetScenes.filter(isDescendentType);
 }
-function getQueryController(sceneObject) {
-  let parent = sceneObject;
-  while (parent) {
-    if (parent.state.$behaviors) {
-      for (const behavior of parent.state.$behaviors) {
-        if (isQueryController(behavior)) {
-          return behavior;
-        }
-      }
-    }
-    parent = parent.parent;
-  }
-  return void 0;
-}
-function getUrlSyncManager(sceneObject) {
-  let parent = sceneObject;
-  while (parent) {
-    if ("urlSyncManager" in parent.state) {
-      return parent.state.urlSyncManager;
-    }
-    parent = parent.parent;
+function getScopes(sceneObject) {
+  const scopesVariable = lookupVariable(SCOPES_VARIABLE_NAME, sceneObject);
+  if (scopesVariable instanceof ScopesVariable) {
+    return scopesVariable.state.scopes;
   }
   return void 0;
 }
 
-export { findAllObjects, findByKey, findByKeyAndType, findDescendents, findObject, getAncestor, getData, getDataLayers, getLayout, getQueryController, getUrlSyncManager, getVariables, hasVariableDependencyInLoadingState, interpolate };
+export { findAllObjects, findByKey, findByKeyAndType, findDescendents, findObject, getAncestor, getData, getDataLayers, getLayout, getScopes, getVariables, hasVariableDependencyInLoadingState, interpolate };
 //# sourceMappingURL=sceneGraph.js.map

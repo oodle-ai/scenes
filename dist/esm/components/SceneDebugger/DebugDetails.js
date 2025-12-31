@@ -7,16 +7,7 @@ import { isSceneObject } from '../../core/types.js';
 function DebugDetails({ node }) {
   const state = node.useState();
   const styles = useStyles2(getStyles);
-  return /* @__PURE__ */ React.createElement("div", {
-    className: styles.container
-  }, Object.keys(state).map((key) => /* @__PURE__ */ React.createElement("div", {
-    className: styles.row,
-    key
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.keyName
-  }, key), /* @__PURE__ */ React.createElement("div", {
-    className: styles.value
-  }, renderValue(key, state[key], node)))));
+  return /* @__PURE__ */ React.createElement("div", { className: styles.container }, Object.keys(state).map((key) => /* @__PURE__ */ React.createElement("div", { className: styles.row, key }, /* @__PURE__ */ React.createElement("div", { className: styles.keyName }, key), /* @__PURE__ */ React.createElement("div", { className: styles.value }, renderValue(key, state[key], node)))));
 }
 function renderValue(key, value, node) {
   if (value === null) {
@@ -24,26 +15,22 @@ function renderValue(key, value, node) {
   }
   switch (typeof value) {
     case "number":
-      return /* @__PURE__ */ React.createElement(Input, {
-        type: "number",
-        defaultValue: value,
-        onBlur: (evt) => node.setState({ [key]: evt.currentTarget.valueAsNumber })
-      });
+      return /* @__PURE__ */ React.createElement(
+        Input,
+        {
+          type: "number",
+          defaultValue: value,
+          onBlur: (evt) => node.setState({ [key]: evt.currentTarget.valueAsNumber })
+        }
+      );
     case "string":
-      return /* @__PURE__ */ React.createElement(Input, {
-        type: "text",
-        defaultValue: value,
-        onBlur: (evt) => node.setState({ [key]: evt.currentTarget.value })
-      });
+      return /* @__PURE__ */ React.createElement(Input, { type: "text", defaultValue: value, onBlur: (evt) => node.setState({ [key]: evt.currentTarget.value }) });
     case "object":
       if (isSceneObject(value)) {
         return value.constructor.name;
       }
       if (isPlainObject(value) || isArray(value)) {
-        return /* @__PURE__ */ React.createElement(JSONFormatter, {
-          json: value,
-          open: 0
-        });
+        return /* @__PURE__ */ React.createElement(JSONFormatter, { json: value, open: 0 });
       }
       return String(value);
     default:

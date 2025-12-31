@@ -3,32 +3,16 @@ import { DEFAULT_PANEL_SPAN } from './constants.js';
 import { isSceneGridRow } from './SceneGridItem.js';
 import { SceneGridLayoutRenderer } from './SceneGridLayoutRenderer.js';
 import { SceneGridRow } from './SceneGridRow.js';
+import { SceneGridLayoutDragStartEvent } from './types.js';
 import { fitPanelsInHeight } from './utils.js';
+import { isRepeatCloneOrChildOf } from '../../../utils/utils.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-const _SceneGridLayout = class extends SceneObjectBase {
+const _SceneGridLayout = class _SceneGridLayout extends SceneObjectBase {
   constructor(state) {
-    super(__spreadProps(__spreadValues({}, state), {
+    super({
+      ...state,
       children: sortChildrenByPosition(state.children)
-    }));
+    });
     this._skipOnLayoutChange = false;
     this._oldLayout = [];
     this._loadOldLayout = false;
@@ -50,7 +34,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
           height: item.h
         };
         if (!isItemSizeEqual(child.state, nextSize)) {
-          child.setState(__spreadValues({}, nextSize));
+          child.setState({
+            ...nextSize
+          });
         }
       }
       this.setState({ children: sortChildrenByPosition(this.state.children) });
@@ -68,6 +54,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     this.onDragStop = (gridLayout, o, updatedItem) => {
       const sceneChild = this.getSceneLayoutChild(updatedItem.i);
       gridLayout = sortGridLayout(gridLayout);
+      const indexOfUpdatedItem = gridLayout.findIndex((item) => item.i === updatedItem.i);
+      let newParent = this.findGridItemSceneParent(gridLayout, indexOfUpdatedItem - 1);
+      let newChildren = this.state.children;
       for (let i = 0; i < gridLayout.length; i++) {
         const gridItem = gridLayout[i];
         const child = this.getSceneLayoutChild(gridItem.i);
@@ -79,22 +68,25 @@ const _SceneGridLayout = class extends SceneObjectBase {
           });
         }
       }
-      const indexOfUpdatedItem = gridLayout.findIndex((item) => item.i === updatedItem.i);
-      let newParent = this.findGridItemSceneParent(gridLayout, indexOfUpdatedItem - 1);
-      let newChildren = this.state.children;
+      if (newParent instanceof SceneGridRow && isRepeatCloneOrChildOf(newParent)) {
+        this._loadOldLayout = true;
+      }
       if (sceneChild instanceof SceneGridRow && newParent instanceof SceneGridRow) {
         if (!this.isRowDropValid(gridLayout, updatedItem, indexOfUpdatedItem)) {
           this._loadOldLayout = true;
         }
         newParent = this;
       }
-      if (newParent !== sceneChild.parent) {
+      if (newParent !== sceneChild.parent && !this._loadOldLayout) {
         newChildren = this.moveChildTo(sceneChild, newParent);
       }
       this.setState({ children: sortChildrenByPosition(newChildren) });
       this._skipOnLayoutChange = true;
     };
   }
+  /**
+   * SceneLayout interface. Used for example by VizPanelRenderer
+   */
   isDraggable() {
     var _a;
     return (_a = this.state.isDraggable) != null ? _a : false;
@@ -104,6 +96,27 @@ const _SceneGridLayout = class extends SceneObjectBase {
   }
   getDragClassCancel() {
     return `grid-drag-cancel`;
+  }
+  getDragHooks() {
+    return {
+      onDragStart: (evt, panel) => {
+        this.publishEvent(new SceneGridLayoutDragStartEvent({ evt, panel }), true);
+      }
+    };
+  }
+  adjustYPositions(after, amount) {
+    for (const child of this.state.children) {
+      if (child.state.y > after) {
+        child.setState({ y: child.state.y + amount });
+      }
+      if (child instanceof SceneGridRow) {
+        for (const rowChild of child.state.children) {
+          if (rowChild.state.y > after) {
+            rowChild.setState({ y: rowChild.state.y + amount });
+          }
+        }
+      }
+    }
   }
   toggleRow(row) {
     var _a, _b;
@@ -124,7 +137,7 @@ const _SceneGridLayout = class extends SceneObjectBase {
     const yDiff = firstPanelYPos - (rowY + 1);
     let yMax = rowY;
     for (const panel of rowChildren) {
-      const newSize = __spreadValues({}, panel.state);
+      const newSize = { ...panel.state };
       newSize.y = (_b = newSize.y) != null ? _b : rowY;
       newSize.y -= yDiff;
       if (newSize.y !== panel.state.y) {
@@ -151,6 +164,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
   ignoreLayoutChange(shouldIgnore) {
     this._skipOnLayoutChange = shouldIgnore;
   }
+  /**
+   * Will also scan row children and return child of the row
+   */
   getSceneLayoutChild(key) {
     for (const child of this.state.children) {
       if (child.state.key === key) {
@@ -171,6 +187,10 @@ const _SceneGridLayout = class extends SceneObjectBase {
       y: child.state.y + amount
     });
   }
+  /**
+   *  We assume the layout array is sorted according to y pos, and walk upwards until we find a row.
+   *  If it is collapsed there is no row to add it to. The default is then to return the SceneGridLayout itself
+   */
   findGridItemSceneParent(layout, startAt) {
     for (let i = startAt; i >= 0; i--) {
       const gridItem = layout[i];
@@ -184,6 +204,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     return this;
   }
+  /**
+   * Helper func to check if we are dropping a row in between panels of another row
+   */
   isRowDropValid(gridLayout, updatedItem, indexOfUpdatedItem) {
     if (gridLayout[gridLayout.length - 1].i === updatedItem.i) {
       return true;
@@ -196,6 +219,9 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     return false;
   }
+  /**
+   * This likely needs a slightly different approach. Where we clone or deactivate or and re-activate the moved child
+   */
   moveChildTo(child, target) {
     const currentParent = child.parent;
     let rootChildren = this.state.children;
@@ -224,16 +250,19 @@ const _SceneGridLayout = class extends SceneObjectBase {
     return rootChildren;
   }
   toGridCell(child) {
-    var _a, _b;
     const size = child.state;
-    let x = (_a = size.x) != null ? _a : 0;
-    let y = (_b = size.y) != null ? _b : 0;
-    const w = Number.isInteger(Number(size.width)) ? Number(size.width) : DEFAULT_PANEL_SPAN;
-    const h = Number.isInteger(Number(size.height)) ? Number(size.height) : DEFAULT_PANEL_SPAN;
+    let x = Number.isFinite(Number(size.x)) ? Number(size.x) : 0;
+    let y = Number.isFinite(Number(size.y)) ? Number(size.y) : 0;
+    const w = Number.isFinite(Number(size.width)) ? Number(size.width) : DEFAULT_PANEL_SPAN;
+    const h = Number.isFinite(Number(size.height)) ? Number(size.height) : DEFAULT_PANEL_SPAN;
     let isDraggable = child.state.isDraggable;
     let isResizable = child.state.isResizable;
     if (child instanceof SceneGridRow) {
       isDraggable = child.state.isCollapsed ? true : false;
+      isResizable = false;
+    }
+    if (isRepeatCloneOrChildOf(child)) {
+      isDraggable = false;
       isResizable = false;
     }
     return { i: child.state.key, x, y, h, w, isResizable, isDraggable };
@@ -254,14 +283,14 @@ const _SceneGridLayout = class extends SceneObjectBase {
     }
     if (width < 768) {
       this._skipOnLayoutChange = true;
-      return cells.map((cell) => __spreadProps(__spreadValues({}, cell), { w: 24 }));
+      return cells.map((cell) => ({ ...cell, w: 24 }));
     }
     this._skipOnLayoutChange = false;
     return cells;
   }
 };
+_SceneGridLayout.Component = SceneGridLayoutRenderer;
 let SceneGridLayout = _SceneGridLayout;
-SceneGridLayout.Component = SceneGridLayoutRenderer;
 function isItemSizeEqual(a, b) {
   return a.x === b.x && a.y === b.y && a.width === b.width && a.height === b.height;
 }

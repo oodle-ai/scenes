@@ -8,9 +8,7 @@ class SceneControlsSpacer extends SceneObjectBase {
   }
 }
 SceneControlsSpacer.Component = (_props) => {
-  return /* @__PURE__ */ React.createElement("div", {
-    style: { flexGrow: 1 }
-  });
+  return /* @__PURE__ */ React.createElement("div", { style: { flexGrow: 1 } });
 };
 
 export { SceneControlsSpacer };

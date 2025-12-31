@@ -1,4 +1,4 @@
-import { useFloating, autoUpdate, offset, flip, size, useRole, useDismiss, useListNavigation, useInteractions } from '@floating-ui/react';
+import { useFloating, offset, flip, size, autoUpdate, useRole, useDismiss, useListNavigation, useInteractions } from '@floating-ui/react';
 
 const MAX_MENU_HEIGHT = 300;
 const useFloatingInteractions = ({
@@ -30,6 +30,7 @@ const useFloatingInteractions = ({
   });
   const role = useRole(context, { role: "listbox" });
   const dismiss = useDismiss(context, {
+    // if outside click lands on operator pill, then ignore outside click
     outsidePress: (event) => {
       var _a;
       if (event.currentTarget instanceof Element) {

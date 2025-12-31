@@ -2,7 +2,8 @@ import { VizPanel } from '../components/VizPanel/VizPanel.js';
 import { SceneObjectBase } from '../core/SceneObjectBase.js';
 import { sceneGraph } from '../core/sceneGraph/index.js';
 
-const _LiveNowTimer = class extends SceneObjectBase {
+const _LiveNowTimer = class _LiveNowTimer extends SceneObjectBase {
+  // ms
   constructor({ enabled = false }) {
     super({ enabled });
     this.timerId = void 0;
@@ -37,8 +38,8 @@ const _LiveNowTimer = class extends SceneObjectBase {
     return this.state.enabled;
   }
 };
+_LiveNowTimer.REFRESH_RATE = 100;
 let LiveNowTimer = _LiveNowTimer;
-LiveNowTimer.REFRESH_RATE = 100;
 
 export { LiveNowTimer };
 //# sourceMappingURL=LiveNowTimer.js.map

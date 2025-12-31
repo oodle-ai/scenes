@@ -1,5 +1,5 @@
-import { rangeUtil, dateTime, FieldType } from '@grafana/data';
-import { config } from '@grafana/runtime';
+import { t, Trans } from '@grafana/i18n';
+import { rangeUtil, dateTime } from '@grafana/data';
 import { useStyles2, ButtonGroup, ToolbarButton, Checkbox, ButtonSelect } from '@grafana/ui';
 import React from 'react';
 import { sceneGraph } from '../core/sceneGraph/index.js';
@@ -10,25 +10,6 @@ import { parseUrlParam } from '../utils/parseUrlParam.js';
 import { css } from '@emotion/css';
 import { of } from 'rxjs';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 const PREVIOUS_PERIOD_VALUE = "__previousPeriod";
 const NO_PERIOD_VALUE = "__noPeriod";
 const PREVIOUS_PERIOD_COMPARE_OPTION = {
@@ -36,7 +17,7 @@ const PREVIOUS_PERIOD_COMPARE_OPTION = {
   value: PREVIOUS_PERIOD_VALUE
 };
 const NO_COMPARE_OPTION = {
-  label: "No comparison",
+  label: "None",
   value: NO_PERIOD_VALUE
 };
 const DEFAULT_COMPARE_OPTIONS = [
@@ -46,7 +27,7 @@ const DEFAULT_COMPARE_OPTIONS = [
 ];
 class SceneTimeRangeCompare extends SceneObjectBase {
   constructor(state) {
-    super(__spreadValues({ compareOptions: DEFAULT_COMPARE_OPTIONS }, state));
+    super({ compareOptions: DEFAULT_COMPARE_OPTIONS, ...state });
     this._urlSync = new SceneObjectUrlSyncConfig(this, { keys: ["compareWith"] });
     this._onActivate = () => {
       const sceneTimeRange = sceneGraph.getTimeRange(this);
@@ -86,6 +67,7 @@ class SceneTimeRangeCompare extends SceneObjectBase {
     };
     this.addActivationHandler(this._onActivate);
   }
+  // Get a time shifted request to compare with the primary request.
   getExtraQueries(request) {
     const extraQueries = [];
     const compareRange = this.getCompareTimeRange(request.range);
@@ -95,15 +77,17 @@ class SceneTimeRangeCompare extends SceneObjectBase {
     const targets = request.targets.filter((query) => query.timeRangeCompare !== false);
     if (targets.length) {
       extraQueries.push({
-        req: __spreadProps(__spreadValues({}, request), {
+        req: {
+          ...request,
           targets,
           range: compareRange
-        }),
+        },
         processor: timeShiftAlignmentProcessor
       });
     }
     return extraQueries;
   }
+  // The query runner should rerun the comparison query if the compareWith value has changed and there are queries that haven't opted out of TWC
   shouldRerun(prev, next, queries) {
     return prev.compareWith !== next.compareWith && queries.find((query) => query.timeRangeCompare !== false) !== void 0;
   }
@@ -159,33 +143,21 @@ const timeShiftAlignmentProcessor = (primary, secondary) => {
   const diff = secondary.timeRange.from.diff(primary.timeRange.from);
   secondary.series.forEach((series) => {
     series.refId = getCompareSeriesRefId(series.refId || "");
-    series.meta = __spreadProps(__spreadValues({}, series.meta), {
+    series.meta = {
+      ...series.meta,
+      // @ts-ignore Remove when https://github.com/grafana/grafana/pull/71129 is released
       timeCompare: {
         diffMs: diff,
         isTimeShiftQuery: true
       }
-    });
-    series.fields.forEach((field) => {
-      if (field.type === FieldType.time) {
-        field.values = field.values.map((v) => {
-          return diff < 0 ? v - diff : v + diff;
-        });
-      }
-      field.config = __spreadProps(__spreadValues({}, field.config), {
-        color: {
-          mode: "fixed",
-          fixedColor: config.theme.palette.gray60
-        }
-      });
-      return field;
-    });
+    };
   });
   return of(secondary);
 };
 function SceneTimeRangeCompareRenderer({ model }) {
   var _a;
   const styles = useStyles2(getStyles);
-  const { compareWith, compareOptions } = model.useState();
+  const { compareWith, compareOptions, hideCheckbox } = model.useState();
   const [previousCompare, setPreviousCompare] = React.useState(compareWith);
   const previousValue = (_a = compareOptions.find(({ value: value2 }) => value2 === previousCompare)) != null ? _a : PREVIOUS_PERIOD_COMPARE_OPTION;
   const value = compareOptions.find(({ value: value2 }) => value2 === compareWith);
@@ -198,31 +170,39 @@ function SceneTimeRangeCompareRenderer({ model }) {
       model.onCompareWithChanged(previousValue.value);
     }
   };
-  return /* @__PURE__ */ React.createElement(ButtonGroup, null, /* @__PURE__ */ React.createElement(ToolbarButton, {
-    variant: "canvas",
-    tooltip: "Enable time frame comparison",
-    onClick: (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      onClick();
+  const selectValue = hideCheckbox && !compareWith ? NO_COMPARE_OPTION : value;
+  const showSelect = hideCheckbox || enabled;
+  const displayValue = hideCheckbox && selectValue ? {
+    ...selectValue,
+    label: `Comparison: ${selectValue.label}`
+  } : selectValue;
+  return /* @__PURE__ */ React.createElement(ButtonGroup, null, !hideCheckbox && /* @__PURE__ */ React.createElement(
+    ToolbarButton,
+    {
+      variant: "canvas",
+      tooltip: t(
+        "grafana-scenes.components.scene-time-range-compare-renderer.button-tooltip",
+        "Enable time frame comparison"
+      ),
+      onClick: (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick();
+      }
+    },
+    /* @__PURE__ */ React.createElement(Checkbox, { label: " ", value: enabled, onClick }),
+    /* @__PURE__ */ React.createElement(Trans, { i18nKey: "grafana-scenes.components.scene-time-range-compare-renderer.button-label" }, "Comparison")
+  ), showSelect ? /* @__PURE__ */ React.createElement(
+    ButtonSelect,
+    {
+      variant: "canvas",
+      value: displayValue,
+      options: compareOptions,
+      onChange: (v) => {
+        model.onCompareWithChanged(v.value);
+      }
     }
-  }, /* @__PURE__ */ React.createElement(Checkbox, {
-    label: " ",
-    value: enabled,
-    onClick
-  }), "Comparison"), enabled ? /* @__PURE__ */ React.createElement(ButtonSelect, {
-    variant: "canvas",
-    value,
-    options: compareOptions,
-    onChange: (v) => {
-      model.onCompareWithChanged(v.value);
-    }
-  }) : /* @__PURE__ */ React.createElement(ToolbarButton, {
-    className: styles.previewButton,
-    disabled: true,
-    variant: "canvas",
-    isOpen: false
-  }, previousValue.label));
+  ) : /* @__PURE__ */ React.createElement(ToolbarButton, { className: styles.previewButton, disabled: true, variant: "canvas", isOpen: false }, previousValue.label));
 }
 function getStyles(theme) {
   return {

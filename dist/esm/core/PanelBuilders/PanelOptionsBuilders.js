@@ -1,44 +1,44 @@
-import { defaultOptions } from '@grafana/schema/dist/esm/raw/composable/barchart/panelcfg/x/BarChartPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$1 } from '@grafana/schema/dist/esm/raw/composable/bargauge/panelcfg/x/BarGaugePanelCfg_types.gen';
-import { defaultOptions as defaultOptions$2 } from '@grafana/schema/dist/esm/raw/composable/datagrid/panelcfg/x/DatagridPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$3 } from '@grafana/schema/dist/esm/raw/composable/gauge/panelcfg/x/GaugePanelCfg_types.gen';
-import { defaultOptions as defaultOptions$4 } from '@grafana/schema/dist/esm/raw/composable/geomap/panelcfg/x/GeomapPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$5 } from '@grafana/schema/dist/esm/raw/composable/heatmap/panelcfg/x/HeatmapPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$6 } from '@grafana/schema/dist/esm/raw/composable/histogram/panelcfg/x/HistogramPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$e } from '@grafana/schema/dist/esm/raw/composable/barchart/panelcfg/x/BarChartPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$d } from '@grafana/schema/dist/esm/raw/composable/bargauge/panelcfg/x/BarGaugePanelCfg_types.gen';
+import { defaultOptions as defaultOptions$c } from '@grafana/schema/dist/esm/raw/composable/datagrid/panelcfg/x/DatagridPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$b } from '@grafana/schema/dist/esm/raw/composable/gauge/panelcfg/x/GaugePanelCfg_types.gen';
+import { defaultOptions as defaultOptions$a } from '@grafana/schema/dist/esm/raw/composable/geomap/panelcfg/x/GeomapPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$9 } from '@grafana/schema/dist/esm/raw/composable/heatmap/panelcfg/x/HeatmapPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$8 } from '@grafana/schema/dist/esm/raw/composable/histogram/panelcfg/x/HistogramPanelCfg_types.gen';
 import { defaultOptions as defaultOptions$7 } from '@grafana/schema/dist/esm/raw/composable/news/panelcfg/x/NewsPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$8 } from '@grafana/schema/dist/esm/raw/composable/piechart/panelcfg/x/PieChartPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$9 } from '@grafana/schema/dist/esm/raw/composable/stat/panelcfg/x/StatPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$a } from '@grafana/schema/dist/esm/raw/composable/statetimeline/panelcfg/x/StateTimelinePanelCfg_types.gen';
-import { defaultOptions as defaultOptions$b } from '@grafana/schema/dist/esm/raw/composable/statushistory/panelcfg/x/StatusHistoryPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$c } from '@grafana/schema/dist/esm/raw/composable/table/panelcfg/x/TablePanelCfg_types.gen';
-import { defaultOptions as defaultOptions$d } from '@grafana/schema/dist/esm/raw/composable/text/panelcfg/x/TextPanelCfg_types.gen';
-import { defaultOptions as defaultOptions$e } from '@grafana/schema/dist/esm/raw/composable/xychart/panelcfg/x/XYChartPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$6 } from '@grafana/schema/dist/esm/raw/composable/piechart/panelcfg/x/PieChartPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$5 } from '@grafana/schema/dist/esm/raw/composable/stat/panelcfg/x/StatPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$4 } from '@grafana/schema/dist/esm/raw/composable/statetimeline/panelcfg/x/StateTimelinePanelCfg_types.gen';
+import { defaultOptions as defaultOptions$3 } from '@grafana/schema/dist/esm/raw/composable/statushistory/panelcfg/x/StatusHistoryPanelCfg_types.gen';
+import { defaultOptions as defaultOptions$2 } from '@grafana/schema/dist/esm/raw/composable/table/panelcfg/x/TablePanelCfg_types.gen';
+import { defaultOptions as defaultOptions$1 } from '@grafana/schema/dist/esm/raw/composable/text/panelcfg/x/TextPanelCfg_types.gen';
+import { defaultOptions } from '@grafana/schema/dist/esm/raw/composable/xychart/panelcfg/x/XYChartPanelCfg_types.gen';
 import { PanelOptionsBuilder } from './PanelOptionsBuilder.js';
 
 const PanelOptionsBuilders = {
   barchart() {
-    return new PanelOptionsBuilder(() => defaultOptions);
+    return new PanelOptionsBuilder(() => defaultOptions$e);
   },
   bargauge() {
-    return new PanelOptionsBuilder(() => defaultOptions$1);
+    return new PanelOptionsBuilder(() => defaultOptions$d);
   },
   datagrid() {
-    return new PanelOptionsBuilder(() => defaultOptions$2);
+    return new PanelOptionsBuilder(() => defaultOptions$c);
   },
   flamegraph() {
     return new PanelOptionsBuilder();
   },
   gauge() {
-    return new PanelOptionsBuilder(() => defaultOptions$3);
+    return new PanelOptionsBuilder(() => defaultOptions$b);
   },
   geomap() {
-    return new PanelOptionsBuilder(() => defaultOptions$4);
+    return new PanelOptionsBuilder(() => defaultOptions$a);
   },
   heatmap() {
-    return new PanelOptionsBuilder(() => defaultOptions$5);
+    return new PanelOptionsBuilder(() => defaultOptions$9);
   },
   histogram() {
-    return new PanelOptionsBuilder(() => defaultOptions$6);
+    return new PanelOptionsBuilder(() => defaultOptions$8);
   },
   logs() {
     return new PanelOptionsBuilder();
@@ -50,22 +50,22 @@ const PanelOptionsBuilders = {
     return new PanelOptionsBuilder();
   },
   piechart() {
-    return new PanelOptionsBuilder(() => defaultOptions$8);
+    return new PanelOptionsBuilder(() => defaultOptions$6);
   },
   stat() {
-    return new PanelOptionsBuilder(() => defaultOptions$9);
+    return new PanelOptionsBuilder(() => defaultOptions$5);
   },
   statetimeline() {
-    return new PanelOptionsBuilder(() => defaultOptions$a);
+    return new PanelOptionsBuilder(() => defaultOptions$4);
   },
   statushistory() {
-    return new PanelOptionsBuilder(() => defaultOptions$b);
+    return new PanelOptionsBuilder(() => defaultOptions$3);
   },
   table() {
-    return new PanelOptionsBuilder(() => defaultOptions$c);
+    return new PanelOptionsBuilder(() => defaultOptions$2);
   },
   text() {
-    return new PanelOptionsBuilder(() => defaultOptions$d);
+    return new PanelOptionsBuilder(() => defaultOptions$1);
   },
   timeseries() {
     return new PanelOptionsBuilder();
@@ -77,7 +77,7 @@ const PanelOptionsBuilders = {
     return new PanelOptionsBuilder();
   },
   xychart() {
-    return new PanelOptionsBuilder(() => defaultOptions$e);
+    return new PanelOptionsBuilder(() => defaultOptions);
   }
 };
 

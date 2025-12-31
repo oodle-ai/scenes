@@ -1,9 +1,12 @@
 import React, { createContext } from 'react';
-import { Switch, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { SceneObjectBase } from '../../core/SceneObjectBase.js';
-import { renderSceneComponentWithRouteProps } from './utils.js';
 
 class SceneApp extends SceneObjectBase {
+  constructor() {
+    super(...arguments);
+    this._renderBeforeActivation = true;
+  }
   enrichDataRequest() {
     return {
       app: this.state.name || "app"
@@ -12,14 +15,7 @@ class SceneApp extends SceneObjectBase {
 }
 SceneApp.Component = ({ model }) => {
   const { pages } = model.useState();
-  return /* @__PURE__ */ React.createElement(SceneAppContext.Provider, {
-    value: model
-  }, /* @__PURE__ */ React.createElement(Switch, null, pages.map((page) => /* @__PURE__ */ React.createElement(Route, {
-    key: page.state.url,
-    exact: false,
-    path: page.state.url,
-    render: (props) => renderSceneComponentWithRouteProps(page, props)
-  }))));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(SceneAppContext.Provider, { value: model }, /* @__PURE__ */ React.createElement(Routes, null, pages.map((page) => /* @__PURE__ */ React.createElement(Route, { key: page.state.url, path: page.state.routePath, element: /* @__PURE__ */ React.createElement(page.Component, { model: page }) })))));
 };
 const SceneAppContext = createContext(null);
 const sceneAppCache = /* @__PURE__ */ new Map();

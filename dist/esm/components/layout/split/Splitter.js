@@ -1,25 +1,10 @@
+import { t } from '@grafana/i18n';
 import { cx, css } from '@emotion/css';
 import { useStyles2 } from '@grafana/ui';
 import { clamp, throttle } from 'lodash';
 import React, { useRef, useCallback, useLayoutEffect } from 'react';
 import { useUniqueId } from '../LazyLoader.js';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 const PIXELS_PER_MS = 0.3;
 const VERTICAL_KEYS = /* @__PURE__ */ new Set(["ArrowUp", "ArrowDown"]);
 const HORIZONTAL_KEYS = /* @__PURE__ */ new Set(["ArrowLeft", "ArrowRight"]);
@@ -241,48 +226,66 @@ function Splitter({
   const id = useUniqueId();
   const secondAvailable = kids.length === 2;
   const visibilitySecond = secondAvailable ? "visible" : "hidden";
-  return /* @__PURE__ */ React.createElement("div", {
-    ref: containerRef,
-    className: styles.container,
-    style: {
-      flexDirection: direction
-    }
-  }, /* @__PURE__ */ React.createElement("div", {
-    ref: firstPaneRef,
-    className: styles.panel,
-    style: __spreadValues({
-      flexGrow: initialSize === "auto" ? 0.5 : clamp(initialSize, 0, 1),
-      [minDimProp]: "min-content"
-    }, primaryPaneStyles),
-    id: `start-panel-${id}`
-  }, kids[0]), kids[1] && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", {
-    ref: splitterRef,
-    style: { [measurementProp]: `${handleSize}px` },
-    className: cx(styles.handle, { [styles.handleHorizontal]: direction === "column" }),
-    onPointerUp,
-    onPointerDown,
-    onPointerMove,
-    onKeyDown,
-    onKeyUp,
-    onDoubleClick,
-    onBlur,
-    role: "separator",
-    "aria-valuemin": 0,
-    "aria-valuemax": 100,
-    "aria-valuenow": 50,
-    "aria-controls": `start-panel-${id}`,
-    "aria-label": "Pane resize widget",
-    tabIndex: 0
-  }), /* @__PURE__ */ React.createElement("div", {
-    ref: secondPaneRef,
-    className: styles.panel,
-    style: __spreadValues({
-      flexGrow: initialSize === "auto" ? 0.5 : clamp(1 - initialSize, 0, 1),
-      [minDimProp]: "min-content",
-      visibility: `${visibilitySecond}`
-    }, secondaryPaneStyles),
-    id: `end-panel-${id}`
-  }, kids[1])));
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      ref: containerRef,
+      className: styles.container,
+      style: {
+        flexDirection: direction
+      }
+    },
+    /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        ref: firstPaneRef,
+        className: styles.panel,
+        style: {
+          flexGrow: initialSize === "auto" ? 0.5 : clamp(initialSize, 0, 1),
+          [minDimProp]: "min-content",
+          ...primaryPaneStyles
+        },
+        id: `start-panel-${id}`
+      },
+      kids[0]
+    ),
+    kids[1] && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        ref: splitterRef,
+        style: { [measurementProp]: `${handleSize}px` },
+        className: cx(styles.handle, { [styles.handleHorizontal]: direction === "column" }),
+        onPointerUp,
+        onPointerDown,
+        onPointerMove,
+        onKeyDown,
+        onKeyUp,
+        onDoubleClick,
+        onBlur,
+        role: "separator",
+        "aria-valuemin": 0,
+        "aria-valuemax": 100,
+        "aria-valuenow": 50,
+        "aria-controls": `start-panel-${id}`,
+        "aria-label": t("grafana-scenes.components.splitter.aria-label-pane-resize-widget", "Pane resize widget"),
+        tabIndex: 0
+      }
+    ), /* @__PURE__ */ React.createElement(
+      "div",
+      {
+        ref: secondPaneRef,
+        className: styles.panel,
+        style: {
+          flexGrow: initialSize === "auto" ? 0.5 : clamp(1 - initialSize, 0, 1),
+          [minDimProp]: "min-content",
+          visibility: `${visibilitySecond}`,
+          ...secondaryPaneStyles
+        },
+        id: `end-panel-${id}`
+      },
+      kids[1]
+    ))
+  );
 }
 function getStyles(theme) {
   return {

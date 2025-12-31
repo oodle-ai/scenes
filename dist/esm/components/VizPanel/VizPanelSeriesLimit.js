@@ -1,3 +1,4 @@
+import { t } from '@grafana/i18n';
 import { css } from '@emotion/css';
 import { useStyles2, Icon, Tooltip, Button } from '@grafana/ui';
 import React from 'react';
@@ -9,21 +10,29 @@ function VizPanelSeriesLimit({ data, showAll, seriesLimit, onShowAllSeries }) {
     return null;
   }
   const buttonText = showAll ? "Restore limit" : `Show all ${seriesCount}`;
-  return /* @__PURE__ */ React.createElement("div", {
-    className: styles.timeSeriesDisclaimer
-  }, !showAll && /* @__PURE__ */ React.createElement("span", {
-    className: styles.warningMessage
-  }, /* @__PURE__ */ React.createElement(Icon, {
-    title: `Showing only ${seriesLimit} series`,
-    name: "exclamation-triangle",
-    "aria-hidden": "true"
-  })), /* @__PURE__ */ React.createElement(Tooltip, {
-    content: "Rendering too many series in a single panel may impact performance and make data harder to read."
-  }, /* @__PURE__ */ React.createElement(Button, {
-    variant: "secondary",
-    size: "sm",
-    onClick: onShowAllSeries
-  }, buttonText)));
+  return /* @__PURE__ */ React.createElement("div", { className: styles.timeSeriesDisclaimer }, !showAll && /* @__PURE__ */ React.createElement("span", { className: styles.warningMessage }, /* @__PURE__ */ React.createElement(
+    Icon,
+    {
+      title: t(
+        "grafana-scenes.components.viz-panel-series-limit.warning-message",
+        `Showing only {{seriesLimit}} series`,
+        {
+          seriesLimit
+        }
+      ),
+      name: "exclamation-triangle",
+      "aria-hidden": "true"
+    }
+  )), /* @__PURE__ */ React.createElement(
+    Tooltip,
+    {
+      content: t(
+        "grafana-scenes.components.viz-panel-series-limit.content-rendering-series-single-panel-impact-performance",
+        "Rendering too many series in a single panel may impact performance and make data harder to read."
+      )
+    },
+    /* @__PURE__ */ React.createElement(Button, { variant: "secondary", size: "sm", onClick: onShowAllSeries }, buttonText)
+  ));
 }
 const getStyles = (theme) => ({
   timeSeriesDisclaimer: css({

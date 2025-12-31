@@ -23,7 +23,11 @@ async function getExploreURL(data, model, timeRange, transform) {
     return (_a2 = transform == null ? void 0 : transform(q)) != null ? _a2 : q;
   });
   const queries = interpolatedQueries != null ? interpolatedQueries : [];
-  const datasource = (_d = (_c = queries.find((query) => {
+  const hasMixedDatasources = new Set(queries.map((q) => {
+    var _a2;
+    return (_a2 = q.datasource) == null ? void 0 : _a2.uid;
+  })).size > 1;
+  let datasource = hasMixedDatasources ? "-- Mixed --" : (_d = (_c = queries.find((query) => {
     var _a2;
     return !!((_a2 = query.datasource) == null ? void 0 : _a2.uid);
   })) == null ? void 0 : _c.datasource) == null ? void 0 : _d.uid;

@@ -1,19 +1,14 @@
 import React, { forwardRef, useLayoutEffect } from 'react';
 import { AdHocCombobox } from './AdHocFiltersCombobox.js';
 
-const AdHocFiltersAlwaysWipCombobox = forwardRef(function AdHocFiltersAlwaysWipCombobox2({ model }, parentRef) {
-  const { _wip } = model.useState();
+const AdHocFiltersAlwaysWipCombobox = forwardRef(function AdHocFiltersAlwaysWipCombobox2({ controller }, parentRef) {
+  const { wip } = controller.useState();
   useLayoutEffect(() => {
-    if (!_wip) {
-      model._addWip();
+    if (!wip) {
+      controller.addWip();
     }
-  }, [_wip]);
-  return /* @__PURE__ */ React.createElement(AdHocCombobox, {
-    model,
-    filter: _wip,
-    isAlwaysWip: true,
-    ref: parentRef
-  });
+  }, [wip]);
+  return /* @__PURE__ */ React.createElement(AdHocCombobox, { controller, filter: wip, isAlwaysWip: true, ref: parentRef });
 });
 
 export { AdHocFiltersAlwaysWipCombobox };

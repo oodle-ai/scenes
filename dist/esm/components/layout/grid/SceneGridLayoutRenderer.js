@@ -1,42 +1,11 @@
 import React, { useRef, useEffect } from 'react';
 import ReactGridLayout from 'react-grid-layout';
-import { GRID_CELL_VMARGIN, GRID_COLUMN_COUNT, GRID_CELL_HEIGHT } from './constants.js';
+import { GRID_CELL_HEIGHT, GRID_COLUMN_COUNT, GRID_CELL_VMARGIN } from './constants.js';
 import { LazyLoader } from '../LazyLoader.js';
 import { useStyles2 } from '@grafana/ui';
-import { cx, css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useMeasure } from 'react-use';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
-var __objRest = (source, exclude) => {
-  var target = {};
-  for (var prop in source)
-    if (__hasOwnProp.call(source, prop) && exclude.indexOf(prop) < 0)
-      target[prop] = source[prop];
-  if (source != null && __getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(source)) {
-      if (exclude.indexOf(prop) < 0 && __propIsEnum.call(source, prop))
-        target[prop] = source[prop];
-    }
-  return target;
-};
 function SceneGridLayoutRenderer({ model }) {
   const { children, isLazy, isDraggable, isResizable } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
@@ -50,68 +19,89 @@ function SceneGridLayoutRenderer({ model }) {
       return null;
     }
     const layout = model.buildGridLayout(width2, height2);
-    const children2 = React.useMemo(() => layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(GridItemWrapper, {
-      key: gridItem.i,
-      grid: model,
-      layoutItem: gridItem,
-      index,
-      isLazy,
-      totalCount: layout.length
-    })), [layout, model, isLazy]);
-    return /* @__PURE__ */ React.createElement("div", {
-      ref,
-      style: { width: `${width2}px`, height: "100%" },
-      className: "react-grid-layout"
-    }, /* @__PURE__ */ React.createElement(ReactGridLayout, {
-      width: width2,
-      isDraggable: isDraggable && width2 > 768,
-      isResizable: isResizable != null ? isResizable : false,
-      containerPadding: [0, 0],
-      useCSSTransforms: true,
-      margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
-      cols: GRID_COLUMN_COUNT,
-      rowHeight: GRID_CELL_HEIGHT,
-      draggableHandle: `.grid-drag-handle-${model.state.key}`,
-      draggableCancel: ".grid-drag-cancel",
-      layout,
-      onDragStart: model.onDragStart,
-      onDragStop: model.onDragStop,
-      onResizeStop: model.onResizeStop,
-      onLayoutChange: model.onLayoutChange,
-      isBounded: false,
-      resizeHandle: /* @__PURE__ */ React.createElement(ResizeHandle, null)
-    }, children2));
+    return (
+      /**
+       * The children is using a width of 100% so we need to guarantee that it is wrapped
+       * in an element that has the calculated size given by the AutoSizer. The AutoSizer
+       * has a width of 0 and will let its content overflow its div.
+       */
+      /* @__PURE__ */ React.createElement("div", { ref, style: { width: `${width2}px`, height: "100%" }, className: "react-grid-layout" }, /* @__PURE__ */ React.createElement(
+        ReactGridLayout,
+        {
+          width: width2,
+          isDraggable: isDraggable && width2 > 768,
+          isResizable: isResizable != null ? isResizable : false,
+          containerPadding: [0, 0],
+          useCSSTransforms: true,
+          margin: [GRID_CELL_VMARGIN, GRID_CELL_VMARGIN],
+          cols: GRID_COLUMN_COUNT,
+          rowHeight: GRID_CELL_HEIGHT,
+          draggableHandle: `.grid-drag-handle-${model.state.key}`,
+          draggableCancel: ".grid-drag-cancel",
+          layout,
+          onDragStart: model.onDragStart,
+          onDragStop: model.onDragStop,
+          onResizeStop: model.onResizeStop,
+          onLayoutChange: model.onLayoutChange,
+          isBounded: false,
+          resizeHandle: /* @__PURE__ */ React.createElement(ResizeHandle, null)
+        },
+        layout.map((gridItem, index) => /* @__PURE__ */ React.createElement(
+          GridItemWrapper,
+          {
+            key: gridItem.i,
+            grid: model,
+            layoutItem: gridItem,
+            index,
+            isLazy,
+            totalCount: layout.length
+          }
+        ))
+      ))
+    );
   };
-  return /* @__PURE__ */ React.createElement("div", {
-    ref: outerDivRef,
-    style: { flex: "1 1 auto", position: "relative", zIndex: 1, width: "100%" }
-  }, renderGrid(width, height));
+  return /* @__PURE__ */ React.createElement("div", { ref: outerDivRef, className: gridWrapperClass }, renderGrid(width, height));
 }
+const gridWrapperClass = css({
+  flex: "1 1 auto",
+  position: "relative",
+  zIndex: 1,
+  width: "100%"
+});
 const GridItemWrapper = React.forwardRef((props, ref) => {
-  var _b;
-  const _a = props, { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children } = _a, divProps = __objRest(_a, ["grid", "layoutItem", "index", "totalCount", "isLazy", "style", "onLoad", "onChange", "children"]);
+  var _a;
+  const { grid, layoutItem, index, totalCount, isLazy, style, onLoad, onChange, children, ...divProps } = props;
   const sceneChild = grid.getSceneLayoutChild(layoutItem.i);
-  const className = (_b = sceneChild.getClassName) == null ? void 0 : _b.call(sceneChild);
-  const innerContent = /* @__PURE__ */ React.createElement(sceneChild.Component, {
-    model: sceneChild,
-    key: sceneChild.state.key
-  });
+  const className = (_a = sceneChild.getClassName) == null ? void 0 : _a.call(sceneChild);
+  const innerContent = /* @__PURE__ */ React.createElement(sceneChild.Component, { model: sceneChild, key: sceneChild.state.key });
   if (isLazy) {
-    return /* @__PURE__ */ React.createElement(LazyLoader, __spreadProps(__spreadValues({}, divProps), {
+    return /* @__PURE__ */ React.createElement(
+      LazyLoader,
+      {
+        ...divProps,
+        key: sceneChild.state.key,
+        "data-griditem-key": sceneChild.state.key,
+        className: cx(className, props.className),
+        style,
+        ref
+      },
+      innerContent,
+      children
+    );
+  }
+  return /* @__PURE__ */ React.createElement(
+    "div",
+    {
+      ...divProps,
+      ref,
       key: sceneChild.state.key,
       "data-griditem-key": sceneChild.state.key,
       className: cx(className, props.className),
-      style,
-      ref
-    }), innerContent, children);
-  }
-  return /* @__PURE__ */ React.createElement("div", __spreadProps(__spreadValues({}, divProps), {
-    ref,
-    key: sceneChild.state.key,
-    "data-griditem-key": sceneChild.state.key,
-    className: cx(className, props.className),
-    style
-  }), innerContent, children);
+      style
+    },
+    innerContent,
+    children
+  );
 });
 GridItemWrapper.displayName = "GridItemWrapper";
 function validateChildrenSize(children) {
@@ -132,26 +122,18 @@ function updateAnimationClass(ref, isDraggable, retry) {
     setTimeout(() => updateAnimationClass(ref, isDraggable, true), 50);
   }
 }
-const ResizeHandle = React.forwardRef((_a, ref) => {
-  var _b = _a, divProps = __objRest(_b, ["handleAxis"]);
+const ResizeHandle = React.forwardRef(({ handleAxis, ...divProps }, ref) => {
   const customCssClass = useStyles2(getResizeHandleStyles);
-  return /* @__PURE__ */ React.createElement("div", __spreadProps(__spreadValues({
-    ref
-  }, divProps), {
-    className: `${customCssClass} scene-resize-handle`
-  }), /* @__PURE__ */ React.createElement("svg", {
-    width: "16px",
-    height: "16px",
-    viewBox: "0 0 24 24",
-    fill: "none",
-    xmlns: "http://www.w3.org/2000/svg"
-  }, /* @__PURE__ */ React.createElement("path", {
-    d: "M21 15L15 21M21 8L8 21",
-    stroke: "currentColor",
-    strokeWidth: "2",
-    strokeLinecap: "round",
-    strokeLinejoin: "round"
-  })));
+  return /* @__PURE__ */ React.createElement("div", { ref, ...divProps, className: `${customCssClass} scene-resize-handle` }, /* @__PURE__ */ React.createElement("svg", { width: "16px", height: "16px", viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" }, /* @__PURE__ */ React.createElement(
+    "path",
+    {
+      d: "M21 15L15 21M21 8L8 21",
+      stroke: "currentColor",
+      strokeWidth: "2",
+      strokeLinecap: "round",
+      strokeLinejoin: "round"
+    }
+  )));
 });
 ResizeHandle.displayName = "ResizeHandle";
 function getResizeHandleStyles(theme) {

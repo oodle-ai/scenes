@@ -1,3 +1,4 @@
+import { t, Trans } from '@grafana/i18n';
 import { css } from '@emotion/css';
 import { useStyles2, ToolbarButton, Drawer, CustomScrollbar } from '@grafana/ui';
 import React, { useState } from 'react';
@@ -8,35 +9,15 @@ function SceneDebugger({ scene }) {
   const styles = useStyles2(getStyles);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedObject, setSelectedObject] = useState();
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ToolbarButton, {
-    variant: "canvas",
-    icon: "bug",
-    onClick: () => setIsOpen(true)
-  }), isOpen && /* @__PURE__ */ React.createElement(Drawer, {
-    title: "Scene debugger",
-    onClose: () => setIsOpen(false),
-    size: "lg"
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.panes
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.pane1
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.paneHeading
-  }, "Scene graph"), /* @__PURE__ */ React.createElement(CustomScrollbar, {
-    autoHeightMin: "100%"
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.treeWrapper
-  }, /* @__PURE__ */ React.createElement(DebugTreeNode, {
-    node: scene,
-    selectedObject,
-    onSelect: setSelectedObject
-  })))), /* @__PURE__ */ React.createElement("div", {
-    className: styles.pane2
-  }, /* @__PURE__ */ React.createElement("div", {
-    className: styles.paneHeading
-  }, "Object details"), selectedObject && /* @__PURE__ */ React.createElement(DebugDetails, {
-    node: selectedObject
-  })))));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement(ToolbarButton, { variant: "canvas", icon: "bug", onClick: () => setIsOpen(true) }), isOpen && /* @__PURE__ */ React.createElement(
+    Drawer,
+    {
+      title: t("grafana-scenes.components.scene-debugger.title-scene-debugger", "Scene debugger"),
+      onClose: () => setIsOpen(false),
+      size: "lg"
+    },
+    /* @__PURE__ */ React.createElement("div", { className: styles.panes }, /* @__PURE__ */ React.createElement("div", { className: styles.pane1 }, /* @__PURE__ */ React.createElement("div", { className: styles.paneHeading }, /* @__PURE__ */ React.createElement(Trans, { i18nKey: "grafana-scenes.components.scene-debugger.scene-graph" }, "Scene graph")), /* @__PURE__ */ React.createElement(CustomScrollbar, { autoHeightMin: "100%" }, /* @__PURE__ */ React.createElement("div", { className: styles.treeWrapper }, /* @__PURE__ */ React.createElement(DebugTreeNode, { node: scene, selectedObject, onSelect: setSelectedObject })))), /* @__PURE__ */ React.createElement("div", { className: styles.pane2 }, /* @__PURE__ */ React.createElement("div", { className: styles.paneHeading }, /* @__PURE__ */ React.createElement(Trans, { i18nKey: "grafana-scenes.components.scene-debugger.object-details" }, "Object details")), selectedObject && /* @__PURE__ */ React.createElement(DebugDetails, { node: selectedObject })))
+  ));
 }
 function getStyles(theme) {
   return {

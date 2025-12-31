@@ -1,7 +1,7 @@
 import { DataLinkBuiltInVars } from '@grafana/data';
 import { sceneGraph } from '../core/sceneGraph/index.js';
 import { writeSceneLog } from '../utils/writeSceneLog.js';
-import { VARIABLE_REGEX } from './constants.js';
+import { SCOPES_VARIABLE_NAME, VARIABLE_REGEX } from './constants.js';
 import { safeStringifyValue } from './utils.js';
 import { ConstantVariable } from './variants/ConstantVariable.js';
 
@@ -17,15 +17,19 @@ class VariableDependencyConfig {
       this.handleTimeMacros();
     }
   }
+  /**
+   * Used to check for dependency on a specific variable
+   */
   hasDependencyOn(name) {
     return this.getNames().has(name);
   }
+  /**
+   * This is called whenever any set of variables have new values. It is up to this implementation to check if it's relevant given the current dependencies.
+   */
   variableUpdateCompleted(variable, hasChanged) {
+    var _a, _b, _c, _d;
     const deps = this.getNames();
-    let dependencyChanged = false;
-    if ((deps.has(variable.state.name) || deps.has(DataLinkBuiltInVars.includeVars)) && hasChanged) {
-      dependencyChanged = true;
-    }
+    const dependencyChanged = (deps.has(variable.state.name) || deps.has(DataLinkBuiltInVars.includeVars)) && hasChanged;
     writeSceneLog(
       "VariableDependencyConfig",
       "variableUpdateCompleted",
@@ -33,50 +37,35 @@ class VariableDependencyConfig {
       dependencyChanged,
       this._isWaitingForVariables
     );
-    if (this._options.onAnyVariableChanged) {
-      this._options.onAnyVariableChanged(variable);
-    }
+    (_b = (_a = this._options).onAnyVariableChanged) == null ? void 0 : _b.call(_a, variable);
     if (this._options.onVariableUpdateCompleted && (this._isWaitingForVariables || dependencyChanged)) {
       this._options.onVariableUpdateCompleted();
     }
     if (dependencyChanged) {
-      if (this._options.onReferencedVariableValueChanged) {
-        this._options.onReferencedVariableValueChanged(variable);
-      }
+      (_d = (_c = this._options).onReferencedVariableValueChanged) == null ? void 0 : _d.call(_c, variable);
       if (!this._options.onReferencedVariableValueChanged && !this._options.onVariableUpdateCompleted) {
         this._sceneObject.forceRender();
       }
     }
   }
   hasDependencyInLoadingState() {
-    if (sceneGraph.hasVariableDependencyInLoadingState(this._sceneObject)) {
-      this._isWaitingForVariables = true;
-      return true;
-    }
-    this._isWaitingForVariables = false;
-    return false;
+    this._isWaitingForVariables = sceneGraph.hasVariableDependencyInLoadingState(this._sceneObject);
+    return this._isWaitingForVariables;
   }
   getNames() {
     const prevState = this._state;
     const newState = this._state = this._sceneObject.state;
-    if (!prevState) {
-      this.scanStateForDependencies(this._state);
-      return this._dependencies;
-    }
-    if (newState !== prevState) {
-      if (this._statePaths) {
-        for (const path of this._statePaths) {
-          if (path === "*" || newState[path] !== prevState[path]) {
-            this.scanStateForDependencies(newState);
-            break;
-          }
-        }
-      } else {
-        this.scanStateForDependencies(newState);
-      }
+    const noPreviousState = !prevState;
+    const stateDiffers = newState !== prevState;
+    const shouldScanForDependencies = noPreviousState || stateDiffers && (!this._statePaths || this._statePaths.some((path) => path === "*" || newState[path] !== prevState[path]));
+    if (shouldScanForDependencies) {
+      this.scanStateForDependencies(newState);
     }
     return this._dependencies;
   }
+  /**
+   * Update variableNames
+   */
   setVariableNames(varNames) {
     this._options.variableNames = varNames;
     this.scanStateForDependencies(this._state);
@@ -86,11 +75,14 @@ class VariableDependencyConfig {
   }
   scanStateForDependencies(state) {
     this._dependencies.clear();
-    this.scanCount += 1;
+    this.scanCount++;
     if (this._options.variableNames) {
       for (const name of this._options.variableNames) {
         this._dependencies.add(name);
       }
+    }
+    if (this._options.dependsOnScopes) {
+      this._dependencies.add(SCOPES_VARIABLE_NAME);
     }
     if (this._statePaths) {
       for (const path of this._statePaths) {

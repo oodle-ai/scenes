@@ -1,5 +1,5 @@
-import { isFilterComplete, isMultiValueOperator } from './AdHocFiltersVariable.js';
-import { escapeUrlPipeDelimiters, toUrlCommaDelimitedString, unescapeUrlDelimiters } from '../utils.js';
+import { isFilterComplete, isMultiValueOperator, isMatchAllFilter } from './AdHocFiltersVariable.js';
+import { escapeOriginFilterUrlDelimiters, toUrlCommaDelimitedString, unescapeUrlDelimiters } from '../utils.js';
 
 class AdHocFiltersVariableUrlSyncHandler {
   constructor(_variable) {
@@ -13,11 +13,26 @@ class AdHocFiltersVariableUrlSyncHandler {
   }
   getUrlState() {
     const filters = this._variable.state.filters;
-    if (filters.length === 0) {
+    const originFilters = this._variable.state.originFilters;
+    let value = [];
+    if (filters.length === 0 && (originFilters == null ? void 0 : originFilters.length) === 0) {
       return { [this.getKey()]: [""] };
     }
-    const value = filters.filter(isFilterComplete).map((filter) => toArray(filter).map(escapeUrlPipeDelimiters).join("|"));
-    return { [this.getKey()]: value };
+    if (filters.length) {
+      value.push(
+        ...filters.filter(isFilterComplete).filter((filter) => !filter.hidden).map((filter) => toArray(filter).map(escapeOriginFilterUrlDelimiters).join("|"))
+      );
+    }
+    if (originFilters == null ? void 0 : originFilters.length) {
+      value.push(
+        ...originFilters == null ? void 0 : originFilters.filter(isFilterComplete).filter((filter) => !filter.hidden && filter.origin && filter.restorable).map(
+          (filter) => toArray(filter).map(escapeOriginFilterUrlDelimiters).join("|").concat(`#${filter.origin}#restorable`)
+        )
+      );
+    }
+    return {
+      [this.getKey()]: value.length ? value : [""]
+    };
   }
   updateFromUrl(values) {
     const urlValue = values[this.getKey()];
@@ -25,8 +40,30 @@ class AdHocFiltersVariableUrlSyncHandler {
       return;
     }
     const filters = deserializeUrlToFilters(urlValue);
-    this._variable.setState({ filters });
+    const originFilters = updateOriginFilters([...this._variable.state.originFilters || []], filters);
+    this._variable.setState({
+      filters: filters.filter((f) => !f.origin),
+      originFilters
+    });
   }
+}
+function updateOriginFilters(prevOriginFilters, filters) {
+  const updatedOriginFilters = [...prevOriginFilters];
+  for (let i = 0; i < filters.length; i++) {
+    const foundOriginFilterIndex = prevOriginFilters.findIndex((f) => f.key === filters[i].key);
+    if (foundOriginFilterIndex > -1 && filters[i].origin === prevOriginFilters[foundOriginFilterIndex].origin) {
+      if (isMatchAllFilter(filters[i])) {
+        filters[i].matchAllFilter = true;
+      }
+      updatedOriginFilters[foundOriginFilterIndex] = filters[i];
+    } else if (filters[i].origin === "dashboard") {
+      delete filters[i].origin;
+      delete filters[i].restorable;
+    } else if (foundOriginFilterIndex === -1 && filters[i].origin === "scope" && filters[i].restorable) {
+      updatedOriginFilters.push(filters[i]);
+    }
+  }
+  return updatedOriginFilters;
 }
 function deserializeUrlToFilters(value) {
   if (Array.isArray(value)) {
@@ -53,7 +90,8 @@ function toFilter(urlValue) {
   if (typeof urlValue !== "string" || urlValue.length === 0) {
     return null;
   }
-  const [key, keyLabel, operator, _operatorLabel, ...values] = urlValue.split("|").reduce((acc, v) => {
+  const [filter, origin, restorable] = urlValue.split("#");
+  const [key, keyLabel, operator, _operatorLabel, ...values] = filter.split("|").reduce((acc, v) => {
     const [key2, label] = v.split(",");
     acc.push(key2, label != null ? label : key2);
     return acc;
@@ -65,8 +103,13 @@ function toFilter(urlValue) {
     value: values[0],
     values: isMultiValueOperator(operator) ? values.filter((_, index) => index % 2 === 0) : void 0,
     valueLabels: values.filter((_, index) => index % 2 === 1),
-    condition: ""
+    condition: "",
+    ...isFilterOrigin(origin) && { origin },
+    ...!!restorable && { restorable: true }
   };
+}
+function isFilterOrigin(value) {
+  return value === "scope" || value === "dashboard";
 }
 function isFilter(filter) {
   return filter !== null && typeof filter.key === "string" && typeof filter.value === "string";

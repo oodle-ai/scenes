@@ -1,12 +1,12 @@
 import { lastValueFrom, of, from, mergeMap, filter, take, throwError, catchError } from 'rxjs';
 import { v4 } from 'uuid';
-import { VariableRefresh, VariableSort, LoadingState, CoreApp } from '@grafana/data';
+import { VariableSort, VariableRefresh, LoadingState, CoreApp } from '@grafana/data';
 import { sceneGraph } from '../../../core/sceneGraph/index.js';
 import { VariableDependencyConfig } from '../../VariableDependencyConfig.js';
-import { renderSelectForVariable } from '../../components/VariableValueSelect.js';
+import { MultiOrSingleValueSelect } from '../../components/VariableValueSelect.js';
 import { MultiValueVariable } from '../MultiValueVariable.js';
 import { createQueryVariableRunner } from './createQueryVariableRunner.js';
-import { metricNamesToVariableValues } from './utils.js';
+import { metricNamesToVariableValues, sortVariableValues } from './utils.js';
 import { toMetricFindValues } from './toMetricFindValues.js';
 import { getDataSource } from '../../../utils/getDataSource.js';
 import { safeStringifyValue } from '../../utils.js';
@@ -14,26 +14,11 @@ import { SEARCH_FILTER_VARIABLE } from '../../constants.js';
 import { debounce } from 'lodash';
 import { registerQueryWithController } from '../../../querying/registerQueryWithController.js';
 import { wrapInSafeSerializableSceneObject } from '../../../utils/wrapInSafeSerializableSceneObject.js';
+import React from 'react';
 
-var __defProp = Object.defineProperty;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
 class QueryVariable extends MultiValueVariable {
   constructor(initialState) {
-    super(__spreadValues({
+    super({
       type: "query",
       name: "",
       value: "",
@@ -43,8 +28,9 @@ class QueryVariable extends MultiValueVariable {
       regex: "",
       query: "",
       refresh: VariableRefresh.onDashboardLoad,
-      sort: VariableSort.disabled
-    }, initialState));
+      sort: VariableSort.disabled,
+      ...initialState
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["regex", "query", "datasource"]
     });
@@ -75,12 +61,14 @@ class QueryVariable extends MultiValueVariable {
         const request = this.getRequest(target, args.searchFilter);
         return runner.runRequest({ variable: this, searchFilter: args.searchFilter }, request).pipe(
           registerQueryWithController({
-            type: "variable",
+            type: "QueryVariable/getValueOptions",
             request,
             origin: this
           }),
           filter((data) => data.state === LoadingState.Done || data.state === LoadingState.Error),
+          // we only care about done or error for now
           take(1),
+          // take the first result, using first caused a bug where it in some situations throw an uncaught error because of no results had been received yet
           mergeMap((data) => {
             if (data.state === LoadingState.Error) {
               return throwError(() => data.error);
@@ -93,7 +81,19 @@ class QueryVariable extends MultiValueVariable {
             if (this.state.regex) {
               regex = sceneGraph.interpolate(this, this.state.regex, void 0, "regex");
             }
-            return of(metricNamesToVariableValues(regex, this.state.sort, values));
+            let options = metricNamesToVariableValues(regex, this.state.sort, values);
+            if (this.state.staticOptions) {
+              const customOptions = this.state.staticOptions;
+              options = options.filter((option) => !customOptions.find((custom) => custom.value === option.value));
+              if (this.state.staticOptionsOrder === "after") {
+                options.push(...customOptions);
+              } else if (this.state.staticOptionsOrder === "sorted") {
+                options = sortVariableValues(options.concat(customOptions), this.state.sort);
+              } else {
+                options.unshift(...customOptions);
+              }
+            }
+            return of(options);
           }),
           catchError((error) => {
             if (error.cancelled) {
@@ -120,6 +120,7 @@ class QueryVariable extends MultiValueVariable {
       range,
       interval: "",
       intervalMs: 0,
+      // @ts-ignore
       targets: [target],
       scopedVars,
       startTime: Date.now()
@@ -128,7 +129,7 @@ class QueryVariable extends MultiValueVariable {
   }
 }
 QueryVariable.Component = ({ model }) => {
-  return renderSelectForVariable(model);
+  return /* @__PURE__ */ React.createElement(MultiOrSingleValueSelect, { model });
 };
 function containsSearchFilter(query) {
   const str = safeStringifyValue(query);

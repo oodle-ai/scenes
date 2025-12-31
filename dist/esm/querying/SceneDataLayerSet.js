@@ -5,29 +5,14 @@ import { SceneObjectBase } from '../core/SceneObjectBase.js';
 import { DataLayersMerger } from './DataLayersMerger.js';
 import { setBaseClassState } from '../utils/utils.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class SceneDataLayerSetBase extends SceneObjectBase {
   constructor() {
     super(...arguments);
+    /** Mark it as a data layer */
     this.isDataLayer = true;
+    /**
+     * Subject to emit results to.
+     */
     this._results = new ReplaySubject(1);
     this._dataLayersMerger = new DataLayersMerger();
   }
@@ -47,7 +32,7 @@ class SceneDataLayerSetBase extends SceneObjectBase {
         series = series.concat(result.data.series);
       }
     }
-    const combinedData = __spreadProps(__spreadValues({}, emptyPanelData), { series });
+    const combinedData = { ...emptyPanelData, series };
     this._results.next({ origin: this, data: combinedData });
     this.setStateHelper({ data: combinedData });
   }
@@ -58,6 +43,9 @@ class SceneDataLayerSetBase extends SceneObjectBase {
     var _a;
     (_a = this.querySub) == null ? void 0 : _a.unsubscribe();
   }
+  /**
+   * This helper function is to counter the contravariance of setState
+   */
   setStateHelper(state) {
     setBaseClassState(this, state);
   }
@@ -90,10 +78,7 @@ class SceneDataLayerSet extends SceneDataLayerSetBase {
 }
 SceneDataLayerSet.Component = ({ model }) => {
   const { layers } = model.useState();
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, layers.map((layer) => /* @__PURE__ */ React.createElement(layer.Component, {
-    model: layer,
-    key: layer.state.key
-  })));
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, layers.map((layer) => /* @__PURE__ */ React.createElement(layer.Component, { model: layer, key: layer.state.key })));
 };
 
 export { SceneDataLayerSet, SceneDataLayerSetBase };

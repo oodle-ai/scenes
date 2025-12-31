@@ -20,15 +20,9 @@ function SceneFlexLayoutRenderer({ model, parentState }) {
   if (isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement("div", {
-    className: style
-  }, children.map((item) => {
+  return /* @__PURE__ */ React.createElement("div", { className: style }, children.map((item) => {
     const Component = item.Component;
-    return /* @__PURE__ */ React.createElement(Component, {
-      key: item.state.key,
-      model: item,
-      parentState: model.state
-    });
+    return /* @__PURE__ */ React.createElement(Component, { key: item.state.key, model: item, parentState: model.state });
   }));
 }
 class SceneFlexItem extends SceneObjectBase {
@@ -43,11 +37,7 @@ function SceneFlexItemRenderer({ model, parentState }) {
   if (!body || isHidden) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement("div", {
-    className: style
-  }, /* @__PURE__ */ React.createElement(body.Component, {
-    model: body
-  }));
+  return /* @__PURE__ */ React.createElement("div", { className: style }, /* @__PURE__ */ React.createElement(body.Component, { model: body }));
 }
 function applyItemStyles(style, state, parentState) {
   var _a, _b, _c;
@@ -77,6 +67,16 @@ function applyItemStyles(style, state, parentState) {
       style.width = state.width;
     } else {
       style.flexGrow = xSizing === "fill" ? 1 : 0;
+    }
+    if (state.wrap) {
+      style.flexWrap = state.wrap;
+      if (state.wrap !== "nowrap") {
+        if (parentDirection === "row") {
+          style.rowGap = "8px";
+        } else {
+          style.columnGap = "8px";
+        }
+      }
     }
   }
   style.minWidth = state.minWidth;

@@ -1,3 +1,4 @@
+import { t } from '@grafana/i18n';
 import { toUtc, getPanelOptionsWithDefaults, renderMarkdown, applyFieldOverrides, compareArrayValues, compareDataFrameStructures, CoreApp, DashboardCursorSync, PanelPlugin, PluginType } from '@grafana/data';
 import { getPluginImportUtils, config, getAppEvents } from '@grafana/runtime';
 import { SceneObjectBase } from '../../core/SceneObjectBase.js';
@@ -13,36 +14,23 @@ import { mergeWith, cloneDeep, isArray, merge, isEmpty } from 'lodash';
 import { UserActionEvent } from '../../core/events.js';
 import { evaluateTimeRange } from '../../utils/evaluateTimeRange.js';
 import { LiveNowTimer } from '../../behaviors/LiveNowTimer.js';
+import { VizPanelRenderProfiler } from '../../performance/VizPanelRenderProfiler.js';
+import { wrapPromiseInStateObservable, registerQueryWithController } from '../../querying/registerQueryWithController.js';
+import { SceneDataTransformer } from '../../querying/SceneDataTransformer.js';
+import { SceneQueryRunner } from '../../querying/SceneQueryRunner.js';
+import { buildPathIdFor } from '../../utils/pathId.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 class VizPanel extends SceneObjectBase {
   constructor(state) {
     var _a;
-    super(__spreadValues({
+    super({
       options: {},
       fieldConfig: { defaults: {}, overrides: [] },
-      title: "Title",
+      title: t("grafana-scenes.components.viz-panel.title.title", "Title"),
       pluginId: "timeseries",
-      _renderCounter: 0
-    }, state));
+      _renderCounter: 0,
+      ...state
+    });
     this._variableDependency = new VariableDependencyConfig(this, {
       statePaths: ["title", "options", "fieldConfig"]
     });
@@ -148,6 +136,9 @@ class VizPanel extends SceneObjectBase {
     this.onStatusMessageClick = () => {
       this.publishEvent(new UserActionEvent({ origin: this, interaction: "panel-status-message-clicked" }), true);
     };
+    /**
+     * Panel context functions
+     */
     this._onSeriesColorChange = (label, color) => {
       this.onFieldConfigChange(changeSeriesColorConfigFactory(label, color, this.state.fieldConfig));
     };
@@ -162,9 +153,10 @@ class VizPanel extends SceneObjectBase {
     };
     this._onInstanceStateChange = (state) => {
       if (this._panelContext) {
-        this._panelContext = __spreadProps(__spreadValues({}, this._panelContext), {
+        this._panelContext = {
+          ...this._panelContext,
           instanceState: state
-        });
+        };
       }
       this.setState({ _pluginInstanceState: state });
     };
@@ -186,9 +178,10 @@ class VizPanel extends SceneObjectBase {
         sortBy = sortKey;
       }
       this.onOptionsChange(
-        __spreadProps(__spreadValues({}, this.state.options), {
-          legend: __spreadProps(__spreadValues({}, legendOptions), { sortBy, sortDesc })
-        }),
+        {
+          ...this.state.options,
+          legend: { ...legendOptions, sortBy, sortDesc }
+        },
         true
       );
     };
@@ -198,6 +191,20 @@ class VizPanel extends SceneObjectBase {
     (_a = state.menu) == null ? void 0 : _a.addActivationHandler(() => {
       this.publishEvent(new UserActionEvent({ origin: this, interaction: "panel-menu-shown" }), true);
     });
+  }
+  /**
+   * Get the VizPanelRenderProfiler behavior if attached
+   */
+  getProfiler() {
+    if (!this.state.$behaviors) {
+      return void 0;
+    }
+    for (const behavior of this.state.$behaviors) {
+      if (behavior instanceof VizPanelRenderProfiler) {
+        return behavior;
+      }
+    }
+    return void 0;
   }
   _onActivate() {
     if (!this._plugin) {
@@ -209,13 +216,24 @@ class VizPanel extends SceneObjectBase {
     this.setState({ _renderCounter: ((_a = this.state._renderCounter) != null ? _a : 0) + 1 });
   }
   async _loadPlugin(pluginId, overwriteOptions, overwriteFieldConfig, isAfterPluginChange) {
+    const profiler = this.getProfiler();
     const plugin = loadPanelPluginSync(pluginId);
     if (plugin) {
+      const endPluginLoadCallback = profiler == null ? void 0 : profiler.onPluginLoadStart(pluginId);
+      endPluginLoadCallback == null ? void 0 : endPluginLoadCallback(plugin, true);
       this._pluginLoaded(plugin, overwriteOptions, overwriteFieldConfig, isAfterPluginChange);
     } else {
       const { importPanelPlugin } = getPluginImportUtils();
       try {
-        const result = await importPanelPlugin(pluginId);
+        const endPluginLoadCallback = profiler == null ? void 0 : profiler.onPluginLoadStart(pluginId);
+        const panelPromise = importPanelPlugin(pluginId);
+        const queryControler = sceneGraph.getQueryController(this);
+        if (queryControler && queryControler.state.enableProfiling) {
+          wrapPromiseInStateObservable(panelPromise).pipe(registerQueryWithController({ type: `VizPanel/loadPlugin/${pluginId}`, origin: this })).subscribe(() => {
+          });
+        }
+        const result = await panelPromise;
+        endPluginLoadCallback == null ? void 0 : endPluginLoadCallback(result, false);
         this._pluginLoaded(result, overwriteOptions, overwriteFieldConfig, isAfterPluginChange);
       } catch (err) {
         this._pluginLoaded(getPanelPluginNotFound(pluginId));
@@ -226,13 +244,26 @@ class VizPanel extends SceneObjectBase {
     }
   }
   getLegacyPanelId() {
-    const panelId = parseInt(this.state.key.replace("panel-", ""), 10);
+    var _a, _b;
+    const parts = (_b = (_a = this.state.key) == null ? void 0 : _a.split("/")) != null ? _b : [];
+    if (parts.length === 0) {
+      return 0;
+    }
+    const part = parts[parts.length - 1];
+    const panelId = parseInt(part.replace("panel-", ""), 10);
     if (isNaN(panelId)) {
       return 0;
     }
     return panelId;
   }
+  /**
+   * Unique id string that includes local variable values (for repeated panels)
+   */
+  getPathId() {
+    return buildPathIdFor(this);
+  }
   async _pluginLoaded(plugin, overwriteOptions, overwriteFieldConfig, isAfterPluginChange) {
+    var _a;
     const { options, fieldConfig, title, pluginVersion, _UNSAFE_customMigrationHandler } = this.state;
     const panel = {
       title,
@@ -250,8 +281,21 @@ class VizPanel extends SceneObjectBase {
     }
     const currentVersion = this._getPluginVersion(plugin);
     _UNSAFE_customMigrationHandler == null ? void 0 : _UNSAFE_customMigrationHandler(panel, plugin);
-    if (plugin.onPanelMigration && currentVersion !== pluginVersion && !isAfterPluginChange) {
+    const needsMigration = currentVersion !== pluginVersion || ((_a = plugin.shouldMigrate) == null ? void 0 : _a.call(plugin, panel));
+    if (plugin.onPanelMigration && needsMigration && !isAfterPluginChange) {
       panel.options = await plugin.onPanelMigration(panel);
+    }
+    let $data = this.state.$data;
+    if (panel.transformations && $data) {
+      if ($data instanceof SceneDataTransformer) {
+        $data.setState({ transformations: panel.transformations });
+      } else if ($data instanceof SceneQueryRunner) {
+        $data.clearParent();
+        $data = new SceneDataTransformer({
+          transformations: panel.transformations,
+          $data
+        });
+      }
     }
     const withDefaults = getPanelOptionsWithDefaults({
       plugin,
@@ -261,6 +305,7 @@ class VizPanel extends SceneObjectBase {
     });
     this._plugin = plugin;
     this.setState({
+      $data,
       options: withDefaults.options,
       fieldConfig: withDefaults.fieldConfig,
       pluginVersion: currentVersion,
@@ -303,15 +348,21 @@ class VizPanel extends SceneObjectBase {
   clearFieldConfigCache() {
     this._dataWithFieldConfig = void 0;
   }
+  /**
+   * Called from the react render path to apply the field config to the data provided by the data provider
+   */
   applyFieldConfig(rawData) {
     var _a, _b, _c, _d;
+    const timestamp = performance.now();
     const plugin = this._plugin;
+    const profiler = this.getProfiler();
     if (!plugin || plugin.meta.skipDataQuery || !rawData) {
       return emptyPanelData;
     }
     if (this._prevData === rawData && this._dataWithFieldConfig) {
       return this._dataWithFieldConfig;
     }
+    const endFieldConfigCallback = profiler == null ? void 0 : profiler.onFieldConfigStart(timestamp);
     const pluginDataSupport = plugin.dataSupport || { alertStates: false, annotations: false };
     const fieldConfigRegistry = plugin.fieldConfigRegistry;
     const prevFrames = (_b = (_a = this._dataWithFieldConfig) == null ? void 0 : _a.series) != null ? _b : [];
@@ -326,10 +377,11 @@ class VizPanel extends SceneObjectBase {
     if (!compareArrayValues(newFrames, prevFrames, compareDataFrameStructures)) {
       this._structureRev++;
     }
-    this._dataWithFieldConfig = __spreadProps(__spreadValues({}, rawData), {
+    this._dataWithFieldConfig = {
+      ...rawData,
       structureRev: this._structureRev,
       series: newFrames
-    });
+    };
     if (this._dataWithFieldConfig.annotations) {
       this._dataWithFieldConfig.annotations = applyFieldOverrides({
         data: this._dataWithFieldConfig.annotations,
@@ -350,7 +402,13 @@ class VizPanel extends SceneObjectBase {
       this._dataWithFieldConfig.annotations = void 0;
     }
     this._prevData = rawData;
+    if (profiler) {
+      endFieldConfigCallback == null ? void 0 : endFieldConfigCallback(performance.now());
+    }
     return this._dataWithFieldConfig;
+  }
+  clone(withState) {
+    return super.clone({ _pluginInstanceState: void 0, _pluginLoadError: void 0, ...withState });
   }
   buildPanelContext() {
     const sync = getCursorSyncScope(this);

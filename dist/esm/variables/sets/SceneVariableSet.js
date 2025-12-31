@@ -8,13 +8,20 @@ import { VariableValueRecorder } from '../VariableValueRecorder.js';
 class SceneVariableSet extends SceneObjectBase {
   constructor(state) {
     super(state);
-    this._variablesThatHaveChanged = /* @__PURE__ */ new Set();
+    /** Variables that are scheduled to be validated and updated */
     this._variablesToUpdate = /* @__PURE__ */ new Set();
+    /** Variables currently updating  */
     this._updating = /* @__PURE__ */ new Map();
     this._variableValueRecorder = new VariableValueRecorder();
+    /**
+     * This makes sure SceneVariableSet's higher up in the chain notify us when parent level variables complete update batches.
+     **/
     this._variableDependency = new SceneVariableSetVariableDependencyHandler(
       this._handleParentVariableUpdatesCompleted.bind(this)
     );
+    /**
+     * Subscribes to child variable value changes, and starts the variable value validation process
+     */
     this._onActivate = () => {
       const timeRange = sceneGraph.getTimeRange(this);
       this._subs.add(
@@ -35,6 +42,9 @@ class SceneVariableSet extends SceneObjectBase {
       this._updateNextBatch();
       return this._onDeactivate;
     };
+    /**
+     * Cancel all currently running updates
+     */
     this._onDeactivate = () => {
       var _a;
       for (const update of this._updating.values()) {
@@ -48,6 +58,9 @@ class SceneVariableSet extends SceneObjectBase {
       this._variablesToUpdate.clear();
       this._updating.clear();
     };
+    /**
+     * Look for new variables that need to be initialized
+     */
     this._onStateChanged = (newState, oldState) => {
       const variablesToUpdateCountStart = this._variablesToUpdate.size;
       for (const variable of oldState.variables) {
@@ -76,6 +89,9 @@ class SceneVariableSet extends SceneObjectBase {
   getByName(name) {
     return this.state.variables.find((x) => x.state.name === name);
   }
+  /**
+   * Add all variables that depend on the changed variable to the update queue
+   */
   _refreshTimeRangeBasedVariables() {
     for (const variable of this.state.variables) {
       if ("refresh" in variable.state && variable.state.refresh === VariableRefresh.onTimeRangeChanged) {
@@ -84,6 +100,9 @@ class SceneVariableSet extends SceneObjectBase {
     }
     this._updateNextBatch();
   }
+  /**
+   * If variables changed while in in-active state we don't get any change events, so we need to check for that here.
+   */
   _checkForVariablesThatChangedWhileInactive() {
     if (!this._variableValueRecorder.hasValues()) {
       return;
@@ -108,10 +127,15 @@ class SceneVariableSet extends SceneObjectBase {
     }
     return true;
   }
+  /**
+   * This loops through variablesToUpdate and update all that can.
+   * If one has a dependency that is currently in variablesToUpdate it will be skipped for now.
+   */
   _updateNextBatch() {
     for (const variable of this._variablesToUpdate) {
       if (!variable.validateAndUpdate) {
-        throw new Error("Variable added to variablesToUpdate but does not have validateAndUpdate");
+        console.error("Variable added to variablesToUpdate but does not have validateAndUpdate");
+        continue;
       }
       if (this._updating.has(variable)) {
         continue;
@@ -131,6 +155,9 @@ class SceneVariableSet extends SceneObjectBase {
       });
     }
   }
+  /**
+   * A variable has completed its update process. This could mean that variables that depend on it can now be updated in turn.
+   */
   _validateAndUpdateCompleted(variable) {
     var _a;
     if (!this._updating.has(variable)) {
@@ -164,13 +191,16 @@ class SceneVariableSet extends SceneObjectBase {
     this._updateNextBatch();
   }
   _handleVariableValueChanged(variableThatChanged) {
-    this._variablesThatHaveChanged.add(variableThatChanged);
     this._addDependentVariablesToUpdateQueue(variableThatChanged);
     if (!this._updating.has(variableThatChanged)) {
       this._updateNextBatch();
       this._notifyDependentSceneObjects(variableThatChanged);
     }
   }
+  /**
+   * This is called by any parent level variable set to notify scene that an update batch is completed.
+   * This is the main mechanism lower level variable set's react to changes on higher levels.
+   */
   _handleParentVariableUpdatesCompleted(variable, hasChanged) {
     if (hasChanged) {
       this._addDependentVariablesToUpdateQueue(variable);
@@ -187,18 +217,26 @@ class SceneVariableSet extends SceneObjectBase {
           if (this._updating.has(otherVariable) && otherVariable.onCancel) {
             otherVariable.onCancel();
           }
-          this._variablesToUpdate.add(otherVariable);
+          if (otherVariable.validateAndUpdate) {
+            this._variablesToUpdate.add(otherVariable);
+          }
+          otherVariable.variableDependency.variableUpdateCompleted(variableThatChanged, true);
         }
       }
     }
   }
+  /**
+   * Walk scene object graph and update all objects that depend on variables that have changed
+   */
   _notifyDependentSceneObjects(variable) {
     if (!this.parent) {
       return;
     }
-    this._traverseSceneAndNotify(this.parent, variable, this._variablesThatHaveChanged.has(variable));
-    this._variablesThatHaveChanged.delete(variable);
+    this._traverseSceneAndNotify(this.parent, variable, true);
   }
+  /**
+   * Recursivly walk the full scene object graph and notify all objects with dependencies that include any of changed variables
+   */
   _traverseSceneAndNotify(sceneObject, variable, hasChanged) {
     if (this === sceneObject) {
       return;
@@ -208,7 +246,9 @@ class SceneVariableSet extends SceneObjectBase {
     }
     if (sceneObject.state.$variables && sceneObject.state.$variables !== this) {
       const localVar = sceneObject.state.$variables.getByName(variable.state.name);
-      if (localVar) {
+      if (localVar == null ? void 0 : localVar.isAncestorLoading) {
+        variable = localVar;
+      } else if (localVar) {
         return;
       }
     }
@@ -217,7 +257,16 @@ class SceneVariableSet extends SceneObjectBase {
     }
     sceneObject.forEachChild((child) => this._traverseSceneAndNotify(child, variable, hasChanged));
   }
+  /**
+   * Return true if variable is waiting to update or currently updating.
+   * It also returns true if a dependency of the variable is loading.
+   *
+   * For example if C depends on variable B which depends on variable A and A is loading this returns true for variable C and B.
+   */
   isVariableLoadingOrWaitingToUpdate(variable) {
+    if (variable.state.loading) {
+      return true;
+    }
     if (variable.isAncestorLoading && variable.isAncestorLoading()) {
       return true;
     }

@@ -19,18 +19,7 @@ EmbeddedScene.Component = EmbeddedSceneRenderer;
 function EmbeddedSceneRenderer({ model }) {
   const { body, controls } = model.useState();
   const styles = useStyles2(getStyles);
-  return /* @__PURE__ */ React.createElement("div", {
-    className: styles.container
-  }, controls && /* @__PURE__ */ React.createElement("div", {
-    className: styles.controls
-  }, controls.map((control) => /* @__PURE__ */ React.createElement(control.Component, {
-    key: control.state.key,
-    model: control
-  }))), /* @__PURE__ */ React.createElement("div", {
-    className: styles.body
-  }, /* @__PURE__ */ React.createElement(body.Component, {
-    model: body
-  })));
+  return /* @__PURE__ */ React.createElement("div", { className: styles.container }, controls && /* @__PURE__ */ React.createElement("div", { className: styles.controls }, controls.map((control) => /* @__PURE__ */ React.createElement(control.Component, { key: control.state.key, model: control }))), /* @__PURE__ */ React.createElement("div", { className: styles.body }, /* @__PURE__ */ React.createElement(body.Component, { model: body })));
 }
 const getStyles = (theme) => {
   return {

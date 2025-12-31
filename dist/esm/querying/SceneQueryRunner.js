@@ -15,34 +15,15 @@ import { isExtraQueryProvider } from './ExtraQueryProvider.js';
 import { extraQueryProcessingOperator, passthroughProcessor } from './extraQueryProcessingOperator.js';
 import { filterAnnotations } from './layers/annotations/filterAnnotations.js';
 import { getEnrichedDataRequest } from './getEnrichedDataRequest.js';
-import { findActiveAdHocFilterVariableByUid } from '../variables/adhoc/patchGetAdhocFilters.js';
 import { registerQueryWithController } from './registerQueryWithController.js';
-import { findActiveGroupByVariablesByUid } from '../variables/groupby/findActiveGroupByVariablesByUid.js';
 import { GroupByVariable } from '../variables/groupby/GroupByVariable.js';
-import { AdHocFiltersVariable, isFilterComplete } from '../variables/adhoc/AdHocFiltersVariable.js';
+import { findPanelProfiler } from '../utils/findPanelProfiler.js';
+import { AdHocFiltersVariable } from '../variables/adhoc/AdHocFiltersVariable.js';
 import { DataLayersMerger } from './DataLayersMerger.js';
 import { interpolate } from '../core/sceneGraph/sceneGraph.js';
 import { wrapInSafeSerializableSceneObject } from '../utils/wrapInSafeSerializableSceneObject.js';
+import { DrilldownDependenciesManager } from '../variables/DrilldownDependenciesManager.js';
 
-var __defProp = Object.defineProperty;
-var __defProps = Object.defineProperties;
-var __getOwnPropDescs = Object.getOwnPropertyDescriptors;
-var __getOwnPropSymbols = Object.getOwnPropertySymbols;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __propIsEnum = Object.prototype.propertyIsEnumerable;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __spreadValues = (a, b) => {
-  for (var prop in b || (b = {}))
-    if (__hasOwnProp.call(b, prop))
-      __defNormalProp(a, prop, b[prop]);
-  if (__getOwnPropSymbols)
-    for (var prop of __getOwnPropSymbols(b)) {
-      if (__propIsEnum.call(b, prop))
-        __defNormalProp(a, prop, b[prop]);
-    }
-  return a;
-};
-var __spreadProps = (a, b) => __defProps(a, __getOwnPropDescs(b));
 let counter = 100;
 function getNextRequestId() {
   return "SQR" + counter++;
@@ -54,11 +35,16 @@ class SceneQueryRunner extends SceneObjectBase {
     this._variableValueRecorder = new VariableValueRecorder();
     this._results = new ReplaySubject(1);
     this._scopedVars = { __sceneObject: wrapInSafeSerializableSceneObject(this) };
+    this._isInView = true;
+    this._bypassIsInView = false;
+    this._queryNotExecutedWhenOutOfView = false;
     this._variableDependency = new VariableDependencyConfig(this, {
-      statePaths: ["queries", "datasource"],
+      statePaths: ["queries", "datasource", "minInterval"],
       onVariableUpdateCompleted: this.onVariableUpdatesCompleted.bind(this),
-      onAnyVariableChanged: this.onAnyVariableChanged.bind(this)
+      onAnyVariableChanged: this.onAnyVariableChanged.bind(this),
+      dependsOnScopes: true
     });
+    this._drilldownDependenciesManager = new DrilldownDependenciesManager(this._variableDependency);
     this.onDataReceived = (data) => {
       const preProcessedData = preProcessPanelData(data, this.state.data);
       this._resultAnnotations = data.annotations;
@@ -98,6 +84,7 @@ class SceneQueryRunner extends SceneObjectBase {
     }
     return () => this._onDeactivate();
   }
+  // This method subscribes to all SceneDataLayers up until the root, and combines the results into data provided from SceneQueryRunner
   _handleDataLayers() {
     const dataLayers = sceneGraph.getDataLayers(this);
     if (dataLayers.length === 0) {
@@ -142,21 +129,38 @@ class SceneQueryRunner extends SceneObjectBase {
       return;
     }
     this._layerAnnotations = annotations;
-    const baseStateUpdate = this.state.data ? this.state.data : __spreadProps(__spreadValues({}, emptyPanelData), { timeRange: timeRange.state.value });
+    const baseStateUpdate = this.state.data ? this.state.data : { ...emptyPanelData, timeRange: timeRange.state.value };
     this.setState({
-      data: __spreadProps(__spreadValues({}, baseStateUpdate), {
+      data: {
+        ...baseStateUpdate,
         annotations: [...(_d = this._resultAnnotations) != null ? _d : [], ...annotations],
         alertState: alertState != null ? alertState : (_e = this.state.data) == null ? void 0 : _e.alertState
-      })
+      }
     });
   }
+  /**
+   * This tries to start a new query whenever a variable completes or is changed.
+   *
+   * We care about variable update completions even when the variable has not changed and even when it is not a direct dependency.
+   * Example: Variables A and B (B depends on A). A update depends on time range. So when time change query runner will
+   * find that variable A is loading which is a dependency on of variable B so will set _isWaitingForVariables to true and
+   * not issue any query.
+   *
+   * When A completes it's loading (with no value change, so B never updates) it will cause a call of this function letting
+   * the query runner know that A has completed, and in case _isWaitingForVariables we try to run the query. The query will
+   * only run if all variables are in a non loading state so in other scenarios where a query depends on many variables this will
+   * be called many times until all dependencies are in a non loading state.   *
+   */
   onVariableUpdatesCompleted() {
     if (this.isQueryModeAuto()) {
       this.runQueries();
     }
   }
+  /**
+   * Check if value changed is a adhoc filter o group by variable that did not exist when we issued the last query
+   */
   onAnyVariableChanged(variable) {
-    if (this._adhocFiltersVar === variable || this._groupByVar === variable || !this.isQueryModeAuto()) {
+    if (this._drilldownDependenciesManager.adHocFiltersVar === variable || this._drilldownDependenciesManager.groupByVar === variable || !this.isQueryModeAuto()) {
       return;
     }
     if (variable instanceof AdHocFiltersVariable && this._isRelevantAutoVariable(variable)) {
@@ -210,9 +214,7 @@ class SceneQueryRunner extends SceneObjectBase {
     (_a = this._timeSub) == null ? void 0 : _a.unsubscribe();
     this._timeSub = void 0;
     this._timeSubRange = void 0;
-    this._adhocFiltersVar = void 0;
-    this._groupByVar = void 0;
-    this._variableValueRecorder.recordCurrentDependencyValuesForSceneObject(this);
+    this._drilldownDependenciesManager.cleanup();
   }
   setContainerWidth(width) {
     if (!this._containerWidth && width > 0) {
@@ -267,7 +269,7 @@ class SceneQueryRunner extends SceneObjectBase {
       this._dataLayersSub = void 0;
     }
     this.setState({
-      data: __spreadProps(__spreadValues({}, this.state.data), { state: LoadingState.Done })
+      data: { ...this.state.data, state: LoadingState.Done }
     });
   }
   async runWithTimeRange(timeRange) {
@@ -275,15 +277,21 @@ class SceneQueryRunner extends SceneObjectBase {
     if (!this.state.maxDataPoints && this.state.maxDataPointsFromWidth && !this._containerWidth) {
       return;
     }
+    if (this.isQueryModeAuto() && !this._isInView && !this._bypassIsInView) {
+      this._queryNotExecutedWhenOutOfView = true;
+      return;
+    }
+    this._queryNotExecutedWhenOutOfView = false;
     if (!this._dataLayersSub) {
       this._handleDataLayers();
     }
     (_a = this._querySub) == null ? void 0 : _a.unsubscribe();
     if (this._variableDependency.hasDependencyInLoadingState()) {
       writeSceneLog("SceneQueryRunner", "Variable dependency is in loading state, skipping query execution");
-      this.setState({ data: __spreadProps(__spreadValues({}, (_b = this.state.data) != null ? _b : emptyPanelData), { state: LoadingState.Loading }) });
+      this.setState({ data: { ...(_b = this.state.data) != null ? _b : emptyPanelData, state: LoadingState.Loading } });
       return;
     }
+    this._variableValueRecorder.recordCurrentDependencyValuesForSceneObject(this);
     const { queries } = this.state;
     if (!(queries == null ? void 0 : queries.length)) {
       this._setNoDataState();
@@ -292,7 +300,7 @@ class SceneQueryRunner extends SceneObjectBase {
     try {
       const datasource = (_c = this.state.datasource) != null ? _c : findFirstDatasource(queries);
       const ds = await getDataSource(datasource, this._scopedVars);
-      this.findAndSubscribeToAdHocFilters(ds.uid);
+      this._drilldownDependenciesManager.findAndSubscribeToDrilldowns(ds.uid);
       const runRequest = getRunRequest();
       const { primary, secondaries, processors } = this.prepareRequests(timeRange, ds);
       writeSceneLog("SceneQueryRunner", "Starting runRequest", this.state.key);
@@ -302,31 +310,37 @@ class SceneQueryRunner extends SceneObjectBase {
         const op = extraQueryProcessingOperator(processors);
         stream = forkJoin([stream, ...secondaryStreams]).pipe(op);
       }
+      const panelProfiler = findPanelProfiler(this);
       stream = stream.pipe(
-        registerQueryWithController({
-          type: "data",
-          request: primary,
-          origin: this,
-          cancel: () => this.cancelQuery()
-        })
+        registerQueryWithController(
+          {
+            type: "SceneQueryRunner/runQueries",
+            request: primary,
+            origin: this,
+            cancel: () => this.cancelQuery()
+          },
+          panelProfiler
+        )
       );
       this._querySub = stream.subscribe(this.onDataReceived);
     } catch (err) {
       console.error("PanelQueryRunner Error", err);
-      this.onDataReceived(__spreadProps(__spreadValues(__spreadValues({}, emptyPanelData), this.state.data), {
+      this.onDataReceived({
+        ...emptyPanelData,
+        ...this.state.data,
         state: LoadingState.Error,
         errors: [toDataQueryError(err)]
-      }));
+      });
     }
   }
   clone(withState) {
     var _a;
     const clone = super.clone(withState);
     if (this._resultAnnotations) {
-      clone["_resultAnnotations"] = this._resultAnnotations.map((frame) => __spreadValues({}, frame));
+      clone["_resultAnnotations"] = this._resultAnnotations.map((frame) => ({ ...frame }));
     }
     if (this._layerAnnotations) {
-      clone["_layerAnnotations"] = this._layerAnnotations.map((frame) => __spreadValues({}, frame));
+      clone["_layerAnnotations"] = this._layerAnnotations.map((frame) => ({ ...frame }));
     }
     clone["_variableValueRecorder"] = this._variableValueRecorder.cloneAndRecordCurrentValuesForSceneObject(this);
     clone["_containerWidth"] = this._containerWidth;
@@ -336,7 +350,7 @@ class SceneQueryRunner extends SceneObjectBase {
   prepareRequests(timeRange, ds) {
     var _a;
     const { minInterval, queries } = this.state;
-    let request = __spreadValues({
+    let request = {
       app: "scenes",
       requestId: getNextRequestId(),
       timezone: timeRange.getTimeZone(),
@@ -353,13 +367,18 @@ class SceneQueryRunner extends SceneObjectBase {
         to: timeRange.state.to
       },
       cacheTimeout: this.state.cacheTimeout,
-      queryCachingTTL: this.state.queryCachingTTL
-    }, getEnrichedDataRequest(this));
-    if (this._adhocFiltersVar) {
-      request.filters = this._adhocFiltersVar.state.filters.filter(isFilterComplete);
+      queryCachingTTL: this.state.queryCachingTTL,
+      scopes: sceneGraph.getScopes(this),
+      // This asks the scene root to provide context properties like app, panel and dashboardUID
+      ...getEnrichedDataRequest(this)
+    };
+    const filters = this._drilldownDependenciesManager.getFilters();
+    const groupByKeys = this._drilldownDependenciesManager.getGroupByKeys();
+    if (filters) {
+      request.filters = filters;
     }
-    if (this._groupByVar) {
-      request.groupByKeys = this._groupByVar.state.value;
+    if (groupByKeys) {
+      request.groupByKeys = groupByKeys;
     }
     request.targets = request.targets.map((query) => {
       var _a2;
@@ -382,7 +401,7 @@ class SceneQueryRunner extends SceneObjectBase {
     for (const provider of (_a = this.getClosestExtraQueryProviders()) != null ? _a : []) {
       for (const { req, processor } of provider.getExtraQueries(request)) {
         const requestId = getNextRequestId();
-        secondaryRequests.push(__spreadProps(__spreadValues({}, req), { requestId }));
+        secondaryRequests.push({ ...req, requestId });
         secondaryProcessors.set(requestId, processor != null ? processor : passthroughProcessor);
       }
     }
@@ -403,6 +422,11 @@ class SceneQueryRunner extends SceneObjectBase {
       this.setState({ data: emptyPanelData });
     }
   }
+  /**
+   * Walk up the scene graph and find any ExtraQueryProviders.
+   *
+   * This will return an array of the closest provider of each type.
+   */
   getClosestExtraQueryProviders() {
     const found = /* @__PURE__ */ new Map();
     if (!this.parent) {
@@ -421,31 +445,23 @@ class SceneQueryRunner extends SceneObjectBase {
     });
     return Array.from(found.values());
   }
-  findAndSubscribeToAdHocFilters(interpolatedUid) {
-    const filtersVar = findActiveAdHocFilterVariableByUid(interpolatedUid);
-    if (this._adhocFiltersVar !== filtersVar) {
-      this._adhocFiltersVar = filtersVar;
-      this._updateExplicitVariableDependencies();
-    }
-    const groupByVar = findActiveGroupByVariablesByUid(interpolatedUid);
-    if (this._groupByVar !== groupByVar) {
-      this._groupByVar = groupByVar;
-      this._updateExplicitVariableDependencies();
-    }
-  }
-  _updateExplicitVariableDependencies() {
-    const explicitDependencies = [];
-    if (this._adhocFiltersVar) {
-      explicitDependencies.push(this._adhocFiltersVar.state.name);
-    }
-    if (this._groupByVar) {
-      explicitDependencies.push(this._groupByVar.state.name);
-    }
-    this._variableDependency.setVariableNames(explicitDependencies);
-  }
   isQueryModeAuto() {
     var _a;
     return ((_a = this.state.runQueriesMode) != null ? _a : "auto") === "auto";
+  }
+  isInViewChanged(isInView) {
+    writeSceneLog("SceneQueryRunner", `isInViewChanged: ${isInView}`, this.state.key);
+    this._isInView = isInView;
+    if (isInView && this._queryNotExecutedWhenOutOfView) {
+      this.runQueries();
+    }
+  }
+  bypassIsInViewChanged(bypassIsInView) {
+    writeSceneLog("SceneQueryRunner", `bypassIsInViewChanged: ${bypassIsInView}`, this.state.key);
+    this._bypassIsInView = bypassIsInView;
+    if (bypassIsInView && this._queryNotExecutedWhenOutOfView) {
+      this.runQueries();
+    }
   }
 }
 function findFirstDatasource(targets) {

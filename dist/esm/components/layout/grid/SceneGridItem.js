@@ -15,9 +15,7 @@ function SceneGridItemRenderer({ model }) {
   if (!body) {
     return null;
   }
-  return /* @__PURE__ */ React.createElement(body.Component, {
-    model: body
-  });
+  return /* @__PURE__ */ React.createElement(body.Component, { model: body });
 }
 function isSceneGridRow(child) {
   return child instanceof SceneGridRow;
