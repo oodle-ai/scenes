@@ -93,66 +93,38 @@ export function VariableValueSelect({ model, state }: { model: MultiValueVariabl
   };
 
   const copyText = String(text ?? value ?? '');
-  const singleValueComponent = useMemo(
-    () =>
-      function SingleValueWithCopy(props: {
-        data: SelectableValue<VariableValue>;
-        children: React.ReactNode;
-        innerProps?: Record<string, unknown>;
-      }) {
-        const theme = useTheme2();
-        const selectStyles = getSelectStyles(theme);
-        const valueText = String(props.data?.label ?? props.data?.value ?? copyText);
-        return (
-          <div
-            className={selectStyles.singleValue}
-            {...(props.innerProps ?? {})}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              width: '100%',
-              maxWidth: '100%',
-              minWidth: 0,
-              overflow: 'visible',
-              boxSizing: 'border-box',
-            }}
-          >
-            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{props.children}</span>
-            <CopyValueButton text={valueText} />
-          </div>
-        );
-      },
-    [copyText]
-  );
+  const wrapperStyles = useStyles2(getSingleSelectWrapperStyles);
 
   return (
-    <Select<VariableValue>
-      id={key}
-      isValidNewOption={(inputValue) => inputValue.trim().length > 0}
-      placeholder={t('grafana-scenes.variables.variable-value-select.placeholder-select-value', 'Select value')}
-      width="auto"
-      disabled={isReadOnly}
-      value={selectValue}
-      inputValue={inputValue}
-      allowCustomValue={allowCustomValue}
-      virtualized
-      filterOption={filterNoOp}
-      tabSelectsValue={false}
-      onInputChange={onInputChange}
-      onOpenMenu={onOpenMenu}
-      onCloseMenu={onCloseMenu}
-      options={filteredOptions}
-      components={{ SingleValue: singleValueComponent }}
-      data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`)}
-      onChange={(newValue) => {
-        model.changeValueTo(newValue.value!, newValue.label!, true);
-        queryController?.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
+    <div className={wrapperStyles.wrapper}>
+      <Select<VariableValue>
+        id={key}
+        isValidNewOption={(inputValue) => inputValue.trim().length > 0}
+        placeholder={t('grafana-scenes.variables.variable-value-select.placeholder-select-value', 'Select value')}
+        width="auto"
+        disabled={isReadOnly}
+        value={selectValue}
+        inputValue={inputValue}
+        allowCustomValue={allowCustomValue}
+        virtualized
+        filterOption={filterNoOp}
+        tabSelectsValue={false}
+        onInputChange={onInputChange}
+        onOpenMenu={onOpenMenu}
+        onCloseMenu={onCloseMenu}
+        options={filteredOptions}
+        data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`)}
+        onChange={(newValue) => {
+          model.changeValueTo(newValue.value!, newValue.label!, true);
+          queryController?.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
 
-        if (hasCustomValue !== newValue.__isNew__) {
-          setHasCustomValue(newValue.__isNew__);
-        }
-      }}
-    />
+          if (hasCustomValue !== newValue.__isNew__) {
+            setHasCustomValue(newValue.__isNew__);
+          }
+        }}
+      />
+      <CopyValueButton text={copyText} className={wrapperStyles.copyButton} />
+    </div>
   );
 }
 
@@ -358,6 +330,36 @@ OptionWithCheckbox.displayName = 'SelectMenuOptions';
 const getOptionStyles = (theme: GrafanaTheme2) => ({
   checkbox: css({
     marginRight: theme.spacing(2),
+  }),
+});
+
+const getSingleSelectWrapperStyles = (theme: GrafanaTheme2) => ({
+  wrapper: css({
+    display: 'flex',
+    alignItems: 'stretch',
+    '& > :first-child': {
+      '& > div': {
+        borderTopRightRadius: 0,
+        borderBottomRightRadius: 0,
+        borderRight: 'none',
+      },
+    },
+  }),
+  copyButton: css({
+    display: 'flex',
+    alignItems: 'center',
+    padding: `0 ${theme.spacing(0.75)}`,
+    margin: 0,
+    background: theme.components.input.background,
+    border: `1px solid ${theme.components.input.borderColor}`,
+    borderLeft: 'none',
+    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
+    cursor: 'pointer',
+    color: theme.colors.text.secondary,
+    '&:hover': {
+      color: theme.colors.text.primary,
+      background: theme.components.input.background,
+    },
   }),
 });
 
