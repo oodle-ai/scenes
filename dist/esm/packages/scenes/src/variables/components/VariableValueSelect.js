@@ -7,6 +7,7 @@ import { css, cx } from '@emotion/css';
 import { getOptionSearcher } from './getOptionSearcher.js';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
 import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants.js';
+import { CopyValueButton } from './CopyValueButton.js';
 
 const filterNoOp = () => true;
 const filterAll = (v) => v.value !== "$__all";
@@ -26,6 +27,7 @@ function toSelectableValue(value, label) {
   };
 }
 function VariableValueSelect({ model, state }) {
+  var _a;
   const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = state;
   const [inputValue, setInputValue] = useState("");
   const [hasCustomValue, setHasCustomValue] = useState(false);
@@ -51,6 +53,34 @@ function VariableValueSelect({ model, state }) {
   const onCloseMenu = () => {
     setInputValue("");
   };
+  const copyText = String((_a = text != null ? text : value) != null ? _a : "");
+  const singleValueComponent = useMemo(
+    () => function SingleValueWithCopy(props) {
+      var _a2, _b, _c, _d, _e;
+      const theme = useTheme2();
+      const selectStyles = getSelectStyles(theme);
+      const valueText = String((_d = (_c = (_a2 = props.data) == null ? void 0 : _a2.label) != null ? _c : (_b = props.data) == null ? void 0 : _b.value) != null ? _d : copyText);
+      return /* @__PURE__ */ React.createElement(
+        "div",
+        {
+          className: selectStyles.singleValue,
+          ...(_e = props.innerProps) != null ? _e : {},
+          style: {
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            maxWidth: "100%",
+            minWidth: 0,
+            overflow: "visible",
+            boxSizing: "border-box"
+          }
+        },
+        /* @__PURE__ */ React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 } }, props.children),
+        /* @__PURE__ */ React.createElement(CopyValueButton, { text: valueText })
+      );
+    },
+    [copyText]
+  );
   return /* @__PURE__ */ React.createElement(
     Select,
     {
@@ -69,6 +99,7 @@ function VariableValueSelect({ model, state }) {
       onOpenMenu,
       onCloseMenu,
       options: filteredOptions,
+      components: { SingleValue: singleValueComponent },
       "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
       onChange: (newValue) => {
         model.changeValueTo(newValue.value, newValue.label, true);
@@ -102,6 +133,28 @@ function VariableValueSelectMulti({
   }, [arrayValue]);
   const onInputChange = (value2, { action }) => {
     if (action === "input-change") {
+      if (value2.includes(",")) {
+        const parts = value2.split(",").map((v) => v.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          const newValues = [...uncommittedValue];
+          for (const part of parts) {
+            const match = options.find(
+              (o) => {
+                var _a;
+                return String((_a = o.label) != null ? _a : o.value) === part || String(o.value) === part;
+              }
+            );
+            const resolved = match ? match.value : part;
+            if (!newValues.includes(resolved)) {
+              newValues.push(resolved);
+            }
+          }
+          setUncommittedValue(newValues);
+          model.changeValueTo(newValues, void 0, true);
+          setInputValue("");
+          return "";
+        }
+      }
       setInputValue(value2);
       if (model.onSearchChange) {
         model.onSearchChange(value2);
@@ -116,7 +169,15 @@ function VariableValueSelectMulti({
   };
   const placeholder = options.length > 0 ? "Select value" : "";
   const filteredOptions = optionSearcher(inputValue);
-  return /* @__PURE__ */ React.createElement(
+  const copyText = useMemo(() => {
+    const textVal = state.text;
+    if (isArray(textVal)) {
+      return textVal.map((t2) => String(t2)).filter((t2) => t2 !== "All").join(", ");
+    }
+    return String(textVal != null ? textVal : "");
+  }, [state.text]);
+  const wrapperStyles = useStyles2(getMultiSelectWrapperStyles);
+  return /* @__PURE__ */ React.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React.createElement(
     MultiSelect,
     {
       id: key,
@@ -153,7 +214,7 @@ function VariableValueSelectMulti({
         setUncommittedValue(newValue.map((x) => x.value));
       }
     }
-  );
+  ), /* @__PURE__ */ React.createElement(CopyValueButton, { text: copyText, className: wrapperStyles.copyButton }));
 }
 const OptionWithCheckbox = ({
   children,
@@ -196,6 +257,36 @@ OptionWithCheckbox.displayName = "SelectMenuOptions";
 const getOptionStyles = (theme) => ({
   checkbox: css({
     marginRight: theme.spacing(2)
+  })
+});
+const getMultiSelectWrapperStyles = (theme) => ({
+  wrapper: css({
+    display: "flex",
+    alignItems: "stretch",
+    // Remove right border-radius from the Select so the copy button merges visually
+    "& > :first-child": {
+      "& > div": {
+        borderTopRightRadius: 0,
+        borderBottomRightRadius: 0,
+        borderRight: "none"
+      }
+    }
+  }),
+  copyButton: css({
+    display: "flex",
+    alignItems: "center",
+    padding: `0 ${theme.spacing(0.75)}`,
+    margin: 0,
+    background: theme.components.input.background,
+    border: `1px solid ${theme.components.input.borderColor}`,
+    borderLeft: "none",
+    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
+    cursor: "pointer",
+    color: theme.colors.text.secondary,
+    "&:hover": {
+      color: theme.colors.text.primary,
+      background: theme.components.input.background
+    }
   })
 });
 function MultiOrSingleValueSelect({ model }) {

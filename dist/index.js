@@ -3114,6 +3114,83 @@ function getOptionSearcher(options, includeAll = false) {
   return (search) => fuzzyFind(allOptions, haystack, search);
 }
 
+const SHOW_COPIED_DURATION = 2 * 1e3;
+async function copyToClipboard(text, fallbackRef) {
+  var _a;
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  const textarea = document.createElement("textarea");
+  (_a = fallbackRef.current) == null ? void 0 : _a.appendChild(textarea);
+  textarea.value = text;
+  textarea.focus();
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
+}
+function CopyValueButton({ text, disabled, className }) {
+  const styles = ui.useStyles2(getBaseStyles);
+  const copyButtonRef = React.useRef(null);
+  const [showCopied, setShowCopied] = React.useState(false);
+  React.useEffect(() => {
+    if (!showCopied) {
+      return;
+    }
+    const timeoutId = setTimeout(() => setShowCopied(false), SHOW_COPIED_DURATION);
+    return () => clearTimeout(timeoutId);
+  }, [showCopied]);
+  const onCopyClick = React.useCallback(
+    async (event) => {
+      event.stopPropagation();
+      event.preventDefault();
+      try {
+        await copyToClipboard(text, copyButtonRef);
+        setShowCopied(true);
+      } catch (e) {
+      }
+    },
+    [text]
+  );
+  const copiedText = i18n.t("grafana-scenes.copy-value-button.copied", "Copied!");
+  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, showCopied && /* @__PURE__ */ React__default.default.createElement(ui.InlineToast, { placement: "top", referenceElement: copyButtonRef.current }, copiedText), /* @__PURE__ */ React__default.default.createElement(
+    "button",
+    {
+      ref: copyButtonRef,
+      type: "button",
+      className: css.cx(styles.button, showCopied && styles.successButton, className),
+      onClick: onCopyClick,
+      disabled,
+      "aria-label": i18n.t("grafana-scenes.copy-value-button.aria-label", "Copy value"),
+      title: i18n.t("grafana-scenes.copy-value-button.title", "Copy value")
+    },
+    /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: showCopied ? "check" : "copy", size: "sm", "aria-hidden": true })
+  ));
+}
+function getBaseStyles(theme) {
+  return {
+    button: css.css({
+      marginLeft: theme.spacing(0.5),
+      padding: 0,
+      background: "none",
+      border: "none",
+      cursor: "pointer",
+      color: theme.colors.text.secondary,
+      opacity: 1,
+      flexShrink: 0,
+      "&:hover": {
+        color: theme.colors.text.primary
+      },
+      "&:disabled": {
+        cursor: "not-allowed",
+        opacity: 0.3
+      }
+    }),
+    successButton: css.css({
+      color: theme.colors.success.text
+    })
+  };
+}
+
 const filterNoOp$2 = () => true;
 const filterAll = (v) => v.value !== "$__all";
 const determineToggleAllState = (selectedValues, options) => {
@@ -3132,6 +3209,7 @@ function toSelectableValue$2(value, label) {
   };
 }
 function VariableValueSelect({ model, state }) {
+  var _a;
   const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = state;
   const [inputValue, setInputValue] = React.useState("");
   const [hasCustomValue, setHasCustomValue] = React.useState(false);
@@ -3157,6 +3235,34 @@ function VariableValueSelect({ model, state }) {
   const onCloseMenu = () => {
     setInputValue("");
   };
+  const copyText = String((_a = text != null ? text : value) != null ? _a : "");
+  const singleValueComponent = React.useMemo(
+    () => function SingleValueWithCopy(props) {
+      var _a2, _b, _c, _d, _e;
+      const theme = ui.useTheme2();
+      const selectStyles = ui.getSelectStyles(theme);
+      const valueText = String((_d = (_c = (_a2 = props.data) == null ? void 0 : _a2.label) != null ? _c : (_b = props.data) == null ? void 0 : _b.value) != null ? _d : copyText);
+      return /* @__PURE__ */ React__default.default.createElement(
+        "div",
+        {
+          className: selectStyles.singleValue,
+          ...(_e = props.innerProps) != null ? _e : {},
+          style: {
+            display: "flex",
+            alignItems: "center",
+            width: "100%",
+            maxWidth: "100%",
+            minWidth: 0,
+            overflow: "visible",
+            boxSizing: "border-box"
+          }
+        },
+        /* @__PURE__ */ React__default.default.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 } }, props.children),
+        /* @__PURE__ */ React__default.default.createElement(CopyValueButton, { text: valueText })
+      );
+    },
+    [copyText]
+  );
   return /* @__PURE__ */ React__default.default.createElement(
     ui.Select,
     {
@@ -3175,6 +3281,7 @@ function VariableValueSelect({ model, state }) {
       onOpenMenu,
       onCloseMenu,
       options: filteredOptions,
+      components: { SingleValue: singleValueComponent },
       "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
       onChange: (newValue) => {
         model.changeValueTo(newValue.value, newValue.label, true);
@@ -3208,6 +3315,28 @@ function VariableValueSelectMulti({
   }, [arrayValue]);
   const onInputChange = (value2, { action }) => {
     if (action === "input-change") {
+      if (value2.includes(",")) {
+        const parts = value2.split(",").map((v) => v.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          const newValues = [...uncommittedValue];
+          for (const part of parts) {
+            const match = options.find(
+              (o) => {
+                var _a;
+                return String((_a = o.label) != null ? _a : o.value) === part || String(o.value) === part;
+              }
+            );
+            const resolved = match ? match.value : part;
+            if (!newValues.includes(resolved)) {
+              newValues.push(resolved);
+            }
+          }
+          setUncommittedValue(newValues);
+          model.changeValueTo(newValues, void 0, true);
+          setInputValue("");
+          return "";
+        }
+      }
       setInputValue(value2);
       if (model.onSearchChange) {
         model.onSearchChange(value2);
@@ -3222,7 +3351,15 @@ function VariableValueSelectMulti({
   };
   const placeholder = options.length > 0 ? "Select value" : "";
   const filteredOptions = optionSearcher(inputValue);
-  return /* @__PURE__ */ React__default.default.createElement(
+  const copyText = React.useMemo(() => {
+    const textVal = state.text;
+    if (lodash.isArray(textVal)) {
+      return textVal.map((t2) => String(t2)).filter((t2) => t2 !== "All").join(", ");
+    }
+    return String(textVal != null ? textVal : "");
+  }, [state.text]);
+  const wrapperStyles = ui.useStyles2(getMultiSelectWrapperStyles);
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React__default.default.createElement(
     ui.MultiSelect,
     {
       id: key,
@@ -3259,7 +3396,7 @@ function VariableValueSelectMulti({
         setUncommittedValue(newValue.map((x) => x.value));
       }
     }
-  );
+  ), /* @__PURE__ */ React__default.default.createElement(CopyValueButton, { text: copyText, className: wrapperStyles.copyButton }));
 }
 const OptionWithCheckbox = ({
   children,
@@ -3302,6 +3439,36 @@ OptionWithCheckbox.displayName = "SelectMenuOptions";
 const getOptionStyles = (theme) => ({
   checkbox: css.css({
     marginRight: theme.spacing(2)
+  })
+});
+const getMultiSelectWrapperStyles = (theme) => ({
+  wrapper: css.css({
+    display: "flex",
+    alignItems: "stretch",
+    // Remove right border-radius from the Select so the copy button merges visually
+    "& > :first-child": {
+      "& > div": {
+        borderTopRightRadius: 0,
+        borderBottomRightRadius: 0,
+        borderRight: "none"
+      }
+    }
+  }),
+  copyButton: css.css({
+    display: "flex",
+    alignItems: "center",
+    padding: `0 ${theme.spacing(0.75)}`,
+    margin: 0,
+    background: theme.components.input.background,
+    border: `1px solid ${theme.components.input.borderColor}`,
+    borderLeft: "none",
+    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
+    cursor: "pointer",
+    color: theme.colors.text.secondary,
+    "&:hover": {
+      color: theme.colors.text.primary,
+      background: theme.components.input.background
+    }
   })
 });
 function MultiOrSingleValueSelect({ model }) {
@@ -5589,6 +5756,7 @@ function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
         ref: pillWrapperRef
       },
       pillTextContent.length < LABEL_MAX_VISIBLE_LENGTH ? pillText : /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: /* @__PURE__ */ React__default.default.createElement("div", { className: styles.tooltipText }, pillTextContent), placement: "top" }, pillText),
+      !readOnly && !filter.matchAllFilter && /* @__PURE__ */ React__default.default.createElement(CopyValueButton, { text: pillTextContent, className: styles.pillIcon }),
       !readOnly && !filter.matchAllFilter && (!filter.origin || filter.origin === "dashboard") ? /* @__PURE__ */ React__default.default.createElement(
         ui.IconButton,
         {

@@ -7,6 +7,7 @@ import { AdHocFilterWithLabels, FilterOrigin, isMatchAllFilter } from '../AdHocF
 import { AdHocFiltersController } from '../controller/AdHocFiltersController';
 import { t } from '@grafana/i18n';
 import { getNonApplicablePillStyles } from '../../utils';
+import { CopyValueButton } from '../../components/CopyValueButton';
 
 const LABEL_MAX_VISIBLE_LENGTH = 20;
 
@@ -129,6 +130,9 @@ export function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputR
           </Tooltip>
         )}
 
+        {!readOnly && !filter.matchAllFilter && (
+          <CopyValueButton text={pillTextContent} className={styles.pillIcon} />
+        )}
         {!readOnly && !filter.matchAllFilter && (!filter.origin || filter.origin === 'dashboard') ? (
           <IconButton
             onClick={(e) => {

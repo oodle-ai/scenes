@@ -20,6 +20,7 @@ import { css, cx } from '@emotion/css';
 import { getOptionSearcher } from './getOptionSearcher';
 import { sceneGraph } from '../../core/sceneGraph';
 import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants';
+import { CopyValueButton } from './CopyValueButton';
 
 const filterNoOp = () => true;
 
@@ -80,6 +81,39 @@ export function VariableValueSelect({ model, state }: { model: MultiValueVariabl
     setInputValue('');
   };
 
+  const copyText = String(text ?? value ?? '');
+  const singleValueComponent = useMemo(
+    () =>
+      function SingleValueWithCopy(props: {
+        data: SelectableValue<VariableValue>;
+        children: React.ReactNode;
+        innerProps?: Record<string, unknown>;
+      }) {
+        const theme = useTheme2();
+        const selectStyles = getSelectStyles(theme);
+        const valueText = String(props.data?.label ?? props.data?.value ?? copyText);
+        return (
+          <div
+            className={selectStyles.singleValue}
+            {...(props.innerProps ?? {})}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              overflow: 'visible',
+              boxSizing: 'border-box',
+            }}
+          >
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0, flex: 1 }}>{props.children}</span>
+            <CopyValueButton text={valueText} />
+          </div>
+        );
+      },
+    [copyText]
+  );
+
   return (
     <Select<VariableValue>
       id={key}
@@ -97,6 +131,7 @@ export function VariableValueSelect({ model, state }: { model: MultiValueVariabl
       onOpenMenu={onOpenMenu}
       onCloseMenu={onCloseMenu}
       options={filteredOptions}
+      components={{ SingleValue: singleValueComponent }}
       data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`)}
       onChange={(newValue) => {
         model.changeValueTo(newValue.value!, newValue.label!, true);
@@ -140,6 +175,27 @@ export function VariableValueSelectMulti({
 
   const onInputChange = (value: string, { action }: InputActionMeta) => {
     if (action === 'input-change') {
+      // Handle pasted comma-separated values: split into individual selections
+      if (value.includes(',')) {
+        const parts = value.split(',').map((v) => v.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          const newValues = [...uncommittedValue];
+          for (const part of parts) {
+            const match = options.find(
+              (o) => String(o.label ?? o.value) === part || String(o.value) === part
+            );
+            const resolved = (match ? match.value! : part) as VariableValueSingle;
+            if (!newValues.includes(resolved)) {
+              newValues.push(resolved);
+            }
+          }
+          setUncommittedValue(newValues);
+          model.changeValueTo(newValues, undefined, true);
+          setInputValue('');
+          return '';
+        }
+      }
+
       setInputValue(value);
       if (model.onSearchChange) {
         model.onSearchChange!(value);
@@ -158,43 +214,56 @@ export function VariableValueSelectMulti({
   const placeholder = options.length > 0 ? 'Select value' : '';
   const filteredOptions = optionSearcher(inputValue);
 
+  const copyText = useMemo(() => {
+    const textVal = state.text;
+    if (isArray(textVal)) {
+      return textVal.map((t) => String(t)).filter((t) => t !== 'All').join(', ');
+    }
+    return String(textVal ?? '');
+  }, [state.text]);
+
+  const wrapperStyles = useStyles2(getMultiSelectWrapperStyles);
+
   return (
-    <MultiSelect<VariableValueSingle>
-      id={key}
-      placeholder={placeholder}
-      width="auto"
-      inputValue={inputValue}
-      disabled={isReadOnly}
-      value={uncommittedValue}
-      noMultiValueWrap={true}
-      maxVisibleValues={maxVisibleValues ?? 5}
-      tabSelectsValue={false}
-      virtualized
-      allowCustomValue={allowCustomValue}
-      //@ts-ignore
-      toggleAllOptions={{
-        enabled: true,
-        optionsFilter: filterAll,
-        determineToggleAllState: determineToggleAllState,
-      }}
-      options={filteredOptions}
-      closeMenuOnSelect={false}
-      components={{ Option: OptionWithCheckbox }}
-      isClearable={true}
-      hideSelectedOptions={false}
-      onInputChange={onInputChange}
-      onBlur={() => {
-        model.changeValueTo(uncommittedValue, undefined, true);
-      }}
-      filterOption={filterNoOp}
-      data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`)}
-      onChange={(newValue, action) => {
-        if (action.action === 'clear') {
-          model.changeValueTo(['$__all']);
-        }
-        setUncommittedValue(newValue.map((x) => x.value!));
-      }}
-    />
+    <div className={wrapperStyles.wrapper}>
+      <MultiSelect<VariableValueSingle>
+        id={key}
+        placeholder={placeholder}
+        width="auto"
+        inputValue={inputValue}
+        disabled={isReadOnly}
+        value={uncommittedValue}
+        noMultiValueWrap={true}
+        maxVisibleValues={maxVisibleValues ?? 5}
+        tabSelectsValue={false}
+        virtualized
+        allowCustomValue={allowCustomValue}
+        //@ts-ignore
+        toggleAllOptions={{
+          enabled: true,
+          optionsFilter: filterAll,
+          determineToggleAllState: determineToggleAllState,
+        }}
+        options={filteredOptions}
+        closeMenuOnSelect={false}
+        components={{ Option: OptionWithCheckbox }}
+        isClearable={true}
+        hideSelectedOptions={false}
+        onInputChange={onInputChange}
+        onBlur={() => {
+          model.changeValueTo(uncommittedValue, undefined, true);
+        }}
+        filterOption={filterNoOp}
+        data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`)}
+        onChange={(newValue, action) => {
+          if (action.action === 'clear') {
+            model.changeValueTo(['$__all']);
+          }
+          setUncommittedValue(newValue.map((x) => x.value!));
+        }}
+      />
+      <CopyValueButton text={copyText} className={wrapperStyles.copyButton} />
+    </div>
   );
 }
 
@@ -257,6 +326,37 @@ OptionWithCheckbox.displayName = 'SelectMenuOptions';
 const getOptionStyles = (theme: GrafanaTheme2) => ({
   checkbox: css({
     marginRight: theme.spacing(2),
+  }),
+});
+
+const getMultiSelectWrapperStyles = (theme: GrafanaTheme2) => ({
+  wrapper: css({
+    display: 'flex',
+    alignItems: 'stretch',
+    // Remove right border-radius from the Select so the copy button merges visually
+    '& > :first-child': {
+      '& > div': {
+        borderTopRightRadius: 0,
+        borderBottomRightRadius: 0,
+        borderRight: 'none',
+      },
+    },
+  }),
+  copyButton: css({
+    display: 'flex',
+    alignItems: 'center',
+    padding: `0 ${theme.spacing(0.75)}`,
+    margin: 0,
+    background: theme.components.input.background,
+    border: `1px solid ${theme.components.input.borderColor}`,
+    borderLeft: 'none',
+    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
+    cursor: 'pointer',
+    color: theme.colors.text.secondary,
+    '&:hover': {
+      color: theme.colors.text.primary,
+      background: theme.components.input.background,
+    },
   }),
 });
 
