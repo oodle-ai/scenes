@@ -64,34 +64,8 @@ function VariableValueSelect({ model, state }) {
     setInputValue("");
   };
   const copyText = String((_a = text != null ? text : value) != null ? _a : "");
-  const singleValueComponent = useMemo(
-    () => function SingleValueWithCopy(props) {
-      var _a2, _b, _c, _d, _e;
-      const theme = useTheme2();
-      const selectStyles = getSelectStyles(theme);
-      const valueText = String((_d = (_c = (_a2 = props.data) == null ? void 0 : _a2.label) != null ? _c : (_b = props.data) == null ? void 0 : _b.value) != null ? _d : copyText);
-      return /* @__PURE__ */ React.createElement(
-        "div",
-        {
-          className: selectStyles.singleValue,
-          ...(_e = props.innerProps) != null ? _e : {},
-          style: {
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            maxWidth: "100%",
-            minWidth: 0,
-            overflow: "visible",
-            boxSizing: "border-box"
-          }
-        },
-        /* @__PURE__ */ React.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 } }, props.children),
-        /* @__PURE__ */ React.createElement(CopyValueButton, { text: valueText })
-      );
-    },
-    [copyText]
-  );
-  return /* @__PURE__ */ React.createElement(
+  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
+  return /* @__PURE__ */ React.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React.createElement(
     Select,
     {
       id: key,
@@ -109,7 +83,6 @@ function VariableValueSelect({ model, state }) {
       onOpenMenu,
       onCloseMenu,
       options: filteredOptions,
-      components: { SingleValue: singleValueComponent },
       "data-testid": selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
       onChange: (newValue) => {
         model.changeValueTo(newValue.value, newValue.label, true);
@@ -119,7 +92,7 @@ function VariableValueSelect({ model, state }) {
         }
       }
     }
-  );
+  ), /* @__PURE__ */ React.createElement(CopyValueButton, { text: copyText, className: wrapperStyles.copyButton }));
 }
 function VariableValueSelectMulti({
   model,
@@ -178,7 +151,10 @@ function VariableValueSelectMulti({
     return inputValue;
   };
   const placeholder = options.length > 0 ? "Select value" : "";
-  const filteredOptions = optionSearcher(inputValue);
+  const filteredOptions = useMemo(
+    () => optionSearcher(inputValue),
+    [optionSearcher, inputValue]
+  );
   const sortedOptions = useMemo(() => {
     const selectedSet = new Set(arrayValue.map(String));
     const optionValueSet = new Set(filteredOptions.map((o) => String(o.value)));
@@ -201,7 +177,7 @@ function VariableValueSelectMulti({
     }
     return String(textVal != null ? textVal : "");
   }, [state.text]);
-  const wrapperStyles = useStyles2(getMultiSelectWrapperStyles);
+  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
   return /* @__PURE__ */ React.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React.createElement(
     MultiSelect,
     {
@@ -284,12 +260,12 @@ const getOptionStyles = (theme) => ({
     marginRight: theme.spacing(2)
   })
 });
-const getMultiSelectWrapperStyles = (theme) => ({
+const getSelectCopyWrapperStyles = (theme) => ({
   wrapper: css({
     display: "flex",
     alignItems: "stretch",
-    // Remove right border-radius from the Select so the copy button merges visually
     "& > :first-child": {
+      // Targets SelectContainer (the bordered wrapper inside @grafana/ui Select)
       "& > div": {
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
@@ -301,6 +277,8 @@ const getMultiSelectWrapperStyles = (theme) => ({
     display: "flex",
     alignItems: "center",
     padding: `0 ${theme.spacing(0.75)}`,
+    // Override CopyValueButton's base styles (marginLeft, background, border)
+    marginLeft: 0,
     margin: 0,
     background: theme.components.input.background,
     border: `1px solid ${theme.components.input.borderColor}`,

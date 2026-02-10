@@ -3245,34 +3245,8 @@ function VariableValueSelect({ model, state }) {
     setInputValue("");
   };
   const copyText = String((_a = text != null ? text : value) != null ? _a : "");
-  const singleValueComponent = React.useMemo(
-    () => function SingleValueWithCopy(props) {
-      var _a2, _b, _c, _d, _e;
-      const theme = ui.useTheme2();
-      const selectStyles = ui.getSelectStyles(theme);
-      const valueText = String((_d = (_c = (_a2 = props.data) == null ? void 0 : _a2.label) != null ? _c : (_b = props.data) == null ? void 0 : _b.value) != null ? _d : copyText);
-      return /* @__PURE__ */ React__default.default.createElement(
-        "div",
-        {
-          className: selectStyles.singleValue,
-          ...(_e = props.innerProps) != null ? _e : {},
-          style: {
-            display: "flex",
-            alignItems: "center",
-            width: "100%",
-            maxWidth: "100%",
-            minWidth: 0,
-            overflow: "visible",
-            boxSizing: "border-box"
-          }
-        },
-        /* @__PURE__ */ React__default.default.createElement("span", { style: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, flex: 1 } }, props.children),
-        /* @__PURE__ */ React__default.default.createElement(CopyValueButton, { text: valueText })
-      );
-    },
-    [copyText]
-  );
-  return /* @__PURE__ */ React__default.default.createElement(
+  const wrapperStyles = ui.useStyles2(getSelectCopyWrapperStyles);
+  return /* @__PURE__ */ React__default.default.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React__default.default.createElement(
     ui.Select,
     {
       id: key,
@@ -3290,7 +3264,6 @@ function VariableValueSelect({ model, state }) {
       onOpenMenu,
       onCloseMenu,
       options: filteredOptions,
-      components: { SingleValue: singleValueComponent },
       "data-testid": e2eSelectors.selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`),
       onChange: (newValue) => {
         model.changeValueTo(newValue.value, newValue.label, true);
@@ -3300,7 +3273,7 @@ function VariableValueSelect({ model, state }) {
         }
       }
     }
-  );
+  ), /* @__PURE__ */ React__default.default.createElement(CopyValueButton, { text: copyText, className: wrapperStyles.copyButton }));
 }
 function VariableValueSelectMulti({
   model,
@@ -3359,7 +3332,10 @@ function VariableValueSelectMulti({
     return inputValue;
   };
   const placeholder = options.length > 0 ? "Select value" : "";
-  const filteredOptions = optionSearcher(inputValue);
+  const filteredOptions = React.useMemo(
+    () => optionSearcher(inputValue),
+    [optionSearcher, inputValue]
+  );
   const sortedOptions = React.useMemo(() => {
     const selectedSet = new Set(arrayValue.map(String));
     const optionValueSet = new Set(filteredOptions.map((o) => String(o.value)));
@@ -3382,7 +3358,7 @@ function VariableValueSelectMulti({
     }
     return String(textVal != null ? textVal : "");
   }, [state.text]);
-  const wrapperStyles = ui.useStyles2(getMultiSelectWrapperStyles);
+  const wrapperStyles = ui.useStyles2(getSelectCopyWrapperStyles);
   return /* @__PURE__ */ React__default.default.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React__default.default.createElement(
     ui.MultiSelect,
     {
@@ -3465,12 +3441,12 @@ const getOptionStyles = (theme) => ({
     marginRight: theme.spacing(2)
   })
 });
-const getMultiSelectWrapperStyles = (theme) => ({
+const getSelectCopyWrapperStyles = (theme) => ({
   wrapper: css.css({
     display: "flex",
     alignItems: "stretch",
-    // Remove right border-radius from the Select so the copy button merges visually
     "& > :first-child": {
+      // Targets SelectContainer (the bordered wrapper inside @grafana/ui Select)
       "& > div": {
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
@@ -3482,6 +3458,8 @@ const getMultiSelectWrapperStyles = (theme) => ({
     display: "flex",
     alignItems: "center",
     padding: `0 ${theme.spacing(0.75)}`,
+    // Override CopyValueButton's base styles (marginLeft, background, border)
+    marginLeft: 0,
     margin: 0,
     background: theme.components.input.background,
     border: `1px solid ${theme.components.input.borderColor}`,
