@@ -93,7 +93,7 @@ export function VariableValueSelect({ model, state }: { model: MultiValueVariabl
   };
 
   const copyText = String(text ?? value ?? '');
-  const wrapperStyles = useStyles2(getSingleSelectWrapperStyles);
+  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
 
   return (
     <div className={wrapperStyles.wrapper}>
@@ -195,7 +195,11 @@ export function VariableValueSelectMulti({
   };
 
   const placeholder = options.length > 0 ? 'Select value' : '';
-  const filteredOptions = optionSearcher(inputValue);
+
+  const filteredOptions = useMemo(
+    () => optionSearcher(inputValue),
+    [optionSearcher, inputValue]
+  );
 
   const sortedOptions = useMemo(() => {
     const selectedSet = new Set(arrayValue.map(String));
@@ -226,7 +230,7 @@ export function VariableValueSelectMulti({
     return String(textVal ?? '');
   }, [state.text]);
 
-  const wrapperStyles = useStyles2(getMultiSelectWrapperStyles);
+  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
 
   return (
     <div className={wrapperStyles.wrapper}>
@@ -333,11 +337,21 @@ const getOptionStyles = (theme: GrafanaTheme2) => ({
   }),
 });
 
-const getSingleSelectWrapperStyles = (theme: GrafanaTheme2) => ({
+/**
+ * Shared styles for the Select/MultiSelect + CopyValueButton wrapper.
+ * Visually merges the select control and copy button into a single bordered unit.
+ *
+ * NOTE: The nested selector `& > :first-child > div` targets the SelectContainer
+ * element rendered by @grafana/ui's <Select>/<MultiSelect>. SelectContainer is the
+ * outermost <div> that carries the input border. This is fragile — if @grafana/ui
+ * changes the Select DOM structure, this selector may silently break.
+ */
+const getSelectCopyWrapperStyles = (theme: GrafanaTheme2) => ({
   wrapper: css({
     display: 'flex',
     alignItems: 'stretch',
     '& > :first-child': {
+      // Targets SelectContainer (the bordered wrapper inside @grafana/ui Select)
       '& > div': {
         borderTopRightRadius: 0,
         borderBottomRightRadius: 0,
@@ -349,37 +363,8 @@ const getSingleSelectWrapperStyles = (theme: GrafanaTheme2) => ({
     display: 'flex',
     alignItems: 'center',
     padding: `0 ${theme.spacing(0.75)}`,
-    margin: 0,
-    background: theme.components.input.background,
-    border: `1px solid ${theme.components.input.borderColor}`,
-    borderLeft: 'none',
-    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
-    cursor: 'pointer',
-    color: theme.colors.text.secondary,
-    '&:hover': {
-      color: theme.colors.text.primary,
-      background: theme.components.input.background,
-    },
-  }),
-});
-
-const getMultiSelectWrapperStyles = (theme: GrafanaTheme2) => ({
-  wrapper: css({
-    display: 'flex',
-    alignItems: 'stretch',
-    // Remove right border-radius from the Select so the copy button merges visually
-    '& > :first-child': {
-      '& > div': {
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0,
-        borderRight: 'none',
-      },
-    },
-  }),
-  copyButton: css({
-    display: 'flex',
-    alignItems: 'center',
-    padding: `0 ${theme.spacing(0.75)}`,
+    // Override CopyValueButton's base styles (marginLeft, background, border)
+    marginLeft: 0,
     margin: 0,
     background: theme.components.input.background,
     border: `1px solid ${theme.components.input.borderColor}`,
