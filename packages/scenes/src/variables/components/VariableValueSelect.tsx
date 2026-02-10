@@ -18,6 +18,7 @@ import { selectors } from '@grafana/e2e-selectors';
 import { GrafanaTheme2, SelectableValue } from '@grafana/data';
 import { css, cx } from '@emotion/css';
 import { getOptionSearcher } from './getOptionSearcher';
+import { ALL_VARIABLE_VALUE } from '../constants';
 import { sceneGraph } from '../../core/sceneGraph';
 import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants';
 import { CopyValueButton } from './CopyValueButton';
@@ -214,6 +215,20 @@ export function VariableValueSelectMulti({
   const placeholder = options.length > 0 ? 'Select value' : '';
   const filteredOptions = optionSearcher(inputValue);
 
+  const sortedOptions = useMemo(() => {
+    const selectedSet = new Set(arrayValue.map(String));
+    const allOption = filteredOptions.filter(
+      (o) => o.value === ALL_VARIABLE_VALUE
+    );
+    const selected = filteredOptions.filter(
+      (o) => o.value !== ALL_VARIABLE_VALUE && selectedSet.has(String(o.value))
+    );
+    const unselected = filteredOptions.filter(
+      (o) => o.value !== ALL_VARIABLE_VALUE && !selectedSet.has(String(o.value))
+    );
+    return [...allOption, ...selected, ...unselected];
+  }, [filteredOptions, arrayValue]);
+
   const copyText = useMemo(() => {
     const textVal = state.text;
     if (isArray(textVal)) {
@@ -244,7 +259,7 @@ export function VariableValueSelectMulti({
           optionsFilter: filterAll,
           determineToggleAllState: determineToggleAllState,
         }}
-        options={filteredOptions}
+        options={sortedOptions}
         closeMenuOnSelect={false}
         components={{ Option: OptionWithCheckbox }}
         isClearable={true}
