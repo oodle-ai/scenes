@@ -3226,7 +3226,16 @@ function VariableValueSelect({ model, state }) {
     }
     return value2;
   };
-  const filteredOptions = optionSearcher(inputValue);
+  const filteredOptions = React.useMemo(() => {
+    const results = optionSearcher(inputValue);
+    if (hasCustomValue && value != null && value !== "" && value !== ALL_VARIABLE_VALUE) {
+      const exists = results.some((o) => String(o.value) === String(value));
+      if (!exists) {
+        return [{ value, label: String(text) }, ...results];
+      }
+    }
+    return results;
+  }, [optionSearcher, inputValue, hasCustomValue, value, text]);
   const onOpenMenu = () => {
     if (hasCustomValue) {
       setInputValue(String(text));
@@ -3351,6 +3360,21 @@ function VariableValueSelectMulti({
   };
   const placeholder = options.length > 0 ? "Select value" : "";
   const filteredOptions = optionSearcher(inputValue);
+  const sortedOptions = React.useMemo(() => {
+    const selectedSet = new Set(arrayValue.map(String));
+    const optionValueSet = new Set(filteredOptions.map((o) => String(o.value)));
+    const customOptions = arrayValue.filter((v) => v !== ALL_VARIABLE_VALUE && !optionValueSet.has(String(v))).map((v) => ({ value: v, label: String(v) }));
+    const allOption = filteredOptions.filter(
+      (o) => o.value === ALL_VARIABLE_VALUE
+    );
+    const selected = filteredOptions.filter(
+      (o) => o.value !== ALL_VARIABLE_VALUE && selectedSet.has(String(o.value))
+    );
+    const unselected = filteredOptions.filter(
+      (o) => o.value !== ALL_VARIABLE_VALUE && !selectedSet.has(String(o.value))
+    );
+    return [...allOption, ...customOptions, ...selected, ...unselected];
+  }, [filteredOptions, arrayValue]);
   const copyText = React.useMemo(() => {
     const textVal = state.text;
     if (lodash.isArray(textVal)) {
@@ -3378,7 +3402,7 @@ function VariableValueSelectMulti({
         optionsFilter: filterAll,
         determineToggleAllState
       },
-      options: filteredOptions,
+      options: sortedOptions,
       closeMenuOnSelect: false,
       components: { Option: OptionWithCheckbox },
       isClearable: true,
