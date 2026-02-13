@@ -18,6 +18,7 @@ import { selectors } from '@grafana/e2e-selectors';
 import { GrafanaTheme2, SelectableValue } from '@grafana/data';
 import { css, cx } from '@emotion/css';
 import { getOptionSearcher } from './getOptionSearcher';
+import { ALL_VARIABLE_VALUE } from '../constants';
 import { sceneGraph } from '../../core/sceneGraph';
 import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants';
 
@@ -68,7 +69,17 @@ export function VariableValueSelect({ model, state }: { model: MultiValueVariabl
     return value;
   };
 
-  const filteredOptions = optionSearcher(inputValue);
+  const filteredOptions = useMemo(() => {
+    const results = optionSearcher(inputValue);
+    // If the current value is a custom value not in the options, add it at the top
+    if (hasCustomValue && value != null && value !== '' && value !== ALL_VARIABLE_VALUE) {
+      const exists = results.some((o) => String(o.value) === String(value));
+      if (!exists) {
+        return [{ value, label: String(text) }, ...results];
+      }
+    }
+    return results;
+  }, [optionSearcher, inputValue, hasCustomValue, value, text]);
 
   const onOpenMenu = () => {
     if (hasCustomValue) {
@@ -140,6 +151,27 @@ export function VariableValueSelectMulti({
 
   const onInputChange = (value: string, { action }: InputActionMeta) => {
     if (action === 'input-change') {
+      // Handle pasted comma-separated values: split into individual selections
+      if (value.includes(',')) {
+        const parts = value.split(',').map((v) => v.trim()).filter(Boolean);
+        if (parts.length > 1) {
+          const newValues = [...uncommittedValue];
+          for (const part of parts) {
+            const match = options.find(
+              (o) => String(o.label ?? o.value) === part || String(o.value) === part
+            );
+            const resolved = (match ? match.value! : part) as VariableValueSingle;
+            if (!newValues.includes(resolved)) {
+              newValues.push(resolved);
+            }
+          }
+          setUncommittedValue(newValues);
+          model.changeValueTo(newValues, undefined, true);
+          setInputValue('');
+          return '';
+        }
+      }
+
       setInputValue(value);
       if (model.onSearchChange) {
         model.onSearchChange!(value);
@@ -156,7 +188,32 @@ export function VariableValueSelectMulti({
   };
 
   const placeholder = options.length > 0 ? 'Select value' : '';
-  const filteredOptions = optionSearcher(inputValue);
+
+  const filteredOptions = useMemo(
+    () => optionSearcher(inputValue),
+    [optionSearcher, inputValue]
+  );
+
+  const sortedOptions = useMemo(() => {
+    const selectedSet = new Set(arrayValue.map(String));
+    const optionValueSet = new Set(filteredOptions.map((o) => String(o.value)));
+
+    // Include custom values (selected values not present in the fetched options) at the top
+    const customOptions = arrayValue
+      .filter((v) => v !== ALL_VARIABLE_VALUE && !optionValueSet.has(String(v)))
+      .map((v) => ({ value: v, label: String(v) }));
+
+    const allOption = filteredOptions.filter(
+      (o) => o.value === ALL_VARIABLE_VALUE
+    );
+    const selected = filteredOptions.filter(
+      (o) => o.value !== ALL_VARIABLE_VALUE && selectedSet.has(String(o.value))
+    );
+    const unselected = filteredOptions.filter(
+      (o) => o.value !== ALL_VARIABLE_VALUE && !selectedSet.has(String(o.value))
+    );
+    return [...allOption, ...customOptions, ...selected, ...unselected];
+  }, [filteredOptions, arrayValue]);
 
   return (
     <MultiSelect<VariableValueSingle>
@@ -177,7 +234,7 @@ export function VariableValueSelectMulti({
         optionsFilter: filterAll,
         determineToggleAllState: determineToggleAllState,
       }}
-      options={filteredOptions}
+      options={sortedOptions}
       closeMenuOnSelect={false}
       components={{ Option: OptionWithCheckbox }}
       isClearable={true}
