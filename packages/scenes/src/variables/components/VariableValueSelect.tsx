@@ -21,7 +21,6 @@ import { getOptionSearcher } from './getOptionSearcher';
 import { ALL_VARIABLE_VALUE } from '../constants';
 import { sceneGraph } from '../../core/sceneGraph';
 import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants';
-import { CopyValueButton } from './CopyValueButton';
 
 const filterNoOp = () => true;
 
@@ -92,39 +91,33 @@ export function VariableValueSelect({ model, state }: { model: MultiValueVariabl
     setInputValue('');
   };
 
-  const copyText = String(text ?? value ?? '');
-  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
-
   return (
-    <div className={wrapperStyles.wrapper}>
-      <Select<VariableValue>
-        id={key}
-        isValidNewOption={(inputValue) => inputValue.trim().length > 0}
-        placeholder={t('grafana-scenes.variables.variable-value-select.placeholder-select-value', 'Select value')}
-        width="auto"
-        disabled={isReadOnly}
-        value={selectValue}
-        inputValue={inputValue}
-        allowCustomValue={allowCustomValue}
-        virtualized
-        filterOption={filterNoOp}
-        tabSelectsValue={false}
-        onInputChange={onInputChange}
-        onOpenMenu={onOpenMenu}
-        onCloseMenu={onCloseMenu}
-        options={filteredOptions}
-        data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`)}
-        onChange={(newValue) => {
-          model.changeValueTo(newValue.value!, newValue.label!, true);
-          queryController?.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
+    <Select<VariableValue>
+      id={key}
+      isValidNewOption={(inputValue) => inputValue.trim().length > 0}
+      placeholder={t('grafana-scenes.variables.variable-value-select.placeholder-select-value', 'Select value')}
+      width="auto"
+      disabled={isReadOnly}
+      value={selectValue}
+      inputValue={inputValue}
+      allowCustomValue={allowCustomValue}
+      virtualized
+      filterOption={filterNoOp}
+      tabSelectsValue={false}
+      onInputChange={onInputChange}
+      onOpenMenu={onOpenMenu}
+      onCloseMenu={onCloseMenu}
+      options={filteredOptions}
+      data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${value}`)}
+      onChange={(newValue) => {
+        model.changeValueTo(newValue.value!, newValue.label!, true);
+        queryController?.startProfile(VARIABLE_VALUE_CHANGED_INTERACTION);
 
-          if (hasCustomValue !== newValue.__isNew__) {
-            setHasCustomValue(newValue.__isNew__);
-          }
-        }}
-      />
-      <CopyValueButton text={copyText} className={wrapperStyles.copyButton} />
-    </div>
+        if (hasCustomValue !== newValue.__isNew__) {
+          setHasCustomValue(newValue.__isNew__);
+        }
+      }}
+    />
   );
 }
 
@@ -222,19 +215,8 @@ export function VariableValueSelectMulti({
     return [...allOption, ...customOptions, ...selected, ...unselected];
   }, [filteredOptions, arrayValue]);
 
-  const copyText = useMemo(() => {
-    const textVal = state.text;
-    if (isArray(textVal)) {
-      return textVal.map((t) => String(t)).filter((t) => t !== 'All').join(', ');
-    }
-    return String(textVal ?? '');
-  }, [state.text]);
-
-  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
-
   return (
-    <div className={wrapperStyles.wrapper}>
-      <MultiSelect<VariableValueSingle>
+    <MultiSelect<VariableValueSingle>
         id={key}
         placeholder={placeholder}
         width="auto"
@@ -270,8 +252,6 @@ export function VariableValueSelectMulti({
           setUncommittedValue(newValue.map((x) => x.value!));
         }}
       />
-      <CopyValueButton text={copyText} className={wrapperStyles.copyButton} />
-    </div>
   );
 }
 
@@ -334,48 +314,6 @@ OptionWithCheckbox.displayName = 'SelectMenuOptions';
 const getOptionStyles = (theme: GrafanaTheme2) => ({
   checkbox: css({
     marginRight: theme.spacing(2),
-  }),
-});
-
-/**
- * Shared styles for the Select/MultiSelect + CopyValueButton wrapper.
- * Visually merges the select control and copy button into a single bordered unit.
- *
- * NOTE: The nested selector `& > :first-child > div` targets the SelectContainer
- * element rendered by @grafana/ui's <Select>/<MultiSelect>. SelectContainer is the
- * outermost <div> that carries the input border. This is fragile — if @grafana/ui
- * changes the Select DOM structure, this selector may silently break.
- */
-const getSelectCopyWrapperStyles = (theme: GrafanaTheme2) => ({
-  wrapper: css({
-    display: 'flex',
-    alignItems: 'stretch',
-    '& > :first-child': {
-      // Targets SelectContainer (the bordered wrapper inside @grafana/ui Select)
-      '& > div': {
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0,
-        borderRight: 'none',
-      },
-    },
-  }),
-  copyButton: css({
-    display: 'flex',
-    alignItems: 'center',
-    padding: `0 ${theme.spacing(0.75)}`,
-    // Override CopyValueButton's base styles (marginLeft, background, border)
-    marginLeft: 0,
-    margin: 0,
-    background: theme.components.input.background,
-    border: `1px solid ${theme.components.input.borderColor}`,
-    borderLeft: 'none',
-    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
-    cursor: 'pointer',
-    color: theme.colors.text.secondary,
-    '&:hover': {
-      color: theme.colors.text.primary,
-      background: theme.components.input.background,
-    },
   }),
 });
 

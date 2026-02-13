@@ -8,7 +8,6 @@ import { getOptionSearcher } from './getOptionSearcher.js';
 import { ALL_VARIABLE_VALUE } from '../constants.js';
 import { sceneGraph } from '../../core/sceneGraph/index.js';
 import { VARIABLE_VALUE_CHANGED_INTERACTION } from '../../performance/interactionConstants.js';
-import { CopyValueButton } from './CopyValueButton.js';
 
 const filterNoOp = () => true;
 const filterAll = (v) => v.value !== "$__all";
@@ -28,7 +27,6 @@ function toSelectableValue(value, label) {
   };
 }
 function VariableValueSelect({ model, state }) {
-  var _a;
   const { value, text, key, options, includeAll, isReadOnly, allowCustomValue = true } = state;
   const [inputValue, setInputValue] = useState("");
   const [hasCustomValue, setHasCustomValue] = useState(false);
@@ -63,9 +61,7 @@ function VariableValueSelect({ model, state }) {
   const onCloseMenu = () => {
     setInputValue("");
   };
-  const copyText = String((_a = text != null ? text : value) != null ? _a : "");
-  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
-  return /* @__PURE__ */ React.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement(
     Select,
     {
       id: key,
@@ -92,7 +88,7 @@ function VariableValueSelect({ model, state }) {
         }
       }
     }
-  ), /* @__PURE__ */ React.createElement(CopyValueButton, { text: copyText, className: wrapperStyles.copyButton }));
+  );
 }
 function VariableValueSelectMulti({
   model,
@@ -170,15 +166,7 @@ function VariableValueSelectMulti({
     );
     return [...allOption, ...customOptions, ...selected, ...unselected];
   }, [filteredOptions, arrayValue]);
-  const copyText = useMemo(() => {
-    const textVal = state.text;
-    if (isArray(textVal)) {
-      return textVal.map((t2) => String(t2)).filter((t2) => t2 !== "All").join(", ");
-    }
-    return String(textVal != null ? textVal : "");
-  }, [state.text]);
-  const wrapperStyles = useStyles2(getSelectCopyWrapperStyles);
-  return /* @__PURE__ */ React.createElement("div", { className: wrapperStyles.wrapper }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement(
     MultiSelect,
     {
       id: key,
@@ -215,7 +203,7 @@ function VariableValueSelectMulti({
         setUncommittedValue(newValue.map((x) => x.value));
       }
     }
-  ), /* @__PURE__ */ React.createElement(CopyValueButton, { text: copyText, className: wrapperStyles.copyButton }));
+  );
 }
 const OptionWithCheckbox = ({
   children,
@@ -258,38 +246,6 @@ OptionWithCheckbox.displayName = "SelectMenuOptions";
 const getOptionStyles = (theme) => ({
   checkbox: css({
     marginRight: theme.spacing(2)
-  })
-});
-const getSelectCopyWrapperStyles = (theme) => ({
-  wrapper: css({
-    display: "flex",
-    alignItems: "stretch",
-    "& > :first-child": {
-      // Targets SelectContainer (the bordered wrapper inside @grafana/ui Select)
-      "& > div": {
-        borderTopRightRadius: 0,
-        borderBottomRightRadius: 0,
-        borderRight: "none"
-      }
-    }
-  }),
-  copyButton: css({
-    display: "flex",
-    alignItems: "center",
-    padding: `0 ${theme.spacing(0.75)}`,
-    // Override CopyValueButton's base styles (marginLeft, background, border)
-    marginLeft: 0,
-    margin: 0,
-    background: theme.components.input.background,
-    border: `1px solid ${theme.components.input.borderColor}`,
-    borderLeft: "none",
-    borderRadius: `0 ${theme.shape.radius.default} ${theme.shape.radius.default} 0`,
-    cursor: "pointer",
-    color: theme.colors.text.secondary,
-    "&:hover": {
-      color: theme.colors.text.primary,
-      background: theme.components.input.background
-    }
   })
 });
 function MultiOrSingleValueSelect({ model }) {
