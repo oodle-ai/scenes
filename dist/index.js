@@ -5545,83 +5545,6 @@ const getStyles$e = (theme) => ({
   })
 });
 
-const SHOW_COPIED_DURATION = 2 * 1e3;
-async function copyToClipboard(text, fallbackRef) {
-  var _a;
-  if (navigator.clipboard && window.isSecureContext) {
-    return navigator.clipboard.writeText(text);
-  }
-  const textarea = document.createElement("textarea");
-  (_a = fallbackRef.current) == null ? void 0 : _a.appendChild(textarea);
-  textarea.value = text;
-  textarea.focus();
-  textarea.select();
-  document.execCommand("copy");
-  textarea.remove();
-}
-function CopyValueButton({ text, disabled, className }) {
-  const styles = ui.useStyles2(getBaseStyles);
-  const copyButtonRef = React.useRef(null);
-  const [showCopied, setShowCopied] = React.useState(false);
-  React.useEffect(() => {
-    if (!showCopied) {
-      return;
-    }
-    const timeoutId = setTimeout(() => setShowCopied(false), SHOW_COPIED_DURATION);
-    return () => clearTimeout(timeoutId);
-  }, [showCopied]);
-  const onCopyClick = React.useCallback(
-    async (event) => {
-      event.stopPropagation();
-      event.preventDefault();
-      try {
-        await copyToClipboard(text, copyButtonRef);
-        setShowCopied(true);
-      } catch (e) {
-      }
-    },
-    [text]
-  );
-  const copiedText = i18n.t("grafana-scenes.copy-value-button.copied", "Copied!");
-  return /* @__PURE__ */ React__default.default.createElement(React__default.default.Fragment, null, showCopied && /* @__PURE__ */ React__default.default.createElement(ui.InlineToast, { placement: "top", referenceElement: copyButtonRef.current }, copiedText), /* @__PURE__ */ React__default.default.createElement(
-    "button",
-    {
-      ref: copyButtonRef,
-      type: "button",
-      className: css.cx(styles.button, showCopied && styles.successButton, className),
-      onClick: onCopyClick,
-      disabled,
-      "aria-label": i18n.t("grafana-scenes.copy-value-button.aria-label", "Copy value"),
-      title: i18n.t("grafana-scenes.copy-value-button.title", "Copy value")
-    },
-    /* @__PURE__ */ React__default.default.createElement(ui.Icon, { name: showCopied ? "check" : "copy", size: "sm", "aria-hidden": true })
-  ));
-}
-function getBaseStyles(theme) {
-  return {
-    button: css.css({
-      marginLeft: theme.spacing(0.5),
-      padding: 0,
-      background: "none",
-      border: "none",
-      cursor: "pointer",
-      color: theme.colors.text.secondary,
-      opacity: 1,
-      flexShrink: 0,
-      "&:hover": {
-        color: theme.colors.text.primary
-      },
-      "&:disabled": {
-        cursor: "not-allowed",
-        opacity: 0.3
-      }
-    }),
-    successButton: css.css({
-      color: theme.colors.success.text
-    })
-  };
-}
-
 const LABEL_MAX_VISIBLE_LENGTH = 20;
 function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
   var _a, _b, _c, _d;
@@ -5715,7 +5638,6 @@ function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
         ref: pillWrapperRef
       },
       pillTextContent.length < LABEL_MAX_VISIBLE_LENGTH ? pillText : /* @__PURE__ */ React__default.default.createElement(ui.Tooltip, { content: /* @__PURE__ */ React__default.default.createElement("div", { className: styles.tooltipText }, pillTextContent), placement: "top" }, pillText),
-      !readOnly && !filter.matchAllFilter && /* @__PURE__ */ React__default.default.createElement(CopyValueButton, { text: pillTextContent, className: styles.pillIcon }),
       !readOnly && !filter.matchAllFilter && (!filter.origin || filter.origin === "dashboard") ? /* @__PURE__ */ React__default.default.createElement(
         ui.IconButton,
         {

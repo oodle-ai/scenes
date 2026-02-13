@@ -5,7 +5,6 @@ import { AdHocCombobox } from './AdHocFiltersCombobox.js';
 import { isMatchAllFilter } from '../AdHocFiltersVariable.js';
 import { t } from '@grafana/i18n';
 import { getNonApplicablePillStyles } from '../../utils.js';
-import { CopyValueButton } from '../../components/CopyValueButton.js';
 
 const LABEL_MAX_VISIBLE_LENGTH = 20;
 function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
@@ -100,7 +99,6 @@ function AdHocFilterPill({ filter, controller, readOnly, focusOnWipInputRef }) {
         ref: pillWrapperRef
       },
       pillTextContent.length < LABEL_MAX_VISIBLE_LENGTH ? pillText : /* @__PURE__ */ React.createElement(Tooltip, { content: /* @__PURE__ */ React.createElement("div", { className: styles.tooltipText }, pillTextContent), placement: "top" }, pillText),
-      !readOnly && !filter.matchAllFilter && /* @__PURE__ */ React.createElement(CopyValueButton, { text: pillTextContent, className: styles.pillIcon }),
       !readOnly && !filter.matchAllFilter && (!filter.origin || filter.origin === "dashboard") ? /* @__PURE__ */ React.createElement(
         IconButton,
         {

@@ -217,41 +217,41 @@ export function VariableValueSelectMulti({
 
   return (
     <MultiSelect<VariableValueSingle>
-        id={key}
-        placeholder={placeholder}
-        width="auto"
-        inputValue={inputValue}
-        disabled={isReadOnly}
-        value={uncommittedValue}
-        noMultiValueWrap={true}
-        maxVisibleValues={maxVisibleValues ?? 5}
-        tabSelectsValue={false}
-        virtualized
-        allowCustomValue={allowCustomValue}
-        //@ts-ignore
-        toggleAllOptions={{
-          enabled: true,
-          optionsFilter: filterAll,
-          determineToggleAllState: determineToggleAllState,
-        }}
-        options={sortedOptions}
-        closeMenuOnSelect={false}
-        components={{ Option: OptionWithCheckbox }}
-        isClearable={true}
-        hideSelectedOptions={false}
-        onInputChange={onInputChange}
-        onBlur={() => {
-          model.changeValueTo(uncommittedValue, undefined, true);
-        }}
-        filterOption={filterNoOp}
-        data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`)}
-        onChange={(newValue, action) => {
-          if (action.action === 'clear') {
-            model.changeValueTo(['$__all']);
-          }
-          setUncommittedValue(newValue.map((x) => x.value!));
-        }}
-      />
+      id={key}
+      placeholder={placeholder}
+      width="auto"
+      inputValue={inputValue}
+      disabled={isReadOnly}
+      value={uncommittedValue}
+      noMultiValueWrap={true}
+      maxVisibleValues={maxVisibleValues ?? 5}
+      tabSelectsValue={false}
+      virtualized
+      allowCustomValue={allowCustomValue}
+      //@ts-ignore
+      toggleAllOptions={{
+        enabled: true,
+        optionsFilter: filterAll,
+        determineToggleAllState: determineToggleAllState,
+      }}
+      options={sortedOptions}
+      closeMenuOnSelect={false}
+      components={{ Option: OptionWithCheckbox }}
+      isClearable={true}
+      hideSelectedOptions={false}
+      onInputChange={onInputChange}
+      onBlur={() => {
+        model.changeValueTo(uncommittedValue, undefined, true);
+      }}
+      filterOption={filterNoOp}
+      data-testid={selectors.pages.Dashboard.SubMenu.submenuItemValueDropDownValueLinkTexts(`${uncommittedValue}`)}
+      onChange={(newValue, action) => {
+        if (action.action === 'clear') {
+          model.changeValueTo(['$__all']);
+        }
+        setUncommittedValue(newValue.map((x) => x.value!));
+      }}
+    />
   );
 }
 
