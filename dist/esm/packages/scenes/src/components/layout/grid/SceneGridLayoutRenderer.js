@@ -1,18 +1,27 @@
 import React, { useRef, useEffect } from 'react';
 import ReactGridLayout from 'react-grid-layout';
 import { GRID_CELL_HEIGHT, GRID_COLUMN_COUNT, GRID_CELL_VMARGIN } from './constants.js';
-import { LazyLoader } from '../LazyLoader.js';
+import { LazyLoader, DragActiveContext } from '../LazyLoader.js';
 import { useStyles2 } from '@grafana/ui';
 import { css, cx } from '@emotion/css';
 import { useMeasure } from 'react-use';
 
 function SceneGridLayoutRenderer({ model }) {
-  const { children, isLazy, isDraggable, isResizable } = model.useState();
+  const { children, isLazy, isDraggable, isResizable, isDragging } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
   const ref = useRef(null);
   useEffect(() => {
     updateAnimationClass(ref, !!isDraggable);
   }, [isDraggable]);
+  useEffect(() => {
+    if (!document.getElementById("react-draggable-style-el")) {
+      const styleEl = document.createElement("style");
+      styleEl.type = "text/css";
+      styleEl.id = "react-draggable-style-el";
+      styleEl.innerHTML = "";
+      document.head.appendChild(styleEl);
+    }
+  }, []);
   validateChildrenSize(children);
   const renderGrid = (width2, height2) => {
     if (!width2 || !height2) {
@@ -25,7 +34,7 @@ function SceneGridLayoutRenderer({ model }) {
        * in an element that has the calculated size given by the AutoSizer. The AutoSizer
        * has a width of 0 and will let its content overflow its div.
        */
-      /* @__PURE__ */ React.createElement("div", { ref, style: { width: `${width2}px`, height: "100%" }, className: "react-grid-layout" }, /* @__PURE__ */ React.createElement(
+      /* @__PURE__ */ React.createElement(DragActiveContext.Provider, { value: isDragging != null ? isDragging : false }, /* @__PURE__ */ React.createElement("div", { ref, style: { width: `${width2}px`, height: "100%", userSelect: isDraggable ? "none" : void 0 }, className: "react-grid-layout" }, /* @__PURE__ */ React.createElement(
         ReactGridLayout,
         {
           width: width2,
@@ -57,7 +66,7 @@ function SceneGridLayoutRenderer({ model }) {
             totalCount: layout.length
           }
         ))
-      ))
+      )))
     );
   };
   return /* @__PURE__ */ React.createElement("div", { ref: outerDivRef, className: gridWrapperClass }, renderGrid(width, height));
@@ -83,7 +92,8 @@ const GridItemWrapper = React.forwardRef((props, ref) => {
         "data-griditem-key": sceneChild.state.key,
         className: cx(className, props.className),
         style,
-        ref
+        ref,
+        unloadWhenFarOffScreen: true
       },
       innerContent,
       children

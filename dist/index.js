@@ -7529,17 +7529,84 @@ function useUniqueId() {
   (_a = idRefLazy.current) != null ? _a : idRefLazy.current = lodash.uniqueId();
   return idRefLazy.current;
 }
+const UNLOAD_MULTIPLIER = 2;
+const DragActiveContext = React__default.default.createContext(false);
+let unloadObserver = null;
+const unloadCallbacks = {};
+const unloadElements = /* @__PURE__ */ new Map();
+let resizeTimeout = null;
+function getUnloadMargin() {
+  return `${Math.round(window.innerHeight * UNLOAD_MULTIPLIER)}px`;
+}
+function createUnloadObserver() {
+  return new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const cb = unloadCallbacks[entry.target.id];
+        if (typeof cb === "function") {
+          cb(entry);
+        }
+      }
+    },
+    { rootMargin: getUnloadMargin() }
+  );
+}
+function handleUnloadResize() {
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout);
+  }
+  resizeTimeout = setTimeout(() => {
+    if (unloadObserver && unloadElements.size > 0) {
+      unloadObserver.disconnect();
+      unloadObserver = createUnloadObserver();
+      for (const el of unloadElements.values()) {
+        unloadObserver.observe(el);
+      }
+    }
+  }, 200);
+}
+function observeUnload(id, el, cb) {
+  unloadCallbacks[id] = cb;
+  unloadElements.set(id, el);
+  if (!unloadObserver) {
+    unloadObserver = createUnloadObserver();
+    window.addEventListener("resize", handleUnloadResize);
+  }
+  unloadObserver.observe(el);
+}
+function unobserveUnload(id) {
+  const el = unloadElements.get(id);
+  if (el && unloadObserver) {
+    unloadObserver.unobserve(el);
+  }
+  delete unloadCallbacks[id];
+  unloadElements.delete(id);
+  if (unloadElements.size === 0 && unloadObserver) {
+    unloadObserver.disconnect();
+    unloadObserver = null;
+    window.removeEventListener("resize", handleUnloadResize);
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = null;
+    }
+  }
+}
 const LazyLoader = React__default.default.forwardRef(
-  ({ children, onLoad, onChange, className, ...rest }, ref) => {
+  ({ children, onLoad, onChange, unloadWhenFarOffScreen, className, ...rest }, ref) => {
     const id = useUniqueId();
     const { hideEmpty } = ui.useStyles2(getStyles$8);
     const [loaded, setLoaded] = React.useState(false);
     const [isInView, setIsInView] = React.useState(false);
     const innerRef = React.useRef(null);
+    const loadedRef = React.useRef(false);
+    const isDragActive = React__default.default.useContext(DragActiveContext);
+    const isDragActiveRef = React.useRef(isDragActive);
+    isDragActiveRef.current = isDragActive;
     React.useImperativeHandle(ref, () => innerRef.current);
     reactUse.useEffectOnce(() => {
       LazyLoader.addCallback(id, (entry) => {
-        if (!loaded && entry.isIntersecting) {
+        if (!loadedRef.current && entry.isIntersecting) {
+          loadedRef.current = true;
           setLoaded(true);
           onLoad == null ? void 0 : onLoad();
         }
@@ -7550,11 +7617,27 @@ const LazyLoader = React__default.default.forwardRef(
       if (wrapperEl) {
         LazyLoader.observer.observe(wrapperEl);
       }
+      if (unloadWhenFarOffScreen && wrapperEl) {
+        observeUnload(id, wrapperEl, (entry) => {
+          if (!entry.isIntersecting && loadedRef.current && !isDragActiveRef.current && entry.rootBounds) {
+            const vh = entry.rootBounds.height;
+            const rect = entry.boundingClientRect;
+            const distance = rect.top > entry.rootBounds.bottom ? rect.top - entry.rootBounds.bottom : entry.rootBounds.top - rect.bottom;
+            if (distance > vh * UNLOAD_MULTIPLIER) {
+              loadedRef.current = false;
+              setLoaded(false);
+            }
+          }
+        });
+      }
       return () => {
         wrapperEl && LazyLoader.observer.unobserve(wrapperEl);
         delete LazyLoader.callbacks[id];
         if (Object.keys(LazyLoader.callbacks).length === 0) {
           LazyLoader.observer.disconnect();
+        }
+        if (unloadWhenFarOffScreen) {
+          unobserveUnload(id);
         }
       };
     });
@@ -7581,7 +7664,7 @@ LazyLoader.observer = new IntersectionObserver(
       }
     }
   },
-  { rootMargin: "100px" }
+  { rootMargin: "200px" }
 );
 const LazyLoaderInViewContext = React__default.default.createContext(true);
 function useLazyLoaderIsInView() {
@@ -13640,12 +13723,21 @@ function isSceneGridLayout(child) {
 }
 
 function SceneGridLayoutRenderer({ model }) {
-  const { children, isLazy, isDraggable, isResizable } = model.useState();
+  const { children, isLazy, isDraggable, isResizable, isDragging } = model.useState();
   const [outerDivRef, { width, height }] = reactUse.useMeasure();
   const ref = React.useRef(null);
   React.useEffect(() => {
     updateAnimationClass(ref, !!isDraggable);
   }, [isDraggable]);
+  React.useEffect(() => {
+    if (!document.getElementById("react-draggable-style-el")) {
+      const styleEl = document.createElement("style");
+      styleEl.type = "text/css";
+      styleEl.id = "react-draggable-style-el";
+      styleEl.innerHTML = "";
+      document.head.appendChild(styleEl);
+    }
+  }, []);
   validateChildrenSize(children);
   const renderGrid = (width2, height2) => {
     if (!width2 || !height2) {
@@ -13658,7 +13750,7 @@ function SceneGridLayoutRenderer({ model }) {
        * in an element that has the calculated size given by the AutoSizer. The AutoSizer
        * has a width of 0 and will let its content overflow its div.
        */
-      /* @__PURE__ */ React__default.default.createElement("div", { ref, style: { width: `${width2}px`, height: "100%" }, className: "react-grid-layout" }, /* @__PURE__ */ React__default.default.createElement(
+      /* @__PURE__ */ React__default.default.createElement(DragActiveContext.Provider, { value: isDragging != null ? isDragging : false }, /* @__PURE__ */ React__default.default.createElement("div", { ref, style: { width: `${width2}px`, height: "100%", userSelect: isDraggable ? "none" : void 0 }, className: "react-grid-layout" }, /* @__PURE__ */ React__default.default.createElement(
         ReactGridLayout__default.default,
         {
           width: width2,
@@ -13690,7 +13782,7 @@ function SceneGridLayoutRenderer({ model }) {
             totalCount: layout.length
           }
         ))
-      ))
+      )))
     );
   };
   return /* @__PURE__ */ React__default.default.createElement("div", { ref: outerDivRef, className: gridWrapperClass }, renderGrid(width, height));
@@ -13716,7 +13808,8 @@ const GridItemWrapper = React__default.default.forwardRef((props, ref) => {
         "data-griditem-key": sceneChild.state.key,
         className: css.cx(className, props.className),
         style,
-        ref
+        ref,
+        unloadWhenFarOffScreen: true
       },
       innerContent,
       children
@@ -13851,6 +13944,7 @@ const _SceneGridLayout = class _SceneGridLayout extends SceneObjectBase {
     };
     this.onDragStart = (gridLayout) => {
       this._oldLayout = [...gridLayout];
+      this.setState({ isDragging: true });
     };
     this.onDragStop = (gridLayout, o, updatedItem) => {
       const sceneChild = this.getSceneLayoutChild(updatedItem.i);
@@ -13881,7 +13975,7 @@ const _SceneGridLayout = class _SceneGridLayout extends SceneObjectBase {
       if (newParent !== sceneChild.parent && !this._loadOldLayout) {
         newChildren = this.moveChildTo(sceneChild, newParent);
       }
-      this.setState({ children: sortChildrenByPosition(newChildren) });
+      this.setState({ children: sortChildrenByPosition(newChildren), isDragging: false });
       this._skipOnLayoutChange = true;
     };
   }

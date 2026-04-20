@@ -12,11 +12,84 @@ export function useUniqueId(): string {
   return idRefLazy.current;
 }
 
+const UNLOAD_MULTIPLIER = 2;
+
+export const DragActiveContext = React.createContext<boolean>(false);
+
+// --- Unload observer: unmounts panel content when far off-screen ---
+let unloadObserver: IntersectionObserver | null = null;
+const unloadCallbacks: Record<string, (e: IntersectionObserverEntry) => void> = {};
+const unloadElements = new Map<string, Element>();
+let resizeTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function getUnloadMargin(): string {
+  return `${Math.round(window.innerHeight * UNLOAD_MULTIPLIER)}px`;
+}
+
+function createUnloadObserver(): IntersectionObserver {
+  return new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const cb = unloadCallbacks[entry.target.id];
+        if (typeof cb === 'function') {
+          cb(entry);
+        }
+      }
+    },
+    { rootMargin: getUnloadMargin() }
+  );
+}
+
+function handleUnloadResize() {
+  if (resizeTimeout) {
+    clearTimeout(resizeTimeout);
+  }
+  resizeTimeout = setTimeout(() => {
+    if (unloadObserver && unloadElements.size > 0) {
+      unloadObserver.disconnect();
+      unloadObserver = createUnloadObserver();
+      for (const el of unloadElements.values()) {
+        unloadObserver.observe(el);
+      }
+    }
+  }, 200);
+}
+
+function observeUnload(id: string, el: Element, cb: (e: IntersectionObserverEntry) => void) {
+  unloadCallbacks[id] = cb;
+  unloadElements.set(id, el);
+  if (!unloadObserver) {
+    unloadObserver = createUnloadObserver();
+    window.addEventListener('resize', handleUnloadResize);
+  }
+  unloadObserver.observe(el);
+}
+
+function unobserveUnload(id: string) {
+  const el = unloadElements.get(id);
+  if (el && unloadObserver) {
+    unloadObserver.unobserve(el);
+  }
+  delete unloadCallbacks[id];
+  unloadElements.delete(id);
+
+  if (unloadElements.size === 0 && unloadObserver) {
+    unloadObserver.disconnect();
+    unloadObserver = null;
+    window.removeEventListener('resize', handleUnloadResize);
+    if (resizeTimeout) {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = null;
+    }
+  }
+}
+
 export interface Props extends Omit<React.HTMLProps<HTMLDivElement>, 'onChange' | 'children'> {
   children: React.ReactNode;
   key: string;
   onLoad?: () => void;
   onChange?: (isInView: boolean) => void;
+  unloadWhenFarOffScreen?: boolean;
 }
 
 export interface LazyLoaderType extends ForwardRefExoticComponent<Props> {
@@ -26,18 +99,24 @@ export interface LazyLoaderType extends ForwardRefExoticComponent<Props> {
 }
 
 export const LazyLoader: LazyLoaderType = React.forwardRef<HTMLDivElement, Props>(
-  ({ children, onLoad, onChange, className, ...rest }, ref) => {
+  ({ children, onLoad, onChange, unloadWhenFarOffScreen, className, ...rest }, ref) => {
     const id = useUniqueId();
     const { hideEmpty } = useStyles2(getStyles);
     const [loaded, setLoaded] = useState(false);
     const [isInView, setIsInView] = useState(false);
     const innerRef = useRef<HTMLDivElement>(null);
+    const loadedRef = useRef(false);
+
+    const isDragActive = React.useContext(DragActiveContext);
+    const isDragActiveRef = useRef(isDragActive);
+    isDragActiveRef.current = isDragActive;
 
     useImperativeHandle(ref, () => innerRef.current!);
 
     useEffectOnce(() => {
       LazyLoader.addCallback(id, (entry) => {
-        if (!loaded && entry.isIntersecting) {
+        if (!loadedRef.current && entry.isIntersecting) {
+          loadedRef.current = true;
           setLoaded(true);
           onLoad?.();
         }
@@ -52,11 +131,31 @@ export const LazyLoader: LazyLoaderType = React.forwardRef<HTMLDivElement, Props
         LazyLoader.observer.observe(wrapperEl);
       }
 
+      if (unloadWhenFarOffScreen && wrapperEl) {
+        observeUnload(id, wrapperEl, (entry) => {
+          if (!entry.isIntersecting && loadedRef.current && !isDragActiveRef.current && entry.rootBounds) {
+            const vh = entry.rootBounds.height;
+            const rect = entry.boundingClientRect;
+            const distance =
+              rect.top > entry.rootBounds.bottom
+                ? rect.top - entry.rootBounds.bottom
+                : entry.rootBounds.top - rect.bottom;
+            if (distance > vh * UNLOAD_MULTIPLIER) {
+              loadedRef.current = false;
+              setLoaded(false);
+            }
+          }
+        });
+      }
+
       return () => {
         wrapperEl && LazyLoader.observer.unobserve(wrapperEl);
         delete LazyLoader.callbacks[id];
         if (Object.keys(LazyLoader.callbacks).length === 0) {
           LazyLoader.observer.disconnect();
+        }
+        if (unloadWhenFarOffScreen) {
+          unobserveUnload(id);
         }
       };
     });
@@ -98,7 +197,7 @@ LazyLoader.observer = new IntersectionObserver(
       }
     }
   },
-  { rootMargin: '100px' }
+  { rootMargin: '200px' }
 );
 
 export const LazyLoaderInViewContext = React.createContext<boolean>(true);

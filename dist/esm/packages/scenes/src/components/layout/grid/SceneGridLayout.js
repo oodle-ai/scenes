@@ -50,6 +50,7 @@ const _SceneGridLayout = class _SceneGridLayout extends SceneObjectBase {
     };
     this.onDragStart = (gridLayout) => {
       this._oldLayout = [...gridLayout];
+      this.setState({ isDragging: true });
     };
     this.onDragStop = (gridLayout, o, updatedItem) => {
       const sceneChild = this.getSceneLayoutChild(updatedItem.i);
@@ -80,7 +81,7 @@ const _SceneGridLayout = class _SceneGridLayout extends SceneObjectBase {
       if (newParent !== sceneChild.parent && !this._loadOldLayout) {
         newChildren = this.moveChildTo(sceneChild, newParent);
       }
-      this.setState({ children: sortChildrenByPosition(newChildren) });
+      this.setState({ children: sortChildrenByPosition(newChildren), isDragging: false });
       this._skipOnLayoutChange = true;
     };
   }

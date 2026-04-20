@@ -2,7 +2,7 @@ import React, { RefCallback, useEffect, useRef } from 'react';
 import ReactGridLayout from 'react-grid-layout';
 import { SceneComponentProps } from '../../../core/types';
 import { GRID_CELL_HEIGHT, GRID_CELL_VMARGIN, GRID_COLUMN_COUNT } from './constants';
-import { LazyLoader } from '../LazyLoader';
+import { LazyLoader, DragActiveContext } from '../LazyLoader';
 import { SceneGridLayout } from './SceneGridLayout';
 import { SceneGridItemLike } from './types';
 import { useStyles2 } from '@grafana/ui';
@@ -11,7 +11,7 @@ import { GrafanaTheme2 } from '@grafana/data';
 import { useMeasure } from 'react-use';
 
 export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGridLayout>) {
-  const { children, isLazy, isDraggable, isResizable } = model.useState();
+  const { children, isLazy, isDraggable, isResizable, isDragging } = model.useState();
   const [outerDivRef, { width, height }] = useMeasure();
   const ref = useRef<HTMLDivElement | null>(null);
 
@@ -21,6 +21,23 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
   useEffect(() => {
     updateAnimationClass(ref, !!isDraggable);
   }, [isDraggable]);
+
+  // Pre-inject the style element that react-draggable would otherwise create with
+  // `.react-draggable-transparent-selection *::selection { all: inherit }`.
+  // That wildcard `*` selector forces the browser to restyle every DOM element
+  // (~300K on large dashboards) whenever the body class toggles on drag start/stop.
+  // By pre-creating an empty element with the same id, react-draggable skips its
+  // own injection. The body class still toggles but has no matching rules, so the
+  // style invalidation is effectively free.
+  useEffect(() => {
+    if (!document.getElementById('react-draggable-style-el')) {
+      const styleEl = document.createElement('style');
+      styleEl.type = 'text/css';
+      styleEl.id = 'react-draggable-style-el';
+      styleEl.innerHTML = '';
+      document.head.appendChild(styleEl);
+    }
+  }, []);
 
   validateChildrenSize(children);
 
@@ -37,7 +54,8 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
        * in an element that has the calculated size given by the AutoSizer. The AutoSizer
        * has a width of 0 and will let its content overflow its div.
        */
-      <div ref={ref} style={{ width: `${width}px`, height: '100%' }} className="react-grid-layout">
+      <DragActiveContext.Provider value={isDragging ?? false}>
+      <div ref={ref} style={{ width: `${width}px`, height: '100%', userSelect: isDraggable ? 'none' : undefined }} className="react-grid-layout">
         <ReactGridLayout
           width={width}
           /**
@@ -74,6 +92,7 @@ export function SceneGridLayoutRenderer({ model }: SceneComponentProps<SceneGrid
           ))}
         </ReactGridLayout>
       </div>
+      </DragActiveContext.Provider>
     );
   };
 
@@ -115,6 +134,7 @@ const GridItemWrapper = React.forwardRef<HTMLDivElement, GridItemWrapperProps>((
         className={cx(className, props.className)}
         style={style}
         ref={ref}
+        unloadWhenFarOffScreen
       >
         {innerContent}
         {children}

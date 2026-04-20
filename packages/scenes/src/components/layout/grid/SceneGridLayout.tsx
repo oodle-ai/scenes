@@ -21,6 +21,8 @@ interface SceneGridLayoutState extends SceneObjectState {
   /** Enable or disable item resizing */
   isResizable?: boolean;
   isLazy?: boolean;
+  /** True while a grid item is being dragged. Used to suppress panel unloading during drag. */
+  isDragging?: boolean;
   /**
    * Fit panels to height of the grid. This will scale down the panels vertically to fit available height.
    * The row height is not changed, only the y position and height of the panels.
@@ -314,6 +316,7 @@ export class SceneGridLayout extends SceneObjectBase<SceneGridLayoutState> imple
 
   public onDragStart: ReactGridLayout.ItemCallback = (gridLayout) => {
     this._oldLayout = [...gridLayout];
+    this.setState({ isDragging: true });
   };
 
   public onDragStop: ReactGridLayout.ItemCallback = (gridLayout, o, updatedItem) => {
@@ -361,7 +364,7 @@ export class SceneGridLayout extends SceneObjectBase<SceneGridLayoutState> imple
       newChildren = this.moveChildTo(sceneChild, newParent);
     }
 
-    this.setState({ children: sortChildrenByPosition(newChildren) });
+    this.setState({ children: sortChildrenByPosition(newChildren), isDragging: false });
     this._skipOnLayoutChange = true;
   };
 

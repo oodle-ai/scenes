@@ -3060,6 +3060,8 @@ interface SceneGridLayoutState extends SceneObjectState {
     /** Enable or disable item resizing */
     isResizable?: boolean;
     isLazy?: boolean;
+    /** True while a grid item is being dragged. Used to suppress panel unloading during drag. */
+    isDragging?: boolean;
     /**
      * Fit panels to height of the grid. This will scale down the panels vertically to fit available height.
      * The row height is not changed, only the y position and height of the panels.
@@ -3144,6 +3146,7 @@ interface Props$1 extends Omit<React__default.HTMLProps<HTMLDivElement>, 'onChan
     key: string;
     onLoad?: () => void;
     onChange?: (isInView: boolean) => void;
+    unloadWhenFarOffScreen?: boolean;
 }
 interface LazyLoaderType extends ForwardRefExoticComponent<Props$1> {
     addCallback: (id: string, c: (e: IntersectionObserverEntry) => void) => void;
