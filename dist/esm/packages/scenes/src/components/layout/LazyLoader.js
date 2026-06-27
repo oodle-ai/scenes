@@ -63,7 +63,7 @@ LazyLoader.observer = new IntersectionObserver(
       }
     }
   },
-  { rootMargin: "100px" }
+  { rootMargin: "100px 100px 150% 100px" }
 );
 const LazyLoaderInViewContext = React.createContext(true);
 function useLazyLoaderIsInView() {
