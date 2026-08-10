@@ -50,7 +50,7 @@ class SceneQueryRunner extends SceneObjectBase {
       this._resultAnnotations = data.annotations;
       const dataWithLayersApplied = this._combineDataLayers(preProcessedData);
       let hasFetchedData = this.state._hasFetchedData;
-      if (!hasFetchedData && preProcessedData.state !== LoadingState.Loading) {
+      if (!hasFetchedData && (preProcessedData.state !== LoadingState.Loading || preProcessedData.series.length > 0)) {
         hasFetchedData = true;
       }
       this.setState({ data: dataWithLayersApplied, _hasFetchedData: hasFetchedData });

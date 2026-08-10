@@ -619,7 +619,11 @@ export class SceneQueryRunner extends SceneObjectBase<QueryRunnerState> implemen
 
     let hasFetchedData = this.state._hasFetchedData;
 
-    if (!hasFetchedData && preProcessedData.state !== LoadingState.Loading) {
+    // A query can deliver results while it is still loading, for example one that is split into
+    // several time ranges and fills the panel in progressively. Anything that already carries data
+    // is worth displaying, waiting for a state other than Loading would keep the panel empty until
+    // the query finishes.
+    if (!hasFetchedData && (preProcessedData.state !== LoadingState.Loading || preProcessedData.series.length > 0)) {
       hasFetchedData = true;
     }
 
