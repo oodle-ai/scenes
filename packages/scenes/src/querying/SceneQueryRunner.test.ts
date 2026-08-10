@@ -12,6 +12,7 @@ import {
   DataQueryResponse,
   DataSourceApi,
   FieldType,
+  getDefaultTimeRange,
   LoadingState,
   PanelData,
   toDataFrame,
@@ -2731,6 +2732,55 @@ describe.each(['11.1.2', '11.1.1'])('SceneQueryRunner', (v) => {
     await new Promise((r) => setTimeout(r, 1));
 
     expect(sentRequest?.scopes).toBeUndefined();
+  });
+});
+
+describe('isDataReadyToDisplay', () => {
+  it('is true as soon as a query delivers data, even while it is still loading', async () => {
+    const partial: PanelData = {
+      state: LoadingState.Loading,
+      series: [toDataFrame({ refId: 'A', datapoints: [[100, 1]] })],
+      annotations: [],
+      timeRange: getDefaultTimeRange(),
+    };
+
+    runRequestMock.mockReturnValueOnce(of(partial));
+
+    const queryRunner = new SceneQueryRunner({
+      queries: [{ refId: 'A' }],
+      $timeRange: new SceneTimeRange(),
+    });
+
+    expect(queryRunner.isDataReadyToDisplay()).toBe(false);
+
+    queryRunner.activate();
+    await new Promise((r) => setTimeout(r, 1));
+
+    // A query split into several time ranges reports Loading until the last part arrives, the
+    // panel must render the parts that are already in
+    expect(queryRunner.state.data?.state).toBe(LoadingState.Loading);
+    expect(queryRunner.isDataReadyToDisplay()).toBe(true);
+  });
+
+  it('stays false while a query is loading and has no data yet', async () => {
+    const empty: PanelData = {
+      state: LoadingState.Loading,
+      series: [],
+      annotations: [],
+      timeRange: getDefaultTimeRange(),
+    };
+
+    runRequestMock.mockReturnValueOnce(of(empty));
+
+    const queryRunner = new SceneQueryRunner({
+      queries: [{ refId: 'A' }],
+      $timeRange: new SceneTimeRange(),
+    });
+
+    queryRunner.activate();
+    await new Promise((r) => setTimeout(r, 1));
+
+    expect(queryRunner.isDataReadyToDisplay()).toBe(false);
   });
 });
 
