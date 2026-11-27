@@ -206,7 +206,48 @@ describe('sceneInterpolator', () => {
     const formatter = jest.fn().mockReturnValue('custom');
 
     expect(sceneInterpolator(scene, '$cluster', undefined, formatter)).toBe('custom');
-    expect(formatter.mock.calls[0][1]).toEqual({ name: 'cluster', type: 'custom', multi: true, includeAll: true });
+    expect(formatter.mock.calls[0][1]).toEqual({
+      name: 'cluster',
+      type: 'custom',
+      multi: true,
+      includeAll: true,
+      isAllValue: false,
+    });
+  });
+
+  it('Tells a custom formatter that All is selected and passes every option', () => {
+    const scene = new TestScene({
+      $variables: new SceneVariableSet({
+        variables: [
+          new TestVariable({
+            name: 'cluster',
+            value: ALL_VARIABLE_VALUE,
+            text: ALL_VARIABLE_TEXT,
+            options: [
+              { label: 'A', value: 'A' },
+              { label: 'B', value: 'B' },
+            ],
+            isMulti: true,
+            includeAll: true,
+          }),
+        ],
+      }),
+    });
+
+    const formatter = jest.fn().mockReturnValue('custom');
+
+    expect(sceneInterpolator(scene, '$cluster', undefined, formatter)).toBe('custom');
+    expect(formatter.mock.calls[0][0]).toEqual(['A', 'B']);
+    expect(formatter.mock.calls[0][1]).toEqual({
+      name: 'cluster',
+      type: 'custom',
+      multi: true,
+      includeAll: true,
+      isAllValue: true,
+    });
+    // Formats other than a function get every option, not a regex
+    expect(sceneInterpolator(scene, '${cluster:pipe}')).toBe('A|B');
+    expect(sceneInterpolator(scene, '${cluster:regex}')).toBe('(A|B)');
   });
 
   it('Can use use $__all_variables', () => {

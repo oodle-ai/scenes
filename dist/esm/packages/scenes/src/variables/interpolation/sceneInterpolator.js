@@ -60,7 +60,8 @@ function formatValue(context, variable, value, formatNameOrFn, fieldPath) {
       name: variable.state.name,
       type: variable.state.type,
       multi: variable.state.isMulti,
-      includeAll: variable.state.includeAll
+      includeAll: variable.state.includeAll,
+      isAllValue: hasAllValue(variable)
     });
   }
   let args = [];
@@ -81,6 +82,10 @@ function formatValue(context, variable, value, formatNameOrFn, fieldPath) {
     formatter = formatRegistry.get(VariableFormatID.Glob);
   }
   return formatter.formatter(value, args, variable, fieldPath);
+}
+function hasAllValue(variable) {
+  const { hasAllValue: hasAllValue2 } = variable;
+  return typeof hasAllValue2 === "function" && hasAllValue2.call(variable);
 }
 
 export { sceneInterpolator };

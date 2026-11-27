@@ -122,7 +122,7 @@ const _MultiValueVariable = class _MultiValueVariable extends SceneObjectBase {
       if (this.state.allValue) {
         return new CustomAllValue(this.state.allValue, this);
       }
-      return new CustomAllValue(".*", this);
+      value = this.state.options.map((o) => o.value);
     }
     if (fieldPath != null) {
       if (Array.isArray(value)) {

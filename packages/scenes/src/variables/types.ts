@@ -120,6 +120,11 @@ export interface CustomFormatterVariable {
   type: VariableType;
   multi?: boolean;
   includeAll?: boolean;
+  /**
+   * Oodle: true when the All option is selected and the variable has no custom all value. The value is then the
+   * list of every option; a datasource can match everything in one piece instead (Prometheus uses `.*`).
+   */
+  isAllValue?: boolean;
 }
 
 export type VariableCustomFormatterFn = (

@@ -1889,7 +1889,7 @@ const _MultiValueVariable = class _MultiValueVariable extends SceneObjectBase {
       if (this.state.allValue) {
         return new CustomAllValue(this.state.allValue, this);
       }
-      return new CustomAllValue(".*", this);
+      value = this.state.options.map((o) => o.value);
     }
     if (fieldPath != null) {
       if (Array.isArray(value)) {
@@ -2507,7 +2507,8 @@ function formatValue(context, variable, value, formatNameOrFn, fieldPath) {
       name: variable.state.name,
       type: variable.state.type,
       multi: variable.state.isMulti,
-      includeAll: variable.state.includeAll
+      includeAll: variable.state.includeAll,
+      isAllValue: hasAllValue(variable)
     });
   }
   let args = [];
@@ -2528,6 +2529,10 @@ function formatValue(context, variable, value, formatNameOrFn, fieldPath) {
     formatter = formatRegistry.get(schema.VariableFormatID.Glob);
   }
   return formatter.formatter(value, args, variable, fieldPath);
+}
+function hasAllValue(variable) {
+  const { hasAllValue: hasAllValue2 } = variable;
+  return typeof hasAllValue2 === "function" && hasAllValue2.call(variable);
 }
 
 function isSceneObject(obj) {
