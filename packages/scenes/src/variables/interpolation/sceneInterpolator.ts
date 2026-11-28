@@ -109,6 +109,7 @@ function formatValue(
       type: variable.state.type as VariableType,
       multi: variable.state.isMulti,
       includeAll: variable.state.includeAll,
+      isAllValue: hasAllValue(variable),
     });
   }
 
@@ -135,4 +136,10 @@ function formatValue(
   }
 
   return formatter.formatter(value, args, variable, fieldPath);
+}
+
+// Duck-typed so this module does not import MultiValueVariable, which imports the interpolation code.
+function hasAllValue(variable: FormatVariable): boolean {
+  const { hasAllValue } = variable as { hasAllValue?: () => boolean };
+  return typeof hasAllValue === 'function' && hasAllValue.call(variable);
 }

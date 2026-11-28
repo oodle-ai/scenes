@@ -220,8 +220,7 @@ export abstract class MultiValueVariable<TState extends MultiValueVariableState 
       if (this.state.allValue) {
         return new CustomAllValue(this.state.allValue, this);
       }
-
-      return new CustomAllValue('.*', this);
+      value = this.state.options.map((o) => o.value);
     }
 
     if (fieldPath != null) {
